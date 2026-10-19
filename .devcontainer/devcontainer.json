@@ -1,0 +1,27 @@
+{
+  "name": "credit-card-dispute",
+  "build": {
+      "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "forwardPorts": [8765],
+  "portsAttributes": {
+      "8765": {
+          "label": "dispute runtime",
+          "onAutoForward": "silent"
+      }
+  },
+  "containerEnv": {
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "UV_LINK_MODE": "copy"
+  },
+  "customizations": {
+      "vscode": {
+          "extensions": ["ms-python.python"],
+          "settings": {
+              "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+          }
+      }
+  },
+  "postCreateCommand": "uv sync --locked && uv run --locked python tools/validate_package.py"
+}
