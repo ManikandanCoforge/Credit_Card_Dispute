@@ -50,3 +50,18 @@ jobs:
       - run: uv sync --locked
       # Exit code 5 means pytest collected nothing. An empty suite is success.
       - run: uv run --locked pytest || [ $? -eq 5 ]
+
+  env-files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Reject committed env files
+        run: |
+          tracked=$(git ls-files | grep -E '(^|/)\.env$|(^|/)\.venv/' || true)
+          if [ -n "$tracked" ]; then
+            echo "Committed env files:"
+            printf '%s\n' "$tracked"
+            exit 1
+          fi
