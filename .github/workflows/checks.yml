@@ -18,7 +18,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
-          python-version: "3.12"
+          python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
       - run: uv run --locked mypy src
@@ -32,7 +32,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
-          python-version: "3.12"
+          python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
       - run: uv run --locked bandit -r src
@@ -45,7 +45,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
-          python-version: "3.12"
+          python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
       # Exit code 5 means pytest collected nothing. An empty suite is success.

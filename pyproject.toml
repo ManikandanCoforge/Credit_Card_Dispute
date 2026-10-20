@@ -2,15 +2,15 @@
 name = "fde-card-disputes-training"
 version = "1.0.0"
 description = "Fictional Associate FDE capstone simulator and fixtures"
-requires-python = ">=3.12,<3.13"
+requires-python = "==3.12.13"
 dependencies = []
 [tool.uv]
 package = false
 
 [dependency-groups]
 dev = [
-    "bandit>=1.9.4",
-    "mypy>=2.4.0",
-    "pytest>=9.1.1",
-    "ruff>=0.17.1",
+    "bandit==1.9.4",
+    "mypy==2.4.0",
+    "pytest==9.1.1",
+    "ruff==0.17.1",
 ]
