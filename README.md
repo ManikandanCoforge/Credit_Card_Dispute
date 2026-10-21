@@ -7,7 +7,7 @@ Turn an incomplete customer complaint into a cited dispute draft that a human ca
 ## Start here
 
 Read `BRIEF.md`, `docs/POLICY_GUIDE.md`, `docs/API.md`, `docs/OUTPUT_CONTRACT.md`, and `docs/ASSESSMENT.md`.
-Use one isolated copy and mock state database per team. The package has no third-party Python dependencies. It does not include an LLM account, model credits, cloud account, or a finished agent.
+Use one isolated copy and mock state database per team. The mock stays on the standard library. The application depends on third-party packages, including Pydantic 2.14.1. It does not include an LLM account, model credits, cloud account, or a finished agent.
 
 Install Python 3.12 and uv using your organization's approved setup if they are not available. From this directory:
 
