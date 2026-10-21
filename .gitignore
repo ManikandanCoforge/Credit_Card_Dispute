@@ -4,3 +4,25 @@ __pycache__/
 submissions/
 reports/
 *.sqlite
+
+# local agent-skills config
+AGENTS.md
+docs/agents/
+
+# secrets and local env
+.env
+
+# Python build and caches
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# editor and OS
+.DS_Store
+.vscode/
