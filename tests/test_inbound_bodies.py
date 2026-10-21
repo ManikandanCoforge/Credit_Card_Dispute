@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.api_models import CaseListResponse, HealthResponse
+from src.api_models import CaseListResponse, HealthResponse, ToolPayload
 
 
 def test_dev_health_body_parses():
@@ -175,3 +175,41 @@ def test_case_list_rejects_a_non_string_document():
                 ]
             }
         )
+
+
+def test_tool_payload_rejects_a_non_string_source_id():
+    with pytest.raises(ValidationError):
+        ToolPayload.model_validate({"source_id": 1})
+
+
+def test_parsed_tool_payload_rejects_mutation():
+    parsed = ToolPayload.model_validate({"source_id": "CARD-D01-TRANSACTIONS"})
+    with pytest.raises(ValidationError):
+        parsed.source_id = "CARD-D01-MERCHANT"
+
+
+def test_tool_payload_keeps_transaction_fields():
+    parsed = ToolPayload.model_validate(
+        {
+            "source_id": "CARD-D01-TRANSACTIONS",
+            "transactions": [{"transaction_id": "TX-D01", "amount": 117}],
+        }
+    )
+    assert parsed.model_extra == {
+        "transactions": [{"transaction_id": "TX-D01", "amount": 117}]
+    }
+
+
+def test_tool_payload_rejects_a_missing_source_id():
+    with pytest.raises(ValidationError):
+        ToolPayload.model_validate({})
+
+
+def test_tool_payload_rejects_an_empty_source_id():
+    with pytest.raises(ValidationError):
+        ToolPayload.model_validate({"source_id": ""})
+
+
+def test_tool_payload_parses_a_source_id():
+    parsed = ToolPayload.model_validate({"source_id": "CARD-D01-TRANSACTIONS"})
+    assert parsed.source_id == "CARD-D01-TRANSACTIONS"

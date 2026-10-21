@@ -23,3 +23,9 @@ class CaseListResponse(BaseModel):
     model_config = ConfigDict(extra="allow", frozen=True)
 
     cases: list[CaseSummary]
+
+
+class ToolPayload(BaseModel):
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    source_id: str = Field(min_length=1)
