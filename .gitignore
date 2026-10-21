@@ -8,6 +8,8 @@ reports/
 # local agent-skills config
 AGENTS.md
 docs/agents/
+.agents/
+skills-lock.json
 
 # secrets and local env
 .env

@@ -57,3 +57,21 @@ class ReviewRow(BaseModel):
     hash: str
     status: str
     reviewer: str | None
+
+
+class RecordCreated(BaseModel):
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    record_id: str
+    case_id: str
+    status: Literal["created"]
+    review_id: str
+
+
+class RecordRow(BaseModel):
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    id: str
+    case_id: str
+    draft: str
+    review_id: str

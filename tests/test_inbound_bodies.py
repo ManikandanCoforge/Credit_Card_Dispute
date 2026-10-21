@@ -5,6 +5,8 @@ from src.api_models import (
     CaseListResponse,
     ErrorBody,
     HealthResponse,
+    RecordCreated,
+    RecordRow,
     ReviewCreated,
     ReviewRow,
     ToolPayload,
@@ -388,3 +390,119 @@ def test_fetched_review_parses_with_a_null_reviewer():
     )
     assert parsed.reviewer is None
     assert parsed.draft == '{"case_id":"CARD-D01"}'
+
+
+def test_record_creation_rejects_a_missing_review_id():
+    with pytest.raises(ValidationError):
+        RecordCreated.model_validate(
+            {
+                "record_id": "dispute-d01",
+                "case_id": "CARD-D01",
+                "status": "created",
+            }
+        )
+
+
+def test_record_creation_rejects_a_status_other_than_created():
+    with pytest.raises(ValidationError):
+        RecordCreated.model_validate(
+            {
+                "record_id": "dispute-d01",
+                "case_id": "CARD-D01",
+                "status": "pending",
+                "review_id": "rev_abc",
+            }
+        )
+
+
+def test_record_creation_parses_created():
+    parsed = RecordCreated.model_validate(
+        {
+            "record_id": "dispute-d01",
+            "case_id": "CARD-D01",
+            "status": "created",
+            "review_id": "rev_abc",
+        }
+    )
+    assert parsed.record_id == "dispute-d01"
+    assert parsed.case_id == "CARD-D01"
+    assert parsed.status == "created"
+    assert parsed.review_id == "rev_abc"
+
+
+def test_fetched_record_keeps_an_extra_key():
+    parsed = RecordRow.model_validate(
+        {
+            "id": "dispute-d01",
+            "case_id": "CARD-D01",
+            "draft": '{"case_id":"CARD-D01"}',
+            "review_id": "rev_abc",
+            "status": "created",
+        }
+    )
+    assert parsed.model_extra == {"status": "created"}
+
+
+def test_record_creation_keeps_an_extra_key():
+    parsed = RecordCreated.model_validate(
+        {
+            "record_id": "dispute-d01",
+            "case_id": "CARD-D01",
+            "status": "created",
+            "review_id": "rev_abc",
+            "draft_hash": "abc123",
+        }
+    )
+    assert parsed.model_extra == {"draft_hash": "abc123"}
+
+
+def test_parsed_record_row_rejects_mutation():
+    parsed = RecordRow.model_validate(
+        {
+            "id": "dispute-d01",
+            "case_id": "CARD-D01",
+            "draft": '{"case_id":"CARD-D01"}',
+            "review_id": "rev_abc",
+        }
+    )
+    with pytest.raises(ValidationError):
+        parsed.draft = "{}"
+
+
+def test_parsed_record_creation_rejects_mutation():
+    parsed = RecordCreated.model_validate(
+        {
+            "record_id": "dispute-d01",
+            "case_id": "CARD-D01",
+            "status": "created",
+            "review_id": "rev_abc",
+        }
+    )
+    with pytest.raises(ValidationError):
+        parsed.review_id = "rev_other"
+
+
+def test_fetched_record_rejects_a_missing_review_id():
+    with pytest.raises(ValidationError):
+        RecordRow.model_validate(
+            {
+                "id": "dispute-d01",
+                "case_id": "CARD-D01",
+                "draft": '{"case_id":"CARD-D01"}',
+            }
+        )
+
+
+def test_fetched_record_keeps_the_draft_string():
+    parsed = RecordRow.model_validate(
+        {
+            "id": "dispute-d01",
+            "case_id": "CARD-D01",
+            "draft": '{"case_id":"CARD-D01"}',
+            "review_id": "rev_abc",
+        }
+    )
+    assert parsed.id == "dispute-d01"
+    assert parsed.case_id == "CARD-D01"
+    assert parsed.draft == '{"case_id":"CARD-D01"}'
+    assert parsed.review_id == "rev_abc"
