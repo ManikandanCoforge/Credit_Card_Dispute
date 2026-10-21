@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.api_models import CaseListResponse, HealthResponse, ToolPayload
+from src.api_models import CaseListResponse, ErrorBody, HealthResponse, ToolPayload
 
 
 def test_dev_health_body_parses():
@@ -213,3 +213,57 @@ def test_tool_payload_rejects_an_empty_source_id():
 def test_tool_payload_parses_a_source_id():
     parsed = ToolPayload.model_validate({"source_id": "CARD-D01-TRANSACTIONS"})
     assert parsed.source_id == "CARD-D01-TRANSACTIONS"
+
+
+def test_error_body_keeps_an_extra_key():
+    parsed = ErrorBody.model_validate({"error": "not_found", "attempt": 2})
+    assert parsed.model_extra == {"attempt": 2}
+
+
+def test_parsed_error_body_rejects_mutation():
+    parsed = ErrorBody.model_validate({"error": "not_found"})
+    with pytest.raises(ValidationError):
+        parsed.error = "upstream_timeout"
+
+
+def test_error_body_rejects_a_coerced_retryable_flag():
+    with pytest.raises(ValidationError):
+        ErrorBody.model_validate({"error": "upstream_timeout", "retryable": "true"})
+
+
+def test_error_body_rejects_a_missing_code():
+    with pytest.raises(ValidationError):
+        ErrorBody.model_validate({})
+
+
+def test_error_body_rejects_an_empty_code():
+    with pytest.raises(ValidationError):
+        ErrorBody.model_validate({"error": ""})
+
+
+def test_error_body_parses_an_unknown_code():
+    parsed = ErrorBody.model_validate({"error": "new_simulator_code"})
+    assert parsed.error == "new_simulator_code"
+
+
+def test_error_body_parses_a_duplicate_case():
+    parsed = ErrorBody.model_validate(
+        {"error": "duplicate_case", "existing_record_id": "dispute-d01"}
+    )
+    assert parsed.error == "duplicate_case"
+    assert parsed.existing_record_id == "dispute-d01"
+    assert parsed.retryable is None
+
+
+def test_error_body_parses_an_upstream_timeout():
+    parsed = ErrorBody.model_validate(
+        {
+            "error": "upstream_timeout",
+            "retryable": True,
+            "message": "Simulated upstream timeout; never treat as no results.",
+        }
+    )
+    assert parsed.error == "upstream_timeout"
+    assert parsed.retryable is True
+    assert parsed.message == "Simulated upstream timeout; never treat as no results."
+    assert parsed.existing_record_id is None

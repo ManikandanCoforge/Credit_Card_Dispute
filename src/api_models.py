@@ -29,3 +29,12 @@ class ToolPayload(BaseModel):
     model_config = ConfigDict(extra="allow", frozen=True)
 
     source_id: str = Field(min_length=1)
+
+
+class ErrorBody(BaseModel):
+    model_config = ConfigDict(extra="allow", strict=True, frozen=True)
+
+    error: str = Field(min_length=1)
+    retryable: bool | None = None
+    message: str | None = None
+    existing_record_id: str | None = None
