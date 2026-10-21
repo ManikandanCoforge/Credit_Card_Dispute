@@ -20,8 +20,9 @@ def build_complaint_records(cases, data_dir):
     """Build one working record per complaint.
 
     A working record is the intake turned into JSON, plus the policy version
-    and the procedure that version names. Transaction and merchant details
-    are added in a later step.
+    and the procedure that version names. When the reported date is missing,
+    or it matches no version or more than one, both policy ids are left empty.
+    Transaction and merchant details are added in a later step.
     """
     data_dir = Path(data_dir)
     versions = _policy_versions(data_dir / "policies")
@@ -44,7 +45,15 @@ def _complaint(case, text):
 
 
 def _policy(reported, versions):
-    chosen = next(version for version in versions if version["start"] <= reported <= version["end"])
+    chosen = [
+        version
+        for version in versions
+        if reported is not None and version["start"] <= reported <= version["end"]
+    ]
+    # A missing date, no window, or two windows is not a choice. The later file does not win.
+    if len(chosen) != 1:
+        return {"version_id": None, "procedure_id": None}
+    chosen = chosen[0]
     return {
         "version_id": chosen["source_id"],
         "procedure_id": chosen["procedure_id"],

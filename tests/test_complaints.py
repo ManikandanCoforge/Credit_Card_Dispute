@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from src.complaints import build_complaint_records
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
@@ -103,6 +101,61 @@ def test_records_follow_the_case_list_order():
     ]
 
 
+def test_reported_date_before_every_window_leaves_policy_empty(tmp_path):
+    cases = _dataset_with_intakes(tmp_path, [("EARLY", "2025-12-31")])
+
+    result = build_complaint_records(cases, tmp_path)
+
+    assert result == [_unresolved("EARLY", "2025-12-31")]
+
+
+def test_reported_date_after_every_window_leaves_policy_empty(tmp_path):
+    cases = _dataset_with_intakes(tmp_path, [("LATE", "2027-01-01")])
+
+    result = build_complaint_records(cases, tmp_path)
+
+    assert result == [_unresolved("LATE", "2027-01-01")]
+
+
+def test_reported_date_inside_two_windows_leaves_policy_empty(tmp_path):
+    cases = _dataset_with_intakes(tmp_path, [("OVERLAP", "2026-10-01")])
+    (tmp_path / "policies" / "CARD-POLICY-ALSO.md").write_text(
+        "Source ID: CARD-POLICY-ALSO\n"
+        "Effective from: 2026-10-01\n"
+        "Effective through: 2026-12-31\n"
+        "Follow the common procedures in CARD-PROCEDURE-99.\n"
+    )
+
+    result = build_complaint_records(cases, tmp_path)
+
+    assert result == [_unresolved("OVERLAP", "2026-10-01")]
+
+
+def test_intake_without_one_reported_date_leaves_policy_empty(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    documents = tmp_path / "documents"
+    (documents / "NONE-INTAKE.md").write_text("Transaction ID: TX-NONE\n")
+    (documents / "TWO-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Reported date: 2026-08-31\n"
+        "Transaction ID: TX-TWO\n"
+    )
+
+    result = build_complaint_records(
+        [
+            {"case_id": "NONE", "intake_source": "NONE-INTAKE"},
+            {"case_id": "TWO", "intake_source": "TWO-INTAKE"},
+        ],
+        tmp_path,
+    )
+
+    none = _unresolved("NONE", None)
+    none["intake"]["transaction_id"] = "TX-NONE"
+    two = _unresolved("TWO", None)
+    two["intake"]["transaction_id"] = "TX-TWO"
+    assert result == [none, two]
+
+
 def test_unusable_policy_lines_do_not_change_the_matching_version(tmp_path):
     cases = _dataset_with_intakes(tmp_path, [("CARD-D01", "2026-10-01")])
     policies = tmp_path / "policies"
@@ -124,14 +177,30 @@ def test_unusable_policy_lines_do_not_change_the_matching_version(tmp_path):
     }
 
 
-def test_missing_intake_file_does_not_produce_a_record(tmp_path):
+def test_a_document_that_is_not_the_intake_does_not_supply_fields(tmp_path):
+    cases = _dataset_with_intakes(tmp_path, [("CARD-D01", "2026-10-01")])
+    (tmp_path / "documents" / "CARD-D01-ATTACHMENT.md").write_text(
+        "Source ID: CARD-D01-ATTACHMENT\n"
+        "Reported date: 2026-01-15\n"
+        "Transaction ID: TX-SECRET\n"
+        "This attachment must not become the statement.\n"
+    )
+    cases[0]["documents"] = ["CARD-D01-ATTACHMENT"]
+
+    result = build_complaint_records(cases, tmp_path)
+
+    assert result == [_matched("CARD-D01", "2026-10-01", "CARD-POLICY-V2")]
+
+
+def test_missing_intake_file_leaves_the_record_empty(tmp_path):
     _dataset_with_intakes(tmp_path, [])
 
-    with pytest.raises(TypeError):
-        build_complaint_records(
-            [{"case_id": "MISSING", "intake_source": "MISSING-INTAKE"}],
-            tmp_path,
-        )
+    result = build_complaint_records(
+        [{"case_id": "MISSING", "intake_source": "MISSING-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result == [_unresolved("MISSING", None)]
 
 
 def test_builder_leaves_the_dataset_unchanged(tmp_path):
@@ -156,6 +225,12 @@ def _dataset_with_intakes(tmp_path, intakes):
         (documents / f"{source}.md").write_text(f"Reported date: {reported_date}\n")
         cases.append({"case_id": case_id, "intake_source": source})
     return cases
+
+
+def _unresolved(case_id, reported_date):
+    record = _matched(case_id, reported_date, None)
+    record["policy"] = {"version_id": None, "procedure_id": None}
+    return record
 
 
 def _matched(case_id, reported_date, version_id):
