@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.complaints import build_complaint_records
+from src.complaints import build_complaint_record, build_complaint_records
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
@@ -33,6 +33,14 @@ def test_card_d01_records_policy_version_2():
             },
         }
     ]
+
+
+def test_one_case_returns_one_working_record(tmp_path):
+    cases = _dataset_with_intakes(tmp_path, [("DAY-V2-START", "2026-09-01")])
+
+    result = build_complaint_record(cases[0], tmp_path)
+
+    assert result == _matched("DAY-V2-START", "2026-09-01", "CARD-POLICY-V2")
 
 
 def test_card_d11_records_policy_version_1():

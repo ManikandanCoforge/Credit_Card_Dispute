@@ -39,6 +39,14 @@ def build_complaint_records(cases, data_dir):
     return records
 
 
+def build_complaint_record(case, data_dir):
+    """Build the working record for one complaint.
+
+    This is the same record one item of build_complaint_records would hold.
+    """
+    return build_complaint_records([case], data_dir)[0]
+
+
 def _complaint(case, text):
     intake, reported = _intake(text)
     return {"case_id": case["case_id"], "intake": intake}, reported
