@@ -38,3 +38,22 @@ class ErrorBody(BaseModel):
     retryable: bool | None = None
     message: str | None = None
     existing_record_id: str | None = None
+
+
+class ReviewCreated(BaseModel):
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    review_id: str
+    status: Literal["pending"]
+    draft_hash: str
+
+
+class ReviewRow(BaseModel):
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    id: str
+    case_id: str
+    draft: str
+    hash: str
+    status: str
+    reviewer: str | None

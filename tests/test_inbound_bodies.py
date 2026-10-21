@@ -1,7 +1,14 @@
 import pytest
 from pydantic import ValidationError
 
-from src.api_models import CaseListResponse, ErrorBody, HealthResponse, ToolPayload
+from src.api_models import (
+    CaseListResponse,
+    ErrorBody,
+    HealthResponse,
+    ReviewCreated,
+    ReviewRow,
+    ToolPayload,
+)
 
 
 def test_dev_health_body_parses():
@@ -267,3 +274,117 @@ def test_error_body_parses_an_upstream_timeout():
     assert parsed.retryable is True
     assert parsed.message == "Simulated upstream timeout; never treat as no results."
     assert parsed.existing_record_id is None
+
+
+def test_review_submission_rejects_a_missing_draft_hash():
+    with pytest.raises(ValidationError):
+        ReviewCreated.model_validate({"review_id": "rev_abc", "status": "pending"})
+
+
+def test_review_submission_rejects_a_decided_status():
+    with pytest.raises(ValidationError):
+        ReviewCreated.model_validate(
+            {"review_id": "rev_abc", "status": "approved", "draft_hash": "abc123"}
+        )
+
+
+def test_review_submission_parses_pending():
+    parsed = ReviewCreated.model_validate(
+        {"review_id": "rev_abc", "status": "pending", "draft_hash": "abc123"}
+    )
+    assert parsed.review_id == "rev_abc"
+    assert parsed.status == "pending"
+    assert parsed.draft_hash == "abc123"
+
+
+def test_fetched_review_keeps_an_extra_key():
+    parsed = ReviewRow.model_validate(
+        {
+            "id": "rev_abc",
+            "case_id": "CARD-D01",
+            "draft": '{"case_id":"CARD-D01"}',
+            "hash": "abc123",
+            "status": "pending",
+            "reviewer": None,
+            "attempt": 1,
+        }
+    )
+    assert parsed.model_extra == {"attempt": 1}
+
+
+def test_review_submission_keeps_an_extra_key():
+    parsed = ReviewCreated.model_validate(
+        {
+            "review_id": "rev_abc",
+            "status": "pending",
+            "draft_hash": "abc123",
+            "case_id": "CARD-D01",
+        }
+    )
+    assert parsed.model_extra == {"case_id": "CARD-D01"}
+
+
+def test_parsed_review_row_rejects_mutation():
+    parsed = ReviewRow.model_validate(
+        {
+            "id": "rev_abc",
+            "case_id": "CARD-D01",
+            "draft": '{"case_id":"CARD-D01"}',
+            "hash": "abc123",
+            "status": "pending",
+            "reviewer": None,
+        }
+    )
+    with pytest.raises(ValidationError):
+        parsed.draft = "{}"
+
+
+def test_parsed_review_submission_rejects_mutation():
+    parsed = ReviewCreated.model_validate(
+        {"review_id": "rev_abc", "status": "pending", "draft_hash": "abc123"}
+    )
+    with pytest.raises(ValidationError):
+        parsed.draft_hash = "def456"
+
+
+def test_fetched_review_accepts_stored_statuses():
+    for status in ("pending", "approved", "rejected"):
+        parsed = ReviewRow.model_validate(
+            {
+                "id": "rev_abc",
+                "case_id": "CARD-D01",
+                "draft": '{"case_id":"CARD-D01"}',
+                "hash": "abc123",
+                "status": status,
+                "reviewer": "reviewer-name",
+            }
+        )
+        assert parsed.status == status
+
+
+def test_fetched_review_rejects_a_missing_reviewer():
+    with pytest.raises(ValidationError):
+        ReviewRow.model_validate(
+            {
+                "id": "rev_abc",
+                "case_id": "CARD-D01",
+                "draft": '{"case_id":"CARD-D01"}',
+                "hash": "abc123",
+                "status": "pending",
+            }
+        )
+
+
+def test_fetched_review_parses_with_a_null_reviewer():
+    parsed = ReviewRow.model_validate(
+        {
+            "id": "rev_abc",
+            "case_id": "CARD-D01",
+            "draft": '{"case_id":"CARD-D01"}',
+            "hash": "abc123",
+            "status": "pending",
+            "reviewer": None,
+        }
+    )
+    assert parsed.reviewer is None
+    assert parsed.draft == '{"case_id":"CARD-D01"}'
