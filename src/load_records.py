@@ -1,0 +1,53 @@
+"""Load the bank case list into working records."""
+
+from http.client import HTTPConnection, HTTPSConnection
+from pathlib import Path
+from urllib.parse import urlparse
+
+from pydantic import ValidationError
+
+from src.api_models import CaseListResponse
+from src.build_record import build_complaint_records
+from src.models import Case, WorkingRecord
+
+
+class CaseListError(Exception):
+    """The bank case list could not be read. Nothing was taken from the dataset."""
+
+
+def load_complaint_records(base_url: str, data_dir: str | Path) -> list[WorkingRecord]:
+    """Load the bank case list and build one working record per complaint.
+
+    The case list is GET /v1/cases. A connection failure, a non-200 response,
+    or a body that is not a usable case list raises CaseListError before the
+    dataset is opened. The failure is not stored on a working record.
+    """
+    origin = urlparse(base_url)
+    hostname = origin.hostname
+    if origin.scheme not in {"http", "https"} or hostname is None:
+        raise CaseListError
+    port = origin.port
+    if port is None:
+        port = 443 if origin.scheme == "https" else 80
+    connection_cls = HTTPSConnection if origin.scheme == "https" else HTTPConnection
+    connection = connection_cls(hostname, port)
+    try:
+        connection.request("GET", "/v1/cases")
+        response = connection.getresponse()
+        status = response.status
+        raw = response.read()
+    except OSError as error:
+        raise CaseListError from error
+    finally:
+        connection.close()
+    if status != 200:
+        raise CaseListError
+    try:
+        case_list = CaseListResponse.model_validate_json(raw)
+    except ValidationError as error:
+        raise CaseListError from error
+    cases: list[Case] = [
+        {"case_id": case.case_id, "intake_source": case.intake_source}
+        for case in case_list.cases
+    ]
+    return build_complaint_records(cases, data_dir)
