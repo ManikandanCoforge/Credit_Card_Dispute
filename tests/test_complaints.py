@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.complaints import build_complaint_record, build_complaint_records
+from src.build_record import build_complaint_record, build_complaint_records
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
