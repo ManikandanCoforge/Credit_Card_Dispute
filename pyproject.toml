@@ -11,11 +11,24 @@ package = false
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = [
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
 
 [dependency-groups]
 dev = [
     "bandit==1.9.4",
     "mypy==2.4.0",
     "pytest==9.1.1",
+    "pytest-cov==7.1.0",
     "ruff==0.17.1",
 ]
