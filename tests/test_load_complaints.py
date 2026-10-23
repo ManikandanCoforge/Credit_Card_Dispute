@@ -45,6 +45,7 @@ def test_reachable_case_list_returns_the_card_d01_working_record():
                 "version_id": "CARD-POLICY-V2",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
+            "absent_fields": [],
         }
     ]
 
@@ -88,6 +89,7 @@ def test_reachable_case_list_keeps_bank_order():
                 "version_id": "CARD-POLICY-V1",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
+            "absent_fields": [],
         },
         {
             "case_id": "CARD-D01",
@@ -108,6 +110,7 @@ def test_reachable_case_list_keeps_bank_order():
                 "version_id": "CARD-POLICY-V2",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
+            "absent_fields": [],
         },
     ]
 
