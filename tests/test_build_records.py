@@ -9,6 +9,179 @@ from src.build_records import (
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
 
+def test_supplied_intake_lines_leave_absent_fields_empty(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "SUPPLIED-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Authorization: denied\n"
+        "Promised service date: 2026-08-20\n"
+        "Purchase receipt: attached\n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "SUPPLIED", "intake_source": "SUPPLIED-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result[0]["absent_fields"] == []
+
+
+def test_authorization_not_supplied_is_an_absent_field(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "AUTH-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Authorization: not supplied\n"
+        "Promised service date: 2026-08-20\n"
+        "Purchase receipt: attached\n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "AUTH", "intake_source": "AUTH-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result[0]["absent_fields"] == ["authorization_confirmation"]
+
+
+def test_promised_service_date_not_supplied_is_an_absent_field(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "DATE-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Authorization: confirmed\n"
+        "Promised service date: not supplied\n"
+        "Purchase receipt: attached\n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "DATE", "intake_source": "DATE-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result[0]["absent_fields"] == ["promised_service_date"]
+
+
+def test_purchase_receipt_not_supplied_is_an_absent_field(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "RECEIPT-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Authorization: confirmed\n"
+        "Promised service date: 2026-08-20\n"
+        "Purchase receipt: not supplied\n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "RECEIPT", "intake_source": "RECEIPT-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result[0]["absent_fields"] == ["purchase_receipt"]
+
+
+def test_every_not_supplied_line_is_listed_in_procedure_order(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "ALL-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Purchase receipt: not supplied\n"
+        "Promised service date: not supplied\n"
+        "Authorization: not supplied\n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "ALL", "intake_source": "ALL-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result[0]["absent_fields"] == [
+        "authorization_confirmation",
+        "promised_service_date",
+        "purchase_receipt",
+    ]
+
+
+def test_card_d04_records_authorization_confirmation():
+    result = build_complaint_records(
+        [{"case_id": "CARD-D04", "intake_source": "CARD-D04-INTAKE"}],
+        DEV,
+    )
+
+    assert result[0]["absent_fields"] == ["authorization_confirmation"]
+
+
+def test_card_d12_records_the_service_fields():
+    result = build_complaint_records(
+        [{"case_id": "CARD-D12", "intake_source": "CARD-D12-INTAKE"}],
+        DEV,
+    )
+
+    assert result[0]["absent_fields"] == [
+        "promised_service_date",
+        "purchase_receipt",
+    ]
+
+
+def test_a_different_phrase_is_not_an_absent_field(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "ODD-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Authorization: Not supplied\n"
+        "Promised service date: not supplied.\n"
+        "Purchase receipt: missing\n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "ODD", "intake_source": "ODD-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result[0]["absent_fields"] == []
+
+
+def test_a_repeated_authorization_line_is_stored_as_not_supplied(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "REPEAT-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Authorization: not supplied\n"
+        "Authorization: denied\n"
+        "Promised service date: 2026-08-20\n"
+        "Purchase receipt: attached\n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "REPEAT", "intake_source": "REPEAT-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result[0]["absent_fields"] == ["authorization_confirmation"]
+
+
+def test_an_attachment_does_not_add_an_absent_field(tmp_path):
+    cases = _dataset_with_intakes(tmp_path, [("SUPPLIED", "2026-10-01")])
+    (tmp_path / "documents" / "SUPPLIED-INTAKE.md").write_text(
+        "Reported date: 2026-10-01\n"
+        "Authorization: denied\n"
+        "Promised service date: 2026-08-20\n"
+        "Purchase receipt: attached\n"
+    )
+    (tmp_path / "documents" / "SUPPLIED-ATTACHMENT.md").write_text(
+        "Authorization: not supplied\n"
+        "Promised service date: not supplied\n"
+        "Purchase receipt: not supplied\n"
+    )
+
+    result = build_complaint_records(cases, tmp_path)
+
+    assert result[0]["absent_fields"] == []
+
+
+def test_builder_does_not_record_missing_information():
+    result = build_complaint_records(
+        [{"case_id": "CARD-D04", "intake_source": "CARD-D04-INTAKE"}],
+        DEV,
+    )
+
+    assert "missing_information" not in result[0]
+
+
 def test_card_d01_records_policy_version_2():
     result = build_complaint_records(
         [{"case_id": "CARD-D01", "intake_source": "CARD-D01-INTAKE"}],
@@ -35,6 +208,7 @@ def test_card_d01_records_policy_version_2():
                 "version_id": "CARD-POLICY-V2",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
+            "absent_fields": [],
         }
     ]
 
@@ -73,6 +247,7 @@ def test_card_d11_records_policy_version_1():
                 "version_id": "CARD-POLICY-V1",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
+            "absent_fields": [],
         }
     ]
 
@@ -221,6 +396,10 @@ def test_empty_or_omitted_intake_strings_read_as_not_supplied(tmp_path):
                 "version_id": "CARD-POLICY-V2",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
+            "absent_fields": [
+                "authorization_confirmation",
+                "purchase_receipt",
+            ],
         }
     ]
 
@@ -465,6 +644,11 @@ def _matched(case_id, reported_date, version_id):
             "version_id": version_id,
             "procedure_id": "CARD-PROCEDURE-01",
         },
+        "absent_fields": [
+            "authorization_confirmation",
+            "promised_service_date",
+            "purchase_receipt",
+        ],
     }
 
 

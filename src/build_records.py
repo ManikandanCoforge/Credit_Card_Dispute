@@ -46,8 +46,9 @@ def build_complaint_records(cases: list[Case], data_dir: str | Path) -> list[Wor
     A working record is the intake turned into JSON, plus the policy version
     and the procedure that version names. A missing intake field is the words
     "not supplied". When that is the reported date, or the date matches no
-    version or more than one, both policy ids are left empty. Transaction and
-    merchant details are added in a later step.
+    version or more than one, both policy ids are left empty.
+    absent_fields lists each intake line whose value is exactly "not supplied".
+    Transaction and merchant details are added in a later step.
     """
     data_dir = Path(data_dir)
     versions = _policy_versions(data_dir / "policies")
@@ -64,6 +65,7 @@ def build_complaint_records(cases: list[Case], data_dir: str | Path) -> list[Wor
                 "case_id": complaint["case_id"],
                 "intake": complaint["intake"],
                 "policy": _policy(reported, versions),
+                "absent_fields": _absent_fields(complaint["intake"]),
             }
         )
     return records
@@ -84,12 +86,7 @@ def build_transaction(record: WorkingRecord, tool_body: _TransactionTool) -> Wor
         }
         for charge in tool_body["transactions"]
     ]
-    return {
-        "case_id": record["case_id"],
-        "intake": record["intake"],
-        "policy": record["policy"],
-        "transactions": charges,
-    }
+    return {**record, "transactions": charges}
 
 
 def build_complaint_record(case: Case, data_dir: str | Path) -> WorkingRecord:
@@ -98,6 +95,17 @@ def build_complaint_record(case: Case, data_dir: str | Path) -> WorkingRecord:
     This is the same record one item of build_complaint_records would hold.
     """
     return build_complaint_records([case], data_dir)[0]
+
+
+def _absent_fields(intake: Intake) -> list[str]:
+    absent: list[str] = []
+    if intake["authorization"] == "not supplied":
+        absent.append("authorization_confirmation")
+    if intake["promised_service_date"] == "not supplied":
+        absent.append("promised_service_date")
+    if intake["purchase_receipt"] == "not supplied":
+        absent.append("purchase_receipt")
+    return absent
 
 
 def _complaint(case: Case, text: str) -> tuple[_Complaint, date | None]:
