@@ -32,6 +32,12 @@ class Transaction(TypedDict):
     posted_date: str
 
 
+class Merchant(TypedDict):
+    merchant_id: str
+    display_name: str
+    note: str
+
+
 class WorkingRecord(TypedDict):
     case_id: str
     intake: Intake | None
@@ -39,3 +45,4 @@ class WorkingRecord(TypedDict):
     missing_information: list[str]
     routing: str | None
     transactions: NotRequired[list[Transaction]]
+    merchant: NotRequired[Merchant]

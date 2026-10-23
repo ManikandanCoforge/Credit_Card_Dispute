@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 from typing import TypedDict
 
-from src.models import Case, Intake, Policy, Transaction, WorkingRecord
+from src.models import Case, Intake, Merchant, Policy, Transaction, WorkingRecord
 
 
 class _Complaint(TypedDict):
@@ -22,6 +22,13 @@ class _PolicyVersion(TypedDict):
 class _TransactionTool(TypedDict):
     source_id: str
     transactions: list[Transaction]
+
+
+class _MerchantTool(TypedDict):
+    source_id: str
+    merchant_id: str
+    display_name: str
+    note: str
 
 
 # A missing, blank, or conflicting label is these words. It is never an empty value.
@@ -90,6 +97,20 @@ def build_transaction(record: WorkingRecord, tool_body: _TransactionTool) -> Wor
         for charge in tool_body["transactions"]
     ]
     return {**record, "transactions": charges}
+
+
+def build_merchant(record: WorkingRecord, tool_body: _MerchantTool) -> WorkingRecord:
+    """Return the working record with the merchant from the tool body.
+
+    The input record is left unchanged. The tool body's source id and private
+    token are not copied. The note is stored as supplied.
+    """
+    merchant: Merchant = {
+        "merchant_id": tool_body["merchant_id"],
+        "display_name": tool_body["display_name"],
+        "note": tool_body["note"],
+    }
+    return {**record, "merchant": merchant}
 
 
 def build_complaint_record(case: Case, data_dir: str | Path) -> WorkingRecord:
