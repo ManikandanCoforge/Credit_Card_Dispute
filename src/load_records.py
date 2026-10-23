@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from pydantic import ValidationError
 
 from src.api_models import CaseListResponse
-from src.build_record import build_complaint_records
+from src.build_records import build_complaint_records
 from src.models import Case, WorkingRecord
 
 

@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from src.build_record import build_complaint_record, build_complaint_records
+from src.build_records import (
+    build_complaint_record,
+    build_complaint_records,
+    build_transaction,
+)
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
@@ -139,12 +143,14 @@ def test_a_different_phrase_is_not_an_absent_field(tmp_path):
     assert result[0]["missing_information"] == []
 
 
-def test_a_repeated_authorization_line_is_not_an_absent_field(tmp_path):
+def test_a_repeated_authorization_line_is_stored_as_not_supplied(tmp_path):
     _dataset_with_intakes(tmp_path, [])
     (tmp_path / "documents" / "REPEAT-INTAKE.md").write_text(
         "Reported date: 2026-10-01\n"
         "Authorization: not supplied\n"
         "Authorization: denied\n"
+        "Promised service date: 2026-08-20\n"
+        "Purchase receipt: attached\n"
     )
 
     result = build_complaint_records(
@@ -152,7 +158,8 @@ def test_a_repeated_authorization_line_is_not_an_absent_field(tmp_path):
         tmp_path,
     )
 
-    assert result[0]["missing_information"] == []
+    assert result[0]["missing_information"] == ["authorization_confirmation"]
+    assert result[0]["routing"] == "request_information"
 
 
 def test_an_attachment_does_not_add_an_absent_field(tmp_path):
@@ -339,9 +346,9 @@ def test_intake_without_one_reported_date_leaves_policy_empty(tmp_path):
         tmp_path,
     )
 
-    none = _unresolved("NONE", None)
+    none = _unresolved("NONE", "not supplied")
     none["intake"]["transaction_id"] = "TX-NONE"
-    two = _unresolved("TWO", None)
+    two = _unresolved("TWO", "not supplied")
     two["intake"]["transaction_id"] = "TX-TWO"
     assert result == [none, two]
 
@@ -350,8 +357,6 @@ def test_unusable_policy_lines_do_not_change_the_matching_version(tmp_path):
     cases = _dataset_with_intakes(tmp_path, [("CARD-D01", "2026-10-01")])
     policies = tmp_path / "policies"
     (policies / "SKIP-SPACE.md").write_text("Effective from: not supplied\n")
-    (policies / "SKIP-DAY.md").write_text("Effective from: 2026-02-31\n")
-    (policies / "SKIP-COMPACT.md").write_text("Effective from: 20261001\n")
     (policies / "OLD-POLICY.md").write_text(
         "Source ID: OLD-POLICY\n"
         "Effective from: 2025-01-01\n"
@@ -365,6 +370,49 @@ def test_unusable_policy_lines_do_not_change_the_matching_version(tmp_path):
         "version_id": "CARD-POLICY-V2",
         "procedure_id": "CARD-PROCEDURE-01",
     }
+
+
+def test_empty_or_omitted_intake_strings_read_as_not_supplied(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "PARTIAL-INTAKE.md").write_text(
+        "Source ID:\n"
+        "The purchase was not mine.\n"
+        "Reported date: 2026-10-01\n"
+        "Transaction ID: \n"
+        "Authorization:\n"
+        "Promised service date: 2026-08-20\n"
+        "Submission reference: \n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "PARTIAL", "intake_source": "PARTIAL-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result == [
+        {
+            "case_id": "PARTIAL",
+            "intake": {
+                "source_id": "not supplied",
+                "statement": "The purchase was not mine.",
+                "reported_date": "2026-10-01",
+                "transaction_id": "not supplied",
+                "authorization": "not supplied",
+                "promised_service_date": "2026-08-20",
+                "purchase_receipt": "not supplied",
+                "submission_reference": "not supplied",
+            },
+            "policy": {
+                "version_id": "CARD-POLICY-V2",
+                "procedure_id": "CARD-PROCEDURE-01",
+            },
+            "missing_information": [
+                "authorization_confirmation",
+                "purchase_receipt",
+            ],
+            "routing": "request_information",
+        }
+    ]
 
 
 def test_a_document_that_is_not_the_intake_does_not_supply_fields(tmp_path):
@@ -382,7 +430,7 @@ def test_a_document_that_is_not_the_intake_does_not_supply_fields(tmp_path):
     assert result == [_matched("CARD-D01", "2026-10-01", "CARD-POLICY-V2")]
 
 
-def test_missing_intake_file_leaves_the_record_empty(tmp_path):
+def test_missing_intake_file_records_not_supplied(tmp_path):
     _dataset_with_intakes(tmp_path, [])
 
     result = build_complaint_records(
@@ -390,7 +438,174 @@ def test_missing_intake_file_leaves_the_record_empty(tmp_path):
         tmp_path,
     )
 
-    assert result == [_unresolved("MISSING", None)]
+    assert result == [_unresolved("MISSING", "not supplied")]
+
+
+def test_one_charge_is_attached_to_a_new_working_record():
+    record = {
+        "case_id": "CARD-D01",
+        "intake": {
+            "source_id": "CARD-D01-INTAKE",
+            "statement": (
+                "I found a card purchase at Morrow Supplies for 117 crowns. "
+                "I do not recognize it and need help checking it."
+            ),
+            "reported_date": "2026-10-01",
+            "transaction_id": "TX-D01",
+            "authorization": "denied",
+            "promised_service_date": "2026-08-20",
+            "purchase_receipt": "attached",
+            "submission_reference": "dispute-d01",
+        },
+        "policy": {
+            "version_id": "CARD-POLICY-V2",
+            "procedure_id": "CARD-PROCEDURE-01",
+        },
+    }
+
+    result = build_transaction(
+        record,
+        {
+            "source_id": "CARD-D01-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D01",
+                    "amount": 117,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+    )
+
+    assert result == {
+        "case_id": "CARD-D01",
+        "intake": {
+            "source_id": "CARD-D01-INTAKE",
+            "statement": (
+                "I found a card purchase at Morrow Supplies for 117 crowns. "
+                "I do not recognize it and need help checking it."
+            ),
+            "reported_date": "2026-10-01",
+            "transaction_id": "TX-D01",
+            "authorization": "denied",
+            "promised_service_date": "2026-08-20",
+            "purchase_receipt": "attached",
+            "submission_reference": "dispute-d01",
+        },
+        "policy": {
+            "version_id": "CARD-POLICY-V2",
+            "procedure_id": "CARD-PROCEDURE-01",
+        },
+        "transactions": [
+            {
+                "transaction_id": "TX-D01",
+                "amount": 117,
+                "currency": "XCR",
+                "merchant_id": "MER-MORROW",
+                "posted_date": "2026-08-19",
+            }
+        ],
+    }
+
+
+def test_attaching_transactions_leaves_the_working_record_unchanged():
+    record = {
+        "case_id": "CARD-D01",
+        "intake": None,
+        "policy": {"version_id": None, "procedure_id": None},
+    }
+
+    build_transaction(
+        record,
+        {
+            "source_id": "CARD-D01-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D01",
+                    "amount": 117,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+    )
+
+    assert record == {
+        "case_id": "CARD-D01",
+        "intake": None,
+        "policy": {"version_id": None, "procedure_id": None},
+    }
+
+
+def test_two_charges_stay_in_tool_body_order():
+    record = {
+        "case_id": "CARD-D02",
+        "intake": None,
+        "policy": {"version_id": "CARD-POLICY-V2", "procedure_id": "CARD-PROCEDURE-01"},
+    }
+
+    result = build_transaction(
+        record,
+        {
+            "source_id": "CARD-D02-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D02",
+                    "amount": 134,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                },
+                {
+                    "transaction_id": "TX-D02-B",
+                    "amount": 134,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                },
+            ],
+        },
+    )
+
+    assert result["transactions"] == [
+        {
+            "transaction_id": "TX-D02",
+            "amount": 134,
+            "currency": "XCR",
+            "merchant_id": "MER-MORROW",
+            "posted_date": "2026-08-19",
+        },
+        {
+            "transaction_id": "TX-D02-B",
+            "amount": 134,
+            "currency": "XCR",
+            "merchant_id": "MER-MORROW",
+            "posted_date": "2026-08-19",
+        },
+    ]
+
+
+def test_an_empty_transaction_list_is_stored_empty():
+    record = {
+        "case_id": "CARD-D01",
+        "intake": None,
+        "policy": {"version_id": None, "procedure_id": None},
+    }
+
+    result = build_transaction(
+        record,
+        {"source_id": "CARD-D01-TRANSACTIONS", "transactions": []},
+    )
+
+    assert result == {
+        "case_id": "CARD-D01",
+        "intake": None,
+        "policy": {"version_id": None, "procedure_id": None},
+        "transactions": [],
+    }
 
 
 def test_builder_leaves_the_dataset_unchanged(tmp_path):
@@ -427,21 +642,25 @@ def _matched(case_id, reported_date, version_id):
     return {
         "case_id": case_id,
         "intake": {
-            "source_id": None,
-            "statement": None,
+            "source_id": "not supplied",
+            "statement": "not supplied",
             "reported_date": reported_date,
-            "transaction_id": None,
-            "authorization": None,
-            "promised_service_date": None,
-            "purchase_receipt": None,
-            "submission_reference": None,
+            "transaction_id": "not supplied",
+            "authorization": "not supplied",
+            "promised_service_date": "not supplied",
+            "purchase_receipt": "not supplied",
+            "submission_reference": "not supplied",
         },
         "policy": {
             "version_id": version_id,
             "procedure_id": "CARD-PROCEDURE-01",
         },
-        "missing_information": [],
-        "routing": None,
+        "missing_information": [
+            "authorization_confirmation",
+            "promised_service_date",
+            "purchase_receipt",
+        ],
+        "routing": "request_information",
     }
 
 

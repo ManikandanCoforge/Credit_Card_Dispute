@@ -1,6 +1,6 @@
 """Working-record shapes built from a complaint intake and its policy."""
 
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class Case(TypedDict):
@@ -9,14 +9,14 @@ class Case(TypedDict):
 
 
 class Intake(TypedDict):
-    source_id: str | None
-    statement: str | None
-    reported_date: str | None
-    transaction_id: str | None
-    authorization: str | None
-    promised_service_date: str | None
-    purchase_receipt: str | None
-    submission_reference: str | None
+    source_id: str
+    statement: str
+    reported_date: str
+    transaction_id: str
+    authorization: str
+    promised_service_date: str
+    purchase_receipt: str
+    submission_reference: str
 
 
 class Policy(TypedDict):
@@ -24,9 +24,18 @@ class Policy(TypedDict):
     procedure_id: str | None
 
 
+class Transaction(TypedDict):
+    transaction_id: str
+    amount: int
+    currency: str
+    merchant_id: str
+    posted_date: str
+
+
 class WorkingRecord(TypedDict):
     case_id: str
-    intake: Intake
+    intake: Intake | None
     policy: Policy
     missing_information: list[str]
     routing: str | None
+    transactions: NotRequired[list[Transaction]]
