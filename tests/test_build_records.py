@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from src.build_records import build_complaint_record, build_complaint_records
+from src.build_records import (
+    build_complaint_record,
+    build_complaint_records,
+    build_transaction,
+)
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
@@ -245,6 +249,173 @@ def test_missing_intake_file_records_not_supplied(tmp_path):
     )
 
     assert result == [_unresolved("MISSING", "not supplied")]
+
+
+def test_one_charge_is_attached_to_a_new_working_record():
+    record = {
+        "case_id": "CARD-D01",
+        "intake": {
+            "source_id": "CARD-D01-INTAKE",
+            "statement": (
+                "I found a card purchase at Morrow Supplies for 117 crowns. "
+                "I do not recognize it and need help checking it."
+            ),
+            "reported_date": "2026-10-01",
+            "transaction_id": "TX-D01",
+            "authorization": "denied",
+            "promised_service_date": "2026-08-20",
+            "purchase_receipt": "attached",
+            "submission_reference": "dispute-d01",
+        },
+        "policy": {
+            "version_id": "CARD-POLICY-V2",
+            "procedure_id": "CARD-PROCEDURE-01",
+        },
+    }
+
+    result = build_transaction(
+        record,
+        {
+            "source_id": "CARD-D01-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D01",
+                    "amount": 117,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+    )
+
+    assert result == {
+        "case_id": "CARD-D01",
+        "intake": {
+            "source_id": "CARD-D01-INTAKE",
+            "statement": (
+                "I found a card purchase at Morrow Supplies for 117 crowns. "
+                "I do not recognize it and need help checking it."
+            ),
+            "reported_date": "2026-10-01",
+            "transaction_id": "TX-D01",
+            "authorization": "denied",
+            "promised_service_date": "2026-08-20",
+            "purchase_receipt": "attached",
+            "submission_reference": "dispute-d01",
+        },
+        "policy": {
+            "version_id": "CARD-POLICY-V2",
+            "procedure_id": "CARD-PROCEDURE-01",
+        },
+        "transactions": [
+            {
+                "transaction_id": "TX-D01",
+                "amount": 117,
+                "currency": "XCR",
+                "merchant_id": "MER-MORROW",
+                "posted_date": "2026-08-19",
+            }
+        ],
+    }
+
+
+def test_attaching_transactions_leaves_the_working_record_unchanged():
+    record = {
+        "case_id": "CARD-D01",
+        "intake": None,
+        "policy": {"version_id": None, "procedure_id": None},
+    }
+
+    build_transaction(
+        record,
+        {
+            "source_id": "CARD-D01-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D01",
+                    "amount": 117,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+    )
+
+    assert record == {
+        "case_id": "CARD-D01",
+        "intake": None,
+        "policy": {"version_id": None, "procedure_id": None},
+    }
+
+
+def test_two_charges_stay_in_tool_body_order():
+    record = {
+        "case_id": "CARD-D02",
+        "intake": None,
+        "policy": {"version_id": "CARD-POLICY-V2", "procedure_id": "CARD-PROCEDURE-01"},
+    }
+
+    result = build_transaction(
+        record,
+        {
+            "source_id": "CARD-D02-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D02",
+                    "amount": 134,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                },
+                {
+                    "transaction_id": "TX-D02-B",
+                    "amount": 134,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                },
+            ],
+        },
+    )
+
+    assert result["transactions"] == [
+        {
+            "transaction_id": "TX-D02",
+            "amount": 134,
+            "currency": "XCR",
+            "merchant_id": "MER-MORROW",
+            "posted_date": "2026-08-19",
+        },
+        {
+            "transaction_id": "TX-D02-B",
+            "amount": 134,
+            "currency": "XCR",
+            "merchant_id": "MER-MORROW",
+            "posted_date": "2026-08-19",
+        },
+    ]
+
+
+def test_an_empty_transaction_list_is_stored_empty():
+    record = {
+        "case_id": "CARD-D01",
+        "intake": None,
+        "policy": {"version_id": None, "procedure_id": None},
+    }
+
+    result = build_transaction(
+        record,
+        {"source_id": "CARD-D01-TRANSACTIONS", "transactions": []},
+    )
+
+    assert result == {
+        "case_id": "CARD-D01",
+        "intake": None,
+        "policy": {"version_id": None, "procedure_id": None},
+        "transactions": [],
+    }
 
 
 def test_builder_leaves_the_dataset_unchanged(tmp_path):
