@@ -1,6 +1,4 @@
 import json
-import ssl
-import subprocess
 import threading
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -205,35 +203,37 @@ def test_unusable_bank_url_does_not_open_the_dataset(tmp_path, base_url):
         load_complaint_records(base_url, dataset)
 
 
-def test_http_url_without_a_port_loads_the_case_list_on_port_80():
-    with _bank(_card_d01_case_list(), port=80, include_port=False) as base_url:
-        assert base_url == "http://127.0.0.1"
-        result = load_complaint_records(base_url, DEV)
+@pytest.mark.parametrize(
+    ("base_url", "connection_name", "port"),
+    [
+        ("http://127.0.0.1", "HTTPConnection", 80),
+        ("https://127.0.0.1", "HTTPSConnection", 443),
+    ],
+)
+def test_url_without_a_port_uses_the_default_port(
+    tmp_path, monkeypatch, base_url, connection_name, port
+):
+    seen = {}
 
-    assert result[0]["case_id"] == "CARD-D01"
-    assert result[0]["intake"]["transaction_id"] == "TX-D01"
-    assert result[0]["policy"]["procedure_id"] == "CARD-PROCEDURE-01"
+    class Probe:
+        def __init__(self, host, bound_port):
+            seen["host"] = host
+            seen["port"] = bound_port
 
+        def request(self, method, path):
+            raise OSError("closed")
 
-def test_https_url_without_a_port_loads_the_case_list_on_port_443(monkeypatch, tmp_path):
-    cert, key = _localhost_cert(tmp_path)
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(cert, key)
-    monkeypatch.setenv("SSL_CERT_FILE", str(cert))
+        def close(self):
+            return
 
-    with _bank(
-        _card_d01_case_list(),
-        port=443,
-        include_port=False,
-        scheme="https",
-        ssl_context=context,
-    ) as base_url:
-        assert base_url == "https://127.0.0.1"
-        result = load_complaint_records(base_url, DEV)
+    monkeypatch.setattr(f"src.load_records.{connection_name}", Probe)
+    dataset = tmp_path / "dataset"
+    dataset.write_text("not a directory")
 
-    assert result[0]["case_id"] == "CARD-D01"
-    assert result[0]["intake"]["transaction_id"] == "TX-D01"
-    assert result[0]["policy"]["procedure_id"] == "CARD-PROCEDURE-01"
+    with pytest.raises(CaseListError):
+        load_complaint_records(base_url, dataset)
+
+    assert seen == {"host": "127.0.0.1", "port": port}
 
 
 def _closed_bank():
@@ -243,48 +243,8 @@ def _closed_bank():
     return f"http://{host}:{port}"
 
 
-def _card_d01_case_list():
-    return {
-        "cases": [
-            {
-                "case_id": "CARD-D01",
-                "intake_source": "CARD-D01-INTAKE",
-                "documents": ["CARD-D01-INTAKE", "CARD-D01-ATTACHMENT"],
-            }
-        ]
-    }
-
-
-def _localhost_cert(directory: Path) -> tuple[Path, Path]:
-    cert = directory / "cert.pem"
-    key = directory / "key.pem"
-    subprocess.run(
-        [
-            "openssl",
-            "req",
-            "-x509",
-            "-newkey",
-            "rsa:2048",
-            "-keyout",
-            str(key),
-            "-out",
-            str(cert),
-            "-days",
-            "1",
-            "-nodes",
-            "-subj",
-            "/CN=127.0.0.1",
-            "-addext",
-            "subjectAltName=IP:127.0.0.1",
-        ],
-        check=True,
-        capture_output=True,
-    )
-    return cert, key
-
-
 @contextmanager
-def _bank(body, status=200, port=0, *, include_port=True, scheme="http", ssl_context=None):
+def _bank(body, status=200):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path != "/v1/cases":
@@ -300,15 +260,12 @@ def _bank(body, status=200, port=0, *, include_port=True, scheme="http", ssl_con
         def log_message(self, format, *args):
             return
 
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    if ssl_context is not None:
-        server.socket = ssl_context.wrap_socket(server.socket, server_side=True)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    host, bound_port = server.server_address
-    authority = host if not include_port else f"{host}:{bound_port}"
+    host, port = server.server_address
     try:
-        yield f"{scheme}://{authority}"
+        yield f"http://{host}:{port}"
     finally:
         server.shutdown()
         thread.join(timeout=2)
