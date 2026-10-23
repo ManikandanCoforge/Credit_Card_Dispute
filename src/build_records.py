@@ -19,6 +19,9 @@ class _PolicyVersion(TypedDict):
     procedure_id: str | None
 
 
+# A missing, blank, or conflicting label is these words. It is never an empty value.
+_NOT_SUPPLIED = "not supplied"
+
 # Customer reference is listed so it stays out of the statement. It is not copied.
 _LABELS = (
     "Source ID",
@@ -36,9 +39,10 @@ def build_complaint_records(cases: list[Case], data_dir: str | Path) -> list[Wor
     """Build one working record per complaint.
 
     A working record is the intake turned into JSON, plus the policy version
-    and the procedure that version names. When the reported date is missing,
-    or it matches no version or more than one, both policy ids are left empty.
-    Transaction and merchant details are added in a later step.
+    and the procedure that version names. A missing intake field is the words
+    "not supplied". When that is the reported date, or the date matches no
+    version or more than one, both policy ids are left empty. Transaction and
+    merchant details are added in a later step.
     """
     data_dir = Path(data_dir)
     versions = _policy_versions(data_dir / "policies")
@@ -79,7 +83,6 @@ def _policy(reported: date | None, versions: list[_PolicyVersion]) -> Policy:
         for version in versions
         if reported is not None and version["start"] <= reported <= version["end"]
     ]
-    # A missing date, no window, or two windows is not a choice. The later file does not win.
     if len(chosen) != 1:
         return {"version_id": None, "procedure_id": None}
     match = chosen[0]
@@ -93,10 +96,16 @@ def _policy_versions(policies_dir: Path) -> list[_PolicyVersion]:
     versions: list[_PolicyVersion] = []
     for path in policies_dir.glob("*.md"):
         text = path.read_text()
-        start = _day(_field(text, "Effective from", word=True))
-        end = _day(_field(text, "Effective through", word=True))
-        source_id = _field(text, "Source ID", word=True)
-        if source_id is None or source_id != path.stem or start is None or end is None or end < start:
+        start = _day(_field(text, "Effective from"))
+        end = _day(_field(text, "Effective through"))
+        source_id = _field(text, "Source ID")
+        if (
+            source_id == _NOT_SUPPLIED
+            or source_id != path.stem
+            or start is None
+            or end is None
+            or end < start
+        ):
             continue
         versions.append(
             {
@@ -110,7 +119,7 @@ def _policy_versions(policies_dir: Path) -> list[_PolicyVersion]:
 
 
 def _intake(text: str) -> tuple[Intake, date | None]:
-    reported = _day(_field(text, "Reported date", word=True))
+    reported_date = _field(text, "Reported date")
     statement = [
         line.strip()
         for line in text.splitlines()
@@ -119,15 +128,15 @@ def _intake(text: str) -> tuple[Intake, date | None]:
         and not any(line.strip().startswith(f"{label}:") for label in _LABELS)
     ]
     return {
-        "source_id": _field(text, "Source ID", word=True),
-        "statement": " ".join(statement) or None,
-        "reported_date": None if reported is None else reported.isoformat(),
+        "source_id": _field(text, "Source ID"),
+        "statement": " ".join(statement) or _NOT_SUPPLIED,
+        "reported_date": reported_date,
         "transaction_id": _field(text, "Transaction ID"),
         "authorization": _field(text, "Authorization"),
         "promised_service_date": _field(text, "Promised service date"),
         "purchase_receipt": _field(text, "Purchase receipt"),
         "submission_reference": _field(text, "Submission reference"),
-    }, reported
+    }, _day(reported_date)
 
 
 def _procedure(text: str) -> str | None:
@@ -144,38 +153,24 @@ def _procedure(text: str) -> str | None:
     return None
 
 
-def _field(text: str, label: str, *, word: bool = False) -> str | None:
+def _field(text: str, label: str) -> str:
     """Read one `Label: value` line.
 
-    word=True keeps a single token, such as a source id.
-    The default keeps the text, including "not supplied".
-    Zero lines, two lines, or a blank value means the field is missing.
+    Zero lines, two lines, or a blank value means the field is not supplied.
     """
-    prefix = f"{label}: "
-    found: list[str] = [
-        line.strip()[len(prefix) :]
+    prefix = f"{label}:"
+    found = [
+        line.strip()[len(prefix) :].strip()
         for line in text.splitlines()
         if line.strip().startswith(prefix)
     ]
-    # One answer only. A repeated label is a conflict, not a choice.
     if len(found) != 1 or not found[0]:
-        return None
-    value = found[0]
-    # A source id or a date is one word. "not supplied" is neither.
-    if word and " " in value:
-        return None
-    return value
+        return _NOT_SUPPLIED
+    return found[0]
 
 
-def _day(value: str | None) -> date | None:
-    """Keep a token only when it is a real YYYY-MM-DD day."""
-    if value is None:
+def _day(value: str) -> date | None:
+    """Parse a YYYY-MM-DD day. A field that is not supplied is not a day."""
+    if value == _NOT_SUPPLIED:
         return None
-    # Reject 2026-02-31 and anything that is not exactly YYYY-MM-DD.
-    try:
-        parsed = date.fromisoformat(value)
-    except ValueError:
-        return None
-    if parsed.isoformat() != value:
-        return None
-    return parsed
+    return date.fromisoformat(value)

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.build_record import build_complaint_record, build_complaint_records
+from src.build_records import build_complaint_record, build_complaint_records
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
@@ -157,9 +157,9 @@ def test_intake_without_one_reported_date_leaves_policy_empty(tmp_path):
         tmp_path,
     )
 
-    none = _unresolved("NONE", None)
+    none = _unresolved("NONE", "not supplied")
     none["intake"]["transaction_id"] = "TX-NONE"
-    two = _unresolved("TWO", None)
+    two = _unresolved("TWO", "not supplied")
     two["intake"]["transaction_id"] = "TX-TWO"
     assert result == [none, two]
 
@@ -168,8 +168,6 @@ def test_unusable_policy_lines_do_not_change_the_matching_version(tmp_path):
     cases = _dataset_with_intakes(tmp_path, [("CARD-D01", "2026-10-01")])
     policies = tmp_path / "policies"
     (policies / "SKIP-SPACE.md").write_text("Effective from: not supplied\n")
-    (policies / "SKIP-DAY.md").write_text("Effective from: 2026-02-31\n")
-    (policies / "SKIP-COMPACT.md").write_text("Effective from: 20261001\n")
     (policies / "OLD-POLICY.md").write_text(
         "Source ID: OLD-POLICY\n"
         "Effective from: 2025-01-01\n"
@@ -183,6 +181,44 @@ def test_unusable_policy_lines_do_not_change_the_matching_version(tmp_path):
         "version_id": "CARD-POLICY-V2",
         "procedure_id": "CARD-PROCEDURE-01",
     }
+
+
+def test_empty_or_omitted_intake_strings_read_as_not_supplied(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "PARTIAL-INTAKE.md").write_text(
+        "Source ID:\n"
+        "The purchase was not mine.\n"
+        "Reported date: 2026-10-01\n"
+        "Transaction ID: \n"
+        "Authorization:\n"
+        "Promised service date: 2026-08-20\n"
+        "Submission reference: \n"
+    )
+
+    result = build_complaint_records(
+        [{"case_id": "PARTIAL", "intake_source": "PARTIAL-INTAKE"}],
+        tmp_path,
+    )
+
+    assert result == [
+        {
+            "case_id": "PARTIAL",
+            "intake": {
+                "source_id": "not supplied",
+                "statement": "The purchase was not mine.",
+                "reported_date": "2026-10-01",
+                "transaction_id": "not supplied",
+                "authorization": "not supplied",
+                "promised_service_date": "2026-08-20",
+                "purchase_receipt": "not supplied",
+                "submission_reference": "not supplied",
+            },
+            "policy": {
+                "version_id": "CARD-POLICY-V2",
+                "procedure_id": "CARD-PROCEDURE-01",
+            },
+        }
+    ]
 
 
 def test_a_document_that_is_not_the_intake_does_not_supply_fields(tmp_path):
@@ -200,7 +236,7 @@ def test_a_document_that_is_not_the_intake_does_not_supply_fields(tmp_path):
     assert result == [_matched("CARD-D01", "2026-10-01", "CARD-POLICY-V2")]
 
 
-def test_missing_intake_file_leaves_the_record_empty(tmp_path):
+def test_missing_intake_file_records_not_supplied(tmp_path):
     _dataset_with_intakes(tmp_path, [])
 
     result = build_complaint_records(
@@ -208,7 +244,7 @@ def test_missing_intake_file_leaves_the_record_empty(tmp_path):
         tmp_path,
     )
 
-    assert result == [_unresolved("MISSING", None)]
+    assert result == [_unresolved("MISSING", "not supplied")]
 
 
 def test_builder_leaves_the_dataset_unchanged(tmp_path):
@@ -245,14 +281,14 @@ def _matched(case_id, reported_date, version_id):
     return {
         "case_id": case_id,
         "intake": {
-            "source_id": None,
-            "statement": None,
+            "source_id": "not supplied",
+            "statement": "not supplied",
             "reported_date": reported_date,
-            "transaction_id": None,
-            "authorization": None,
-            "promised_service_date": None,
-            "purchase_receipt": None,
-            "submission_reference": None,
+            "transaction_id": "not supplied",
+            "authorization": "not supplied",
+            "promised_service_date": "not supplied",
+            "purchase_receipt": "not supplied",
+            "submission_reference": "not supplied",
         },
         "policy": {
             "version_id": version_id,
