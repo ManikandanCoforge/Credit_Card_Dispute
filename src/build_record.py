@@ -38,7 +38,8 @@ def build_complaint_records(cases: list[Case], data_dir: str | Path) -> list[Wor
     A working record is the intake turned into JSON, plus the policy version
     and the procedure that version names. When the reported date is missing,
     or it matches no version or more than one, both policy ids are left empty.
-    absent_fields lists each intake line whose value is exactly "not supplied".
+    missing_information lists each intake line whose value is exactly "not supplied".
+    routing is request_information when that list has any line.
     Transaction and merchant details are added in a later step.
     """
     data_dir = Path(data_dir)
@@ -51,12 +52,14 @@ def build_complaint_records(cases: list[Case], data_dir: str | Path) -> list[Wor
         except OSError:
             text = ""
         complaint, reported = _complaint(case, text)
+        missing_information = _missing_information(complaint["intake"])
         records.append(
             {
                 "case_id": complaint["case_id"],
                 "intake": complaint["intake"],
                 "policy": _policy(reported, versions),
-                "absent_fields": _absent_fields(complaint["intake"]),
+                "missing_information": missing_information,
+                "routing": "request_information" if missing_information else None,
             }
         )
     return records
@@ -70,7 +73,7 @@ def build_complaint_record(case: Case, data_dir: str | Path) -> WorkingRecord:
     return build_complaint_records([case], data_dir)[0]
 
 
-def _absent_fields(intake: Intake) -> list[str]:
+def _missing_information(intake: Intake) -> list[str]:
     absent: list[str] = []
     if intake["authorization"] == "not supplied":
         absent.append("authorization_confirmation")

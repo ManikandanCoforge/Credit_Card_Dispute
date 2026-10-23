@@ -5,7 +5,7 @@ from src.build_record import build_complaint_record, build_complaint_records
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
 
-def test_supplied_intake_lines_leave_absent_fields_empty(tmp_path):
+def test_supplied_intake_lines_leave_missing_information_empty(tmp_path):
     _dataset_with_intakes(tmp_path, [])
     (tmp_path / "documents" / "SUPPLIED-INTAKE.md").write_text(
         "Reported date: 2026-10-01\n"
@@ -19,7 +19,8 @@ def test_supplied_intake_lines_leave_absent_fields_empty(tmp_path):
         tmp_path,
     )
 
-    assert result[0]["absent_fields"] == []
+    assert result[0]["missing_information"] == []
+    assert result[0]["routing"] is None
 
 
 def test_authorization_not_supplied_is_an_absent_field(tmp_path):
@@ -36,7 +37,8 @@ def test_authorization_not_supplied_is_an_absent_field(tmp_path):
         tmp_path,
     )
 
-    assert result[0]["absent_fields"] == ["authorization_confirmation"]
+    assert result[0]["missing_information"] == ["authorization_confirmation"]
+    assert result[0]["routing"] == "request_information"
 
 
 def test_promised_service_date_not_supplied_is_an_absent_field(tmp_path):
@@ -53,7 +55,8 @@ def test_promised_service_date_not_supplied_is_an_absent_field(tmp_path):
         tmp_path,
     )
 
-    assert result[0]["absent_fields"] == ["promised_service_date"]
+    assert result[0]["missing_information"] == ["promised_service_date"]
+    assert result[0]["routing"] == "request_information"
 
 
 def test_purchase_receipt_not_supplied_is_an_absent_field(tmp_path):
@@ -70,7 +73,8 @@ def test_purchase_receipt_not_supplied_is_an_absent_field(tmp_path):
         tmp_path,
     )
 
-    assert result[0]["absent_fields"] == ["purchase_receipt"]
+    assert result[0]["missing_information"] == ["purchase_receipt"]
+    assert result[0]["routing"] == "request_information"
 
 
 def test_every_not_supplied_line_is_listed_in_procedure_order(tmp_path):
@@ -87,11 +91,12 @@ def test_every_not_supplied_line_is_listed_in_procedure_order(tmp_path):
         tmp_path,
     )
 
-    assert result[0]["absent_fields"] == [
+    assert result[0]["missing_information"] == [
         "authorization_confirmation",
         "promised_service_date",
         "purchase_receipt",
     ]
+    assert result[0]["routing"] == "request_information"
 
 
 def test_card_d04_records_authorization_confirmation():
@@ -100,7 +105,8 @@ def test_card_d04_records_authorization_confirmation():
         DEV,
     )
 
-    assert result[0]["absent_fields"] == ["authorization_confirmation"]
+    assert result[0]["missing_information"] == ["authorization_confirmation"]
+    assert result[0]["routing"] == "request_information"
 
 
 def test_card_d12_records_the_service_fields():
@@ -109,10 +115,11 @@ def test_card_d12_records_the_service_fields():
         DEV,
     )
 
-    assert result[0]["absent_fields"] == [
+    assert result[0]["missing_information"] == [
         "promised_service_date",
         "purchase_receipt",
     ]
+    assert result[0]["routing"] == "request_information"
 
 
 def test_a_different_phrase_is_not_an_absent_field(tmp_path):
@@ -129,7 +136,7 @@ def test_a_different_phrase_is_not_an_absent_field(tmp_path):
         tmp_path,
     )
 
-    assert result[0]["absent_fields"] == []
+    assert result[0]["missing_information"] == []
 
 
 def test_a_repeated_authorization_line_is_not_an_absent_field(tmp_path):
@@ -145,7 +152,7 @@ def test_a_repeated_authorization_line_is_not_an_absent_field(tmp_path):
         tmp_path,
     )
 
-    assert result[0]["absent_fields"] == []
+    assert result[0]["missing_information"] == []
 
 
 def test_an_attachment_does_not_add_an_absent_field(tmp_path):
@@ -164,16 +171,16 @@ def test_an_attachment_does_not_add_an_absent_field(tmp_path):
 
     result = build_complaint_records(cases, tmp_path)
 
-    assert result[0]["absent_fields"] == []
+    assert result[0]["missing_information"] == []
 
 
-def test_builder_does_not_record_missing_information():
+def test_card_d04_is_tagged_to_request_the_missing_information():
     result = build_complaint_records(
         [{"case_id": "CARD-D04", "intake_source": "CARD-D04-INTAKE"}],
         DEV,
     )
 
-    assert "missing_information" not in result[0]
+    assert result[0]["routing"] == "request_information"
 
 
 def test_card_d01_records_policy_version_2():
@@ -202,7 +209,8 @@ def test_card_d01_records_policy_version_2():
                 "version_id": "CARD-POLICY-V2",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
-            "absent_fields": [],
+            "missing_information": [],
+            "routing": None,
         }
     ]
 
@@ -241,7 +249,8 @@ def test_card_d11_records_policy_version_1():
                 "version_id": "CARD-POLICY-V1",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
-            "absent_fields": [],
+            "missing_information": [],
+            "routing": None,
         }
     ]
 
@@ -431,7 +440,8 @@ def _matched(case_id, reported_date, version_id):
             "version_id": version_id,
             "procedure_id": "CARD-PROCEDURE-01",
         },
-        "absent_fields": [],
+        "missing_information": [],
+        "routing": None,
     }
 
 
