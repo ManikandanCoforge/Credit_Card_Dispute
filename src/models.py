@@ -36,6 +36,6 @@ class WorkingRecord(TypedDict):
     case_id: str
     intake: Intake | None
     policy: Policy
-    absent_fields: list[str]
+    missing_information: list[str]
+    routing: str | None
     transactions: NotRequired[list[Transaction]]
-    missing_information: NotRequired[list[str]]

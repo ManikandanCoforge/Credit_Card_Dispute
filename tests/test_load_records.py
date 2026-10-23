@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from src.app import prepare_complaints
 from src.load_records import CaseListError, load_complaint_records
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
@@ -45,7 +46,8 @@ def test_reachable_case_list_returns_the_card_d01_working_record():
                 "version_id": "CARD-POLICY-V2",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
-            "absent_fields": [],
+            "missing_information": [],
+            "routing": None,
         }
     ]
 
@@ -89,7 +91,8 @@ def test_reachable_case_list_keeps_bank_order():
                 "version_id": "CARD-POLICY-V1",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
-            "absent_fields": [],
+            "missing_information": [],
+            "routing": None,
         },
         {
             "case_id": "CARD-D01",
@@ -110,9 +113,37 @@ def test_reachable_case_list_keeps_bank_order():
                 "version_id": "CARD-POLICY-V2",
                 "procedure_id": "CARD-PROCEDURE-01",
             },
-            "absent_fields": [],
+            "missing_information": [],
+            "routing": None,
         },
     ]
+
+
+def test_prepare_complaints_tags_a_missing_procedure_line():
+    body = {
+        "cases": [
+            {
+                "case_id": "CARD-D04",
+                "intake_source": "CARD-D04-INTAKE",
+                "documents": ["CARD-D04-INTAKE", "CARD-D04-ATTACHMENT"],
+            },
+            {
+                "case_id": "CARD-D01",
+                "intake_source": "CARD-D01-INTAKE",
+                "documents": ["CARD-D01-INTAKE", "CARD-D01-ATTACHMENT"],
+            },
+        ]
+    }
+
+    with _bank(body) as base_url:
+        result = prepare_complaints(base_url, DEV)
+
+    assert result[0]["case_id"] == "CARD-D04"
+    assert result[0]["missing_information"] == ["authorization_confirmation"]
+    assert result[0]["routing"] == "request_information"
+    assert result[1]["case_id"] == "CARD-D01"
+    assert result[1]["missing_information"] == []
+    assert result[1]["routing"] is None
 
 
 def test_empty_case_list_returns_no_working_records():
