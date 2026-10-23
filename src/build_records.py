@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 from typing import TypedDict
 
-from src.models import Case, Intake, Policy, WorkingRecord
+from src.models import Case, Intake, Policy, Transaction, WorkingRecord
 
 
 class _Complaint(TypedDict):
@@ -17,6 +17,11 @@ class _PolicyVersion(TypedDict):
     start: date
     end: date
     procedure_id: str | None
+
+
+class _TransactionTool(TypedDict):
+    source_id: str
+    transactions: list[Transaction]
 
 
 # A missing, blank, or conflicting label is these words. It is never an empty value.
@@ -62,6 +67,29 @@ def build_complaint_records(cases: list[Case], data_dir: str | Path) -> list[Wor
             }
         )
     return records
+
+
+def build_transaction(record: WorkingRecord, tool_body: _TransactionTool) -> WorkingRecord:
+    """Return the working record with one transaction per charge in the tool body.
+
+    The input record is left unchanged. The tool body's source id is not copied.
+    """
+    charges: list[Transaction] = [
+        {
+            "transaction_id": charge["transaction_id"],
+            "amount": charge["amount"],
+            "currency": charge["currency"],
+            "merchant_id": charge["merchant_id"],
+            "posted_date": charge["posted_date"],
+        }
+        for charge in tool_body["transactions"]
+    ]
+    return {
+        "case_id": record["case_id"],
+        "intake": record["intake"],
+        "policy": record["policy"],
+        "transactions": charges,
+    }
 
 
 def build_complaint_record(case: Case, data_dir: str | Path) -> WorkingRecord:

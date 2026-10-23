@@ -1,6 +1,6 @@
 """Working-record shapes built from a complaint intake and its policy."""
 
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class Case(TypedDict):
@@ -24,7 +24,16 @@ class Policy(TypedDict):
     procedure_id: str | None
 
 
+class Transaction(TypedDict):
+    transaction_id: str
+    amount: int
+    currency: str
+    merchant_id: str
+    posted_date: str
+
+
 class WorkingRecord(TypedDict):
     case_id: str
     intake: Intake | None
     policy: Policy
+    transactions: NotRequired[list[Transaction]]
