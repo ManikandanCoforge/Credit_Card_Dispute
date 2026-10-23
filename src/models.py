@@ -1,6 +1,6 @@
 """Working-record shapes built from a complaint intake and its policy."""
 
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class Case(TypedDict):
@@ -28,3 +28,5 @@ class WorkingRecord(TypedDict):
     case_id: str
     intake: Intake
     policy: Policy
+    absent_fields: list[str]
+    missing_information: NotRequired[list[str]]
