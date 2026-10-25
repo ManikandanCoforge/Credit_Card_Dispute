@@ -12,10 +12,14 @@ load_contract_records
 
 Both tool reads go through the mock service, which audits each one. A failed
 read stops the case: an outage is never treated as an empty transaction history.
+A stopped case does not stop the others: load_contract_results keeps going and
+reports the reason for each case it could not build.
 """
 
+import json
+import sys
 from pathlib import Path
-from typing import cast
+from typing import TypedDict, cast
 from urllib.parse import quote
 
 from pydantic import ValidationError
@@ -23,7 +27,12 @@ from pydantic import ValidationError
 from src.api_models import MerchantToolPayload, TransactionToolPayload
 from src.build_records import build_merchant, build_transaction
 from src.contract import Contract, ContractError, assemble_contract
-from src.load_records import BankReadError, load_complaint_records, read_body
+from src.load_records import (
+    BankReadError,
+    CaseListError,
+    load_complaint_records,
+    read_body,
+)
 from src.models import (
     Intake,
     MerchantTool,
@@ -41,13 +50,85 @@ class ContractRecordError(Exception):
     """A contract object could not be read from the bank or assembled for one case."""
 
 
-def load_contract_records(base_url: str, data_dir: str | Path) -> list[Contract]:
-    """Return one contract object per case in the bank case list, in bank order."""
+class ContractResult(TypedDict):
+    case_id: str
+    contract: Contract | None
+    error: str | None
+
+
+def load_contract_results(base_url: str, data_dir: str | Path) -> list[ContractResult]:
+    """Return one result per case in the bank case list, in bank order.
+
+    A case that cannot be built has a null contract and the reason, and the
+    remaining cases still run. The reason is one of this application's own
+    messages or an exception class name, never text from a payload or document.
+    """
     data_dir = Path(data_dir)
-    return [
-        _contract_record(record, base_url, data_dir)
-        for record in load_complaint_records(base_url, data_dir)
-    ]
+    results: list[ContractResult] = []
+    for record in load_complaint_records(base_url, data_dir):
+        try:
+            contract = _contract_record(record, base_url, data_dir)
+        except ContractRecordError as error:
+            results.append(
+                {"case_id": record["case_id"], "contract": None, "error": _reason(error)}
+            )
+            continue
+        results.append({"case_id": record["case_id"], "contract": contract, "error": None})
+    return results
+
+
+def load_contract_records(base_url: str, data_dir: str | Path) -> list[Contract]:
+    """Return one contract object per case in the bank case list, in bank order.
+
+    Any case that cannot be built raises ContractRecordError with its reason.
+    """
+    contracts: list[Contract] = []
+    for result in load_contract_results(base_url, data_dir):
+        if result["contract"] is None:
+            raise ContractRecordError(f"{result['case_id']}: {result['error']}")
+        contracts.append(result["contract"])
+    return contracts
+
+
+def main() -> None:
+    """Print the submission array for every case that was built.
+
+    Each case that was not built is named on stderr with its reason, and the exit
+    status is 1 when any case was not built, so a partial array is never mistaken
+    for a complete one.
+    """
+    base_url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8765"
+    data_dir = sys.argv[2] if len(sys.argv) > 2 else "data/dev"
+    try:
+        results = load_contract_results(base_url, data_dir)
+    except CaseListError:
+        sys.stderr.write("the bank case list could not be read\n")
+        raise SystemExit(1) from None
+    contracts = [result["contract"] for result in results if result["contract"] is not None]
+    json.dump(contracts, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+    failed = [result for result in results if result["contract"] is None]
+    for result in failed:
+        sys.stderr.write(f"{result['case_id']}: not built: {result['error']}\n")
+    if failed:
+        raise SystemExit(1)
+
+
+def _reason(error: BaseException) -> str:
+    """The first message this application wrote along the cause chain, or a class name.
+
+    Messages from other libraries can carry payload values, such as a pydantic
+    input that holds a private token, so they are never copied.
+    """
+    current: BaseException | None = error
+    deepest = error
+    while current is not None:
+        own = isinstance(current, (ContractRecordError, ContractError, BankReadError))
+        if own and str(current):
+            return str(current)
+        deepest = current
+        current = current.__cause__
+    return type(deepest).__name__
 
 
 def _contract_record(record: WorkingRecord, base_url: str, data_dir: Path) -> Contract:
@@ -64,7 +145,8 @@ def _contract_record(record: WorkingRecord, base_url: str, data_dir: Path) -> Co
     attachment_text = _document(data_dir, "documents", attachment_source)
     procedure_text = _document(data_dir, "policies", procedure_id)
     policy_text = _document(data_dir, "policies", version_id)
-    enriched = build_transaction(record, _transactions(base_url, record["case_id"]))
+    transactions, transactions_text = _transactions(base_url, record["case_id"])
+    enriched = build_transaction(record, transactions)
     enriched = build_merchant(enriched, _merchant(base_url, record["case_id"]))
     try:
         return assemble_contract(
@@ -73,17 +155,20 @@ def _contract_record(record: WorkingRecord, base_url: str, data_dir: Path) -> Co
             attachment_text=attachment_text,
             procedure_text=procedure_text,
             policy_text=policy_text,
+            transactions_text=transactions_text,
         )
     except ContractError as error:
         raise ContractRecordError from error
 
 
-def _transactions(base_url: str, case_id: str) -> TransactionTool:
-    """The transactions tool body, validated before it can reach the contract."""
+def _transactions(base_url: str, case_id: str) -> tuple[TransactionTool, str]:
+    """The transactions tool body, validated, and its text with sorted keys.
+
+    The sorted text is the form the evaluator quotes tool bodies from.
+    """
+    raw = _read_tool(base_url, case_id, "transactions")
     try:
-        payload = TransactionToolPayload.model_validate_json(
-            _read_tool(base_url, case_id, "transactions")
-        )
+        payload = TransactionToolPayload.model_validate_json(raw)
     except ValidationError as error:
         raise ContractRecordError from error
     charges: list[Transaction] = [
@@ -96,7 +181,8 @@ def _transactions(base_url: str, case_id: str) -> TransactionTool:
         }
         for charge in payload.transactions
     ]
-    return {"source_id": payload.source_id, "transactions": charges}
+    tool: TransactionTool = {"source_id": payload.source_id, "transactions": charges}
+    return tool, json.dumps(json.loads(raw), sort_keys=True)
 
 
 def _merchant(base_url: str, case_id: str) -> MerchantTool:
@@ -136,3 +222,7 @@ def _attachment_source(intake_source: str) -> str:
     if not intake_source.endswith(_INTAKE_SUFFIX):
         raise ContractRecordError("the intake source has no attachment pair")
     return intake_source[: -len(_INTAKE_SUFFIX)] + _ATTACHMENT_SUFFIX
+
+
+if __name__ == "__main__":
+    main()

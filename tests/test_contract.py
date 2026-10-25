@@ -19,6 +19,17 @@ INTAKE_TEXT = (DEV / "documents" / "CARD-D01-INTAKE.md").read_text()
 ATTACHMENT_TEXT = (DEV / "documents" / "CARD-D01-ATTACHMENT.md").read_text()
 PROCEDURE_TEXT = (DEV / "policies" / "CARD-PROCEDURE-01.md").read_text()
 POLICY_TEXT = (DEV / "policies" / "CARD-POLICY-V2.md").read_text()
+D01_CHARGE = {
+    "transaction_id": "TX-D01",
+    "amount": 117,
+    "currency": "XCR",
+    "merchant_id": "MER-MORROW",
+    "posted_date": "2026-08-19",
+}
+# The evaluator stores a tool body as json.dumps(body, sort_keys=True).
+TRANSACTIONS_TEXT = json.dumps(
+    {"source_id": "CARD-D01-TRANSACTIONS", "transactions": [D01_CHARGE]}, sort_keys=True
+)
 
 
 class _Facts(BaseModel):
@@ -96,6 +107,14 @@ CARD_D01_CONTRACT = {
             "quote": "Amount: 117 XCR",
         },
         {
+            "claim": "transaction_record",
+            "source_id": "CARD-D01-TRANSACTIONS",
+            "quote": (
+                '{"amount": 117, "currency": "XCR", "merchant_id": "MER-MORROW", '
+                '"posted_date": "2026-08-19", "transaction_id": "TX-D01"}'
+            ),
+        },
+        {
             "claim": "classification",
             "source_id": "CARD-PROCEDURE-01",
             "quote": (
@@ -150,6 +169,7 @@ def test_card_d01_citations_are_exact_excerpts_of_the_named_sources():
     sources = {
         "CARD-D01-INTAKE": INTAKE_TEXT,
         "CARD-D01-ATTACHMENT": ATTACHMENT_TEXT,
+        "CARD-D01-TRANSACTIONS": TRANSACTIONS_TEXT,
         "CARD-PROCEDURE-01": PROCEDURE_TEXT,
         "CARD-POLICY-V2": POLICY_TEXT,
     }
@@ -159,6 +179,7 @@ def test_card_d01_citations_are_exact_excerpts_of_the_named_sources():
     assert [citation["source_id"] for citation in citations] == [
         "CARD-D01-INTAKE",
         "CARD-D01-ATTACHMENT",
+        "CARD-D01-TRANSACTIONS",
         "CARD-PROCEDURE-01",
         "CARD-PROCEDURE-01",
         "CARD-POLICY-V2",
@@ -312,6 +333,72 @@ def test_a_procedure_rule_without_a_full_stop_is_rejected():
         )
 
 
+def test_the_named_charge_is_cited_as_one_sorted_object_from_the_tool_body():
+    charges = [_charge("TX-FIRST", 11), _charge("TX-SECOND", 42, "EUR")]
+    text = _transactions_text(charges)
+
+    result = _assemble(_record(transaction_id="TX-SECOND", transactions=charges))
+
+    citation = result["citations"][2]
+    assert citation == {
+        "claim": "transaction_record",
+        "source_id": "TEST-TRANSACTIONS",
+        "quote": (
+            '{"amount": 42, "currency": "EUR", "merchant_id": "MER-TEST", '
+            '"posted_date": "2026-08-19", "transaction_id": "TX-SECOND"}'
+        ),
+    }
+    assert citation["quote"] in text
+
+
+def test_an_unmatched_transaction_cites_only_that_the_tool_was_read():
+    result = _assemble(
+        _record(transaction_id="TX-MISSING", transactions=[_charge("TX-OTHER", 11)])
+    )
+
+    assert result["citations"][2] == {
+        "claim": "transaction_service_checked",
+        "source_id": "TEST-TRANSACTIONS",
+        "quote": '"source_id": "TEST-TRANSACTIONS"',
+    }
+
+
+@pytest.mark.parametrize(
+    "transactions_text",
+    [
+        "not json",
+        "[]",
+        '{"transactions": []}',
+        '{"source_id": "TEST-TRANSACTIONS"}',
+        '{"source_id": 7, "transactions": []}',
+        '{"source_id": "TEST-TRANSACTIONS", "transactions": {}}',
+    ],
+)
+def test_a_transactions_body_that_is_not_usable_is_rejected(transactions_text):
+    with pytest.raises(ContractError):
+        _assemble(_record(), transactions_text=transactions_text)
+
+
+def test_a_transactions_body_without_sorted_keys_is_rejected():
+    unsorted = json.dumps(
+        {
+            "transactions": [
+                {
+                    "transaction_id": "TX-TEST",
+                    "amount": 11,
+                    "currency": "XCR",
+                    "merchant_id": "MER-TEST",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+            "source_id": "TEST-TRANSACTIONS",
+        }
+    )
+
+    with pytest.raises(ContractError):
+        _assemble(_record(transactions=[_charge("TX-TEST", 11)]), transactions_text=unsorted)
+
+
 def _assemble_card_d01():
     return _assemble(
         {
@@ -335,23 +422,40 @@ def _assemble_card_d01():
             },
             "missing_information": [],
             "routing": None,
-            "transactions": [_charge("TX-D01", 117)],
+            "transactions": [D01_CHARGE],
         },
         intake_text=INTAKE_TEXT,
         attachment_text=ATTACHMENT_TEXT,
         procedure_text=PROCEDURE_TEXT,
         policy_text=POLICY_TEXT,
+        transactions_text=TRANSACTIONS_TEXT,
     )
 
 
-def _assemble(record, intake_text=None, attachment_text=None, procedure_text=None, policy_text=None):
+def _assemble(
+    record,
+    intake_text=None,
+    attachment_text=None,
+    procedure_text=None,
+    policy_text=None,
+    transactions_text=None,
+):
     return assemble_contract(
         record,
         intake_text=_intake_text("2026-10-01") if intake_text is None else intake_text,
         attachment_text=_ATTACHMENT_TEXT if attachment_text is None else attachment_text,
         procedure_text=_PROCEDURE_TEXT if procedure_text is None else procedure_text,
         policy_text=_policy_text(30) if policy_text is None else policy_text,
+        transactions_text=(
+            _transactions_text(record.get("transactions", []))
+            if transactions_text is None
+            else transactions_text
+        ),
     )
+
+
+def _transactions_text(charges):
+    return json.dumps({"source_id": "TEST-TRANSACTIONS", "transactions": charges}, sort_keys=True)
 
 
 def _record(

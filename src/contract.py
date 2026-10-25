@@ -9,6 +9,7 @@ reported date, a rule line missing from the procedure, a quote that is not in it
 source - raises ContractError instead of being paraphrased.
 """
 
+import json
 from datetime import date, timedelta
 from typing import TypedDict
 
@@ -66,12 +67,17 @@ def assemble_contract(
     attachment_text: str,
     procedure_text: str,
     policy_text: str,
+    transactions_text: str,
 ) -> Contract:
     """Return the contract object for one working record.
 
     Amount and currency are read from the transaction named on the intake, never
     from the attachment. A named transaction that the tool did not return leaves
     both facts null; the keys stay present.
+
+    transactions_text is the transactions tool body as the evaluator stores it:
+    json.dumps(body, sort_keys=True). The named charge is cited from it as one
+    sorted JSON object, so the amount and currency are tied to that transaction.
 
     The deadline is the reported date plus the policy's unauthorized day count,
     with the reported day as day zero.
@@ -106,6 +112,7 @@ def assemble_contract(
             "source_id": _source_id(attachment_text),
             "quote": _unique_line(attachment_text, _AMOUNT_LABEL),
         },
+        _transaction_citation(intake["transaction_id"], transactions_text),
         {
             "claim": "classification",
             "source_id": procedure_source,
@@ -160,6 +167,36 @@ def _facts(intake: Intake, transactions: list[Transaction]) -> Facts:
         "currency": None if charge is None else charge["currency"],
         "reported_date": intake["reported_date"],
     }
+
+
+def _transaction_citation(transaction_id: str, transactions_text: str) -> Citation:
+    """Cite the named charge from the tool body, or the body's source id when it is absent.
+
+    The quote is json.dumps(charge, sort_keys=True), which is an exact slice of a
+    body that was itself dumped with sorted keys.
+    """
+    try:
+        body = json.loads(transactions_text)
+        source_id = body["source_id"]
+        charges = body["transactions"]
+    except (ValueError, TypeError, KeyError) as error:
+        raise ContractError("the transactions tool body is not usable") from error
+    if not isinstance(source_id, str) or not isinstance(charges, list):
+        raise ContractError("the transactions tool body is not usable")
+    named = [
+        charge
+        for charge in charges
+        if isinstance(charge, dict) and charge.get("transaction_id") == transaction_id
+    ]
+    if len(named) == 1:
+        claim = "transaction_record"
+        quote = json.dumps(named[0], sort_keys=True)
+    else:
+        claim = "transaction_service_checked"
+        quote = json.dumps({"source_id": source_id})[1:-1]
+    if quote not in transactions_text:
+        raise ContractError("the transactions tool body is not in sorted-key form")
+    return {"claim": claim, "source_id": source_id, "quote": quote}
 
 
 def _deadline(reported: date, policy_text: str) -> tuple[str, str]:

@@ -6,7 +6,9 @@ supplied gold answer, not from the runner's own arithmetic.
 """
 
 import json
+import runpy
 import shutil
+import sys
 import threading
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,9 +16,15 @@ from pathlib import Path
 
 import pytest
 
-from src.contract_records import ContractRecordError, load_contract_records
+from src.contract_records import (
+    ContractRecordError,
+    load_contract_records,
+    load_contract_results,
+    main,
+)
 
-DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
+ROOT = Path(__file__).resolve().parents[1]
+DEV = ROOT / "data" / "dev"
 
 CARD_D01 = {
     "case_id": "CARD-D01",
@@ -83,6 +91,14 @@ CARD_D01_CONTRACT = {
             "claim": "customer_evidence",
             "source_id": "CARD-D01-ATTACHMENT",
             "quote": "Amount: 117 XCR",
+        },
+        {
+            "claim": "transaction_record",
+            "source_id": "CARD-D01-TRANSACTIONS",
+            "quote": (
+                '{"amount": 117, "currency": "XCR", "merchant_id": "MER-MORROW", '
+                '"posted_date": "2026-08-19", "transaction_id": "TX-D01"}'
+            ),
         },
         {
             "claim": "classification",
@@ -302,6 +318,161 @@ def test_an_attachment_without_an_amount_line_stops_after_the_tool_reads(tmp_pat
             load_contract_records(base_url, dataset)
 
     assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT]
+
+
+def test_a_case_that_cannot_be_built_does_not_stop_the_cases_after_it():
+    case_list = {"cases": [CARD_D01, CARD_D11]}
+
+    with _bank(case_list, _d01_and_d11_bodies(), statuses={TRANSACTIONS: 503}) as (
+        base_url,
+        seen,
+    ):
+        results = load_contract_results(base_url, DEV)
+
+    assert [result["case_id"] for result in results] == ["CARD-D01", "CARD-D11"]
+    assert results[0]["contract"] is None
+    assert results[0]["error"] == "BankReadError"
+    assert results[1]["error"] is None
+    assert results[1]["contract"] is not None
+    assert results[1]["contract"]["deadline"] == "2026-09-20"
+    assert seen == [
+        "/v1/cases",
+        TRANSACTIONS,
+        "/v1/cases/CARD-D11/transactions",
+        "/v1/cases/CARD-D11/merchant",
+    ]
+
+
+def test_the_reason_is_the_applications_own_message_when_there_is_one(tmp_path):
+    dataset = tmp_path / "data"
+    shutil.copytree(DEV, dataset)
+    (dataset / "documents" / "CARD-D01-ATTACHMENT.md").write_text(
+        "Source ID: CARD-D01-ATTACHMENT\nMerchant: Morrow Supplies\n"
+    )
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        results = load_contract_results(base_url, dataset)
+
+    assert results == [
+        {
+            "case_id": "CARD-D01",
+            "contract": None,
+            "error": "expected exactly one 'Amount:' line in the source",
+        }
+    ]
+
+
+def test_the_reason_never_copies_a_rejected_payload():
+    tool_bodies = {
+        **TOOL_BODIES,
+        MERCHANT: {
+            "source_id": "CARD-D01-MERCHANT",
+            "merchant_id": "MER-MORROW",
+            "display_name": "Morrow Supplies",
+            "private_token": "SYNTHETIC-PRIVATE-CARD-D01",
+        },
+    }
+
+    with _bank({"cases": [CARD_D01]}, tool_bodies) as (base_url, _seen):
+        results = load_contract_results(base_url, DEV)
+
+    assert results[0]["error"] == "ValidationError"
+    assert "SYNTHETIC-PRIVATE" not in json.dumps(results)
+
+
+def test_load_contract_records_names_the_case_that_could_not_be_built():
+    case_list = {"cases": [CARD_D01, CARD_D11]}
+
+    with _bank(case_list, _d01_and_d11_bodies(), statuses={TRANSACTIONS: 503}) as (
+        base_url,
+        _seen,
+    ):
+        with pytest.raises(ContractRecordError, match="^CARD-D01: BankReadError$"):
+            load_contract_records(base_url, DEV)
+
+
+def test_main_prints_every_built_contract_and_names_the_rest(capsys, monkeypatch):
+    case_list = {"cases": [CARD_D01, CARD_D11]}
+
+    with _bank(case_list, _d01_and_d11_bodies(), statuses={TRANSACTIONS: 503}) as (
+        base_url,
+        _seen,
+    ):
+        monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
+        with pytest.raises(SystemExit) as stopped:
+            main()
+
+    printed = capsys.readouterr()
+    assert stopped.value.code == 1
+    assert [contract["case_id"] for contract in json.loads(printed.out)] == ["CARD-D11"]
+    assert printed.err == "CARD-D01: not built: BankReadError\n"
+
+
+def test_main_exits_normally_when_every_case_is_built(capsys, monkeypatch):
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
+        main()
+
+    printed = capsys.readouterr()
+    assert json.loads(printed.out) == [CARD_D01_CONTRACT]
+    assert printed.err == ""
+
+
+def test_main_reports_an_unreadable_case_list(capsys, monkeypatch):
+    with _bank({"cases": "not a list"}, {}) as (base_url, _seen):
+        monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
+        with pytest.raises(SystemExit) as stopped:
+            main()
+
+    printed = capsys.readouterr()
+    assert stopped.value.code == 1
+    assert printed.out == ""
+    assert printed.err == "the bank case list could not be read\n"
+
+
+def test_running_the_module_uses_the_local_mock_and_data_dev_by_default(capsys, monkeypatch):
+    monkeypatch.chdir(ROOT)
+    monkeypatch.setattr(sys, "argv", ["contract_records"])
+    monkeypatch.setattr(
+        "src.load_records.HTTPConnection",
+        _refusing_connection,
+    )
+
+    with pytest.raises(SystemExit) as stopped:
+        runpy.run_path(str(ROOT / "src" / "contract_records.py"), run_name="__main__")
+
+    assert stopped.value.code == 1
+    assert capsys.readouterr().err == "the bank case list could not be read\n"
+
+
+class _refusing_connection:
+    def __init__(self, host, port):
+        assert (host, port) == ("127.0.0.1", 8765)
+
+    def request(self, method, path):
+        raise ConnectionRefusedError
+
+    def close(self):
+        return
+
+
+def _d01_and_d11_bodies():
+    return {
+        **TOOL_BODIES,
+        "/v1/cases/CARD-D11/transactions": {
+            "source_id": "CARD-D11-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D11",
+                    "amount": 287,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+        "/v1/cases/CARD-D11/merchant": TOOL_BODIES[MERCHANT],
+    }
 
 
 def _dataset(tmp_path):
