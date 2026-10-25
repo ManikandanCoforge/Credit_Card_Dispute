@@ -38,18 +38,6 @@ class Merchant(TypedDict):
     note: str
 
 
-class TransactionTool(TypedDict):
-    source_id: str
-    transactions: list[Transaction]
-
-
-class MerchantTool(TypedDict):
-    source_id: str
-    merchant_id: str
-    display_name: str
-    note: str
-
-
 class WorkingRecord(TypedDict):
     case_id: str
     intake: Intake | None
