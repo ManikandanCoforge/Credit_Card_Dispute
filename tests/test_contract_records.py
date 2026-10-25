@@ -525,3 +525,26 @@ def _bank(case_list, tool_bodies, statuses=None):
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
+
+
+def test_a_case_that_names_evidence_this_step_cannot_read_is_not_built():
+    case_list = {
+        "cases": [
+            {
+                **CARD_D01,
+                "documents": [*CARD_D01["documents"], "CARD-D01-FOLLOWUP"],
+            }
+        ]
+    }
+
+    with _bank(case_list, TOOL_BODIES) as (base_url, seen):
+        results = load_contract_results(base_url, DEV)
+
+    assert results == [
+        {
+            "case_id": "CARD-D01",
+            "contract": None,
+            "error": "the case names evidence this step cannot read: CARD-D01-FOLLOWUP",
+        }
+    ]
+    assert seen == ["/v1/cases"]

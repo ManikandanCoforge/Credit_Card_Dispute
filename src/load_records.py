@@ -48,23 +48,33 @@ def read_body(base_url: str, path: str) -> bytes:
     return body
 
 
-def load_complaint_records(base_url: str, data_dir: str | Path) -> list[WorkingRecord]:
-    """Load the bank case list and build one working record per complaint.
+def load_cases(base_url: str) -> CaseListResponse:
+    """Read the bank case list.
 
-    The case list is GET /v1/cases. A connection failure, a non-200 response,
-    or a body that is not a usable case list raises CaseListError before the
-    dataset is opened. The failure is not stored on a working record.
+    A connection failure, a non-200 response, or a body that is not a usable
+    case list raises CaseListError before the dataset is opened.
     """
     try:
         raw = read_body(base_url, "/v1/cases")
     except BankReadError as error:
         raise CaseListError from error
     try:
-        case_list = CaseListResponse.model_validate_json(raw)
+        return CaseListResponse.model_validate_json(raw)
     except ValidationError as error:
         raise CaseListError from error
+
+
+def records_from_case_list(
+    case_list: CaseListResponse, data_dir: str | Path
+) -> list[WorkingRecord]:
+    """Build one working record per complaint in an already read case list."""
     cases: list[Case] = [
         {"case_id": case.case_id, "intake_source": case.intake_source}
         for case in case_list.cases
     ]
     return build_complaint_records(cases, data_dir)
+
+
+def load_complaint_records(base_url: str, data_dir: str | Path) -> list[WorkingRecord]:
+    """Load the bank case list and build one working record per complaint."""
+    return records_from_case_list(load_cases(base_url), data_dir)

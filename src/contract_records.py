@@ -30,8 +30,9 @@ from src.contract import Contract, ContractError, assemble_contract
 from src.load_records import (
     BankReadError,
     CaseListError,
-    load_complaint_records,
+    load_cases,
     read_body,
+    records_from_case_list,
 )
 from src.models import (
     Intake,
@@ -64,10 +65,14 @@ def load_contract_results(base_url: str, data_dir: str | Path) -> list[ContractR
     messages or an exception class name, never text from a payload or document.
     """
     data_dir = Path(data_dir)
+    case_list = load_cases(base_url)
+    documents = {case.case_id: case.documents for case in case_list.cases}
     results: list[ContractResult] = []
-    for record in load_complaint_records(base_url, data_dir):
+    for record in records_from_case_list(case_list, data_dir):
         try:
-            contract = _contract_record(record, base_url, data_dir)
+            contract = _contract_record(
+                record, base_url, data_dir, documents.get(record["case_id"], [])
+            )
         except ContractRecordError as error:
             results.append(
                 {"case_id": record["case_id"], "contract": None, "error": _reason(error)}
@@ -131,8 +136,15 @@ def _reason(error: BaseException) -> str:
     return type(deepest).__name__
 
 
-def _contract_record(record: WorkingRecord, base_url: str, data_dir: Path) -> Contract:
-    """Read the evidence and the tools for one case, then assemble its contract."""
+def _contract_record(
+    record: WorkingRecord, base_url: str, data_dir: Path, documents: list[str]
+) -> Contract:
+    """Read the evidence and the tools for one case, then assemble its contract.
+
+    documents is the evidence the case list names for this case. A source this
+    step does not read is refused rather than ignored, so a follow-up or a
+    second statement can never be silently left out of the draft.
+    """
     # load_complaint_records always stores an intake object, even for a document
     # it could not read, so a record reaching this runner always has one.
     intake = cast(Intake, record["intake"])
@@ -141,6 +153,12 @@ def _contract_record(record: WorkingRecord, base_url: str, data_dir: Path) -> Co
     if version_id is None or procedure_id is None:
         raise ContractRecordError("the reported date selected no policy version")
     attachment_source = _attachment_source(intake["source_id"])
+    consumed = {intake["source_id"], attachment_source}
+    unread = sorted(set(documents) - consumed)
+    if unread:
+        raise ContractRecordError(
+            "the case names evidence this step cannot read: " + ", ".join(unread)
+        )
     intake_text = _document(data_dir, "documents", intake["source_id"])
     attachment_text = _document(data_dir, "documents", attachment_source)
     procedure_text = _document(data_dir, "policies", procedure_id)
