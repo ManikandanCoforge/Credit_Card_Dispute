@@ -128,8 +128,20 @@ CARD_D01_CONTRACT = {
     ],
     "follow_up_questions": [],
     "narrative": (
-        "Draft for human review: CARD-D01 is classified unauthorized and routed "
-        "ready_for_review, with a policy deadline of 2026-10-31; no case has been created."
+        "Draft for human review.\n"
+        "Evidence: CARD-D01 reports transaction TX-D01, reported 2026-10-01. The transaction "
+        "service shows 117 XCR. Cited sources: CARD-D01-INTAKE, CARD-D01-ATTACHMENT, "
+        "CARD-D01-TRANSACTIONS, CARD-PROCEDURE-01, CARD-POLICY-V2.\n"
+        "Uncertainty: None found in the cited sources.\n"
+        "Recommendation: classified unauthorized under CARD-POLICY-V2, CARD-PROCEDURE-01 and "
+        "routed ready_for_review. The policy deadline is 2026-10-31. A reviewer can check the "
+        "cited evidence and decide.\n"
+        "Limitations: prepared only from the cited documents and tool data under the fictional "
+        "bank procedure; no card-network or legal rules were used. No case has been created: a "
+        "person must approve this exact draft first, and any change needs a new approval.\n"
+        "Customer reply (DRAFT, not sent): Thank you for contacting Lumen Bank about "
+        "transaction TX-D01. Your report is with our dispute team for review. We cannot "
+        "confirm an outcome yet."
     ),
 }
 
@@ -358,6 +370,7 @@ def test_the_reason_is_the_applications_own_message_when_there_is_one(tmp_path):
             "case_id": "CARD-D01",
             "contract": None,
             "error": "expected exactly one 'Amount:' line in the source",
+            "narrative_meter": None,
         }
     ]
 
@@ -497,6 +510,7 @@ def test_a_listed_document_that_is_not_customer_correspondence_cannot_escalate(t
             "case_id": "CARD-D01",
             "contract": None,
             "error": "the case names evidence this step cannot read: CARD-D01-NOTE",
+            "narrative_meter": None,
         }
     ]
     assert seen == ["/v1/cases"]
@@ -513,6 +527,7 @@ def test_a_listed_document_id_that_is_not_a_plain_id_is_never_opened():
             "case_id": "CARD-D01",
             "contract": None,
             "error": "a source id is not a plain document id",
+            "narrative_meter": None,
         }
     ]
     assert seen == ["/v1/cases"]
@@ -586,6 +601,7 @@ def test_a_contract_that_would_carry_a_restricted_value_is_not_emitted():
             "case_id": "CARD-D01",
             "contract": None,
             "error": "a restricted value was about to be emitted",
+            "narrative_meter": None,
         }
     ]
 
@@ -713,6 +729,7 @@ def test_a_case_that_names_evidence_this_step_cannot_read_is_not_built():
             "case_id": "CARD-D01",
             "contract": None,
             "error": "the case names evidence this step cannot read: CARD-D01-FOLLOWUP",
+            "narrative_meter": None,
         }
     ]
     assert seen == ["/v1/cases"]

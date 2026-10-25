@@ -1,4 +1,4 @@
-"""Working-record shapes built from a complaint intake and its policy."""
+"""Working-record shapes built from a complaint intake and its policy, and the contract shape."""
 
 from typing import NotRequired, TypedDict
 
@@ -48,6 +48,39 @@ class MerchantTool(TypedDict):
     merchant_id: str
     display_name: str
     note: str
+
+
+class Facts(TypedDict):
+    transaction_id: str | None
+    amount: int | None
+    currency: str | None
+    reported_date: str | None
+
+
+class Citation(TypedDict):
+    claim: str
+    source_id: str
+    quote: str
+
+
+class FollowUpQuestion(TypedDict):
+    field: str
+    question: str
+
+
+class Contract(TypedDict):
+    """One object of the submission array, as docs/OUTPUT_CONTRACT.md defines it."""
+
+    case_id: str
+    classification: str
+    routing: str
+    policy_ids: list[str]
+    facts: Facts
+    missing_information: list[str]
+    deadline: str | None
+    citations: list[Citation]
+    follow_up_questions: list[FollowUpQuestion]
+    narrative: str
 
 
 class WorkingRecord(TypedDict):
