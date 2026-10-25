@@ -4,16 +4,7 @@ from datetime import date
 from pathlib import Path
 from typing import TypedDict
 
-from src.models import (
-    Case,
-    Intake,
-    Merchant,
-    MerchantTool,
-    Policy,
-    Transaction,
-    TransactionTool,
-    WorkingRecord,
-)
+from src.models import Case, Intake, Merchant, Policy, Transaction, WorkingRecord
 
 
 class _Complaint(TypedDict):
@@ -26,6 +17,18 @@ class _PolicyVersion(TypedDict):
     start: date
     end: date
     procedure_id: str | None
+
+
+class _TransactionTool(TypedDict):
+    source_id: str
+    transactions: list[Transaction]
+
+
+class _MerchantTool(TypedDict):
+    source_id: str
+    merchant_id: str
+    display_name: str
+    note: str
 
 
 # A missing, blank, or conflicting label is these words. It is never an empty value.
@@ -78,7 +81,7 @@ def build_complaint_records(cases: list[Case], data_dir: str | Path) -> list[Wor
     return records
 
 
-def build_transaction(record: WorkingRecord, tool_body: TransactionTool) -> WorkingRecord:
+def build_transaction(record: WorkingRecord, tool_body: _TransactionTool) -> WorkingRecord:
     """Return the working record with one transaction per charge in the tool body.
 
     The input record is left unchanged. The tool body's source id is not copied.
@@ -96,7 +99,7 @@ def build_transaction(record: WorkingRecord, tool_body: TransactionTool) -> Work
     return {**record, "transactions": charges}
 
 
-def build_merchant(record: WorkingRecord, tool_body: MerchantTool) -> WorkingRecord:
+def build_merchant(record: WorkingRecord, tool_body: _MerchantTool) -> WorkingRecord:
     """Return the working record with the merchant from the tool body.
 
     The input record is left unchanged. The tool body's source id and private
