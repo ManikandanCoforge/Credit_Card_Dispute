@@ -41,6 +41,38 @@ class ToolPayload(BaseModel):
     source_id: str = Field(min_length=1)
 
 
+class TransactionCharge(BaseModel):
+    """One transaction row inside the transactions tool body."""
+
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    transaction_id: str = Field(min_length=1)
+    amount: int
+    currency: str = Field(min_length=1)
+    merchant_id: str = Field(min_length=1)
+    posted_date: str = Field(min_length=1)
+
+
+class TransactionToolPayload(BaseModel):
+    """The transactions tool body: the case's charges and their source id."""
+
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    source_id: str = Field(min_length=1)
+    transactions: list[TransactionCharge]
+
+
+class MerchantToolPayload(BaseModel):
+    """The merchant tool body. The private token is kept but never copied out."""
+
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    source_id: str = Field(min_length=1)
+    merchant_id: str = Field(min_length=1)
+    display_name: str = Field(min_length=1)
+    note: str
+
+
 class ErrorBody(BaseModel):
     """An error body. The error code is an open string."""
 
