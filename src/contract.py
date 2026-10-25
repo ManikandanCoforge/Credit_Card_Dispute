@@ -10,9 +10,11 @@ source - raises ContractError instead of being paraphrased.
 """
 
 import json
+from collections.abc import Sequence
 from datetime import date, timedelta
 from typing import TypedDict
 
+from src.escalation import Escalation, EscalationError, find_escalation
 from src.models import Intake, Transaction, WorkingRecord
 
 # build_records stores an absent intake line as these words, never as an empty value.
@@ -21,8 +23,21 @@ _DENIED = "denied"
 _UNAUTHORIZED_DAYS_LABEL = "Unauthorized deadline days:"
 _UNAUTHORIZED_RULE_ANCHOR = "Use unauthorized"
 _ROUTING_RULE_ANCHOR = "Routing precedence:"
+_PRECEDENCE_RULE_ANCHOR = "Manual review takes precedence"
+_EFFECTIVE_FROM_LABEL = "Effective from:"
+_EFFECTIVE_THROUGH_LABEL = "Effective through:"
 _AMOUNT_LABEL = "Amount:"
 _SOURCE_ID_LABEL = "Source ID:"
+_MANUAL_REVIEW = "manual_review"
+
+# One targeted question per missing field that the contract allows.
+_QUESTIONS = {
+    "authorization_confirmation": (
+        "Can you confirm whether you authorized the card transaction named in your complaint?"
+    ),
+    "promised_service_date": "On what date did the merchant promise to supply the service?",
+    "purchase_receipt": "Can you send the receipt or order confirmation for this purchase?",
+}
 
 
 class Facts(TypedDict):
@@ -68,8 +83,14 @@ def assemble_contract(
     procedure_text: str,
     policy_text: str,
     transactions_text: str,
+    customer_texts: Sequence[str] = (),
 ) -> Contract:
     """Return the contract object for one working record.
+
+    customer_texts are further customer statements about the complaint, such as
+    a follow-up email. A cash withdrawal, or customer statements that conflict
+    about authorization, escalate the complaint before it is classified: see
+    src/escalation.py.
 
     Amount and currency are read from the transaction named on the intake, never
     from the attachment. A named transaction that the tool did not return leaves
@@ -88,6 +109,21 @@ def assemble_contract(
     intake = record["intake"]
     if intake is None:
         raise ContractError("the working record has no intake")
+    try:
+        escalation = find_escalation(intake_text, list(customer_texts), procedure_text)
+    except EscalationError as error:
+        raise ContractError(str(error)) from error
+    if escalation is not None:
+        return _escalated_contract(
+            record,
+            intake,
+            escalation,
+            intake_text=intake_text,
+            attachment_text=attachment_text,
+            procedure_text=procedure_text,
+            policy_text=policy_text,
+            transactions_text=transactions_text,
+        )
     classification = _classification(intake)
     version_id = record["policy"]["version_id"]
     procedure_id = record["policy"]["procedure_id"]
@@ -140,6 +176,96 @@ def assemble_contract(
         "citations": citations,
         "follow_up_questions": [],
         "narrative": _narrative(record["case_id"], classification, routing, deadline),
+    }
+
+
+def _escalated_contract(
+    record: WorkingRecord,
+    intake: Intake,
+    escalation: Escalation,
+    *,
+    intake_text: str,
+    attachment_text: str,
+    procedure_text: str,
+    policy_text: str,
+    transactions_text: str,
+) -> Contract:
+    """A complaint the procedure sends to a human.
+
+    Routing is manual_review and the deadline is null. Policy ids, facts and the
+    transaction citation are kept, because the escalation does not skip the
+    work. Missing fields are still listed, each with one question, because
+    manual review outranks missing-information routing without hiding it.
+    """
+    version_id = record["policy"]["version_id"]
+    procedure_id = record["policy"]["procedure_id"]
+    if version_id is None or procedure_id is None:
+        raise ContractError("the reported date selected no policy version")
+    missing = list(record["missing_information"])
+    procedure_source = _source_id(procedure_text)
+    policy_source = _source_id(policy_text)
+    escalation_citations: list[Citation] = [
+        {"claim": quote["claim"], "source_id": quote["source_id"], "quote": quote["quote"]}
+        for quote in escalation["citations"]
+    ]
+    citations: list[Citation] = [
+        {
+            "claim": "customer_evidence",
+            "source_id": _source_id(intake_text),
+            "quote": _statement(intake, intake_text),
+        },
+        {
+            "claim": "customer_evidence",
+            "source_id": _source_id(attachment_text),
+            "quote": _unique_line(attachment_text, _AMOUNT_LABEL),
+        },
+        _transaction_citation(intake["transaction_id"], transactions_text),
+        *escalation_citations,
+        {
+            "claim": "routing",
+            "source_id": procedure_source,
+            "quote": _unique_line(procedure_text, _ROUTING_RULE_ANCHOR),
+        },
+        {
+            "claim": "policy_selection",
+            "source_id": policy_source,
+            "quote": _unique_line(policy_text, _EFFECTIVE_FROM_LABEL),
+        },
+        {
+            "claim": "policy_selection",
+            "source_id": policy_source,
+            "quote": _unique_line(policy_text, _EFFECTIVE_THROUGH_LABEL),
+        },
+    ]
+    if missing:
+        citations.append(
+            {
+                "claim": "routing",
+                "source_id": procedure_source,
+                "quote": _sentence(procedure_text, _PRECEDENCE_RULE_ANCHOR),
+            }
+        )
+    narrative = (
+        f"Draft for human review: {record['case_id']} is classified "
+        f"{escalation['classification']} and routed {_MANUAL_REVIEW}. {escalation['reason']} "
+        "No deadline is set because the procedure gives none for this classification."
+    )
+    if missing:
+        narrative += f" Missing information is still requested: {', '.join(missing)}."
+    narrative += " No case has been created."
+    return {
+        "case_id": record["case_id"],
+        "classification": escalation["classification"],
+        "routing": _MANUAL_REVIEW,
+        "policy_ids": [version_id, procedure_id],
+        "facts": _facts(intake, record.get("transactions", [])),
+        "missing_information": missing,
+        "deadline": None,
+        "citations": citations,
+        "follow_up_questions": [
+            {"field": field, "question": _QUESTIONS[field]} for field in missing
+        ],
+        "narrative": narrative,
     }
 
 

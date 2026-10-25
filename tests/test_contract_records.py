@@ -445,6 +445,79 @@ def test_running_the_module_uses_the_local_mock_and_data_dev_by_default(capsys, 
     assert capsys.readouterr().err == "the bank case list could not be read\n"
 
 
+def test_a_listed_follow_up_email_is_read_as_a_customer_statement():
+    case_list = {
+        "cases": [
+            {
+                "case_id": "CARD-D05",
+                "intake_source": "CARD-D05-INTAKE",
+                "documents": ["CARD-D05-INTAKE", "CARD-D05-ATTACHMENT", "CARD-D05-FOLLOWUP"],
+            }
+        ]
+    }
+    tool_bodies = {
+        "/v1/cases/CARD-D05/transactions": {
+            "source_id": "CARD-D05-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D05",
+                    "amount": 185,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+        "/v1/cases/CARD-D05/merchant": TOOL_BODIES[MERCHANT],
+    }
+
+    with _bank(case_list, tool_bodies) as (base_url, _seen):
+        [contract] = load_contract_records(base_url, DEV)
+
+    assert contract["classification"] == "ambiguous"
+    assert contract["routing"] == "manual_review"
+    assert contract["deadline"] is None
+    assert "CARD-D05-FOLLOWUP" in {citation["source_id"] for citation in contract["citations"]}
+
+
+def test_a_listed_document_that_is_not_customer_correspondence_cannot_escalate(tmp_path):
+    dataset = tmp_path / "data"
+    shutil.copytree(DEV, dataset)
+    (dataset / "documents" / "CARD-D01-NOTE.md").write_text(
+        "# Purchase supporting material\n\nSource ID: CARD-D01-NOTE\n\n"
+        "I did authorize this purchase.\nAuthorization: confirmed\n"
+    )
+    case = {**CARD_D01, "documents": [*CARD_D01["documents"], "CARD-D01-NOTE"]}
+
+    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, seen):
+        results = load_contract_results(base_url, dataset)
+
+    assert results == [
+        {
+            "case_id": "CARD-D01",
+            "contract": None,
+            "error": "the case names evidence this step cannot read: CARD-D01-NOTE",
+        }
+    ]
+    assert seen == ["/v1/cases"]
+
+
+def test_a_listed_document_id_that_is_not_a_plain_id_is_never_opened():
+    case = {**CARD_D01, "documents": [*CARD_D01["documents"], "../policies/CARD-POLICY-V2"]}
+
+    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, seen):
+        results = load_contract_results(base_url, DEV)
+
+    assert results == [
+        {
+            "case_id": "CARD-D01",
+            "contract": None,
+            "error": "a source id is not a plain document id",
+        }
+    ]
+    assert seen == ["/v1/cases"]
+
+
 class _refusing_connection:
     def __init__(self, host, port):
         assert (host, port) == ("127.0.0.1", 8765)

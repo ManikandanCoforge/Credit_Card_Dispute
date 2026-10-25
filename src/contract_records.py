@@ -1,11 +1,13 @@
 """Read the bank and emit one contract object per complaint.
 
-load_contract_records
-  load_complaint_records
+load_contract_results
+  load_cases
     GET /v1/cases
+  records_from_case_list
     read the intake
     match the policy version
   for each case
+    read every other listed document: a customer statement is kept, anything else refuses the case
     read the intake, attachment, procedure and policy documents
     GET /v1/cases/{case_id}/transactions and /v1/cases/{case_id}/merchant
     assemble_contract
@@ -17,6 +19,7 @@ reports the reason for each case it could not build.
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import TypedDict, cast
@@ -45,6 +48,10 @@ from src.models import (
 # The case list names an intake and an attachment that share one prefix.
 _INTAKE_SUFFIX = "-INTAKE"
 _ATTACHMENT_SUFFIX = "-ATTACHMENT"
+# A further listed document is a customer statement when its heading says so.
+_CUSTOMER_HEADING = "# Customer"
+# Source ids become file names, so only plain ids are read. "../x" is never a path.
+_SOURCE_ID = re.compile(r"[A-Z0-9][A-Z0-9-]*")
 
 
 class ContractRecordError(Exception):
@@ -141,9 +148,10 @@ def _contract_record(
 ) -> Contract:
     """Read the evidence and the tools for one case, then assemble its contract.
 
-    documents is the evidence the case list names for this case. A source this
-    step does not read is refused rather than ignored, so a follow-up or a
-    second statement can never be silently left out of the draft.
+    documents is the evidence the case list names for this case. Besides the
+    intake and the attachment, a listed customer statement, such as a follow-up
+    email, is read and passed on. Any other listed source is refused rather than
+    ignored, so evidence can never be silently left out of the draft.
     """
     # load_complaint_records always stores an intake object, even for a document
     # it could not read, so a record reaching this runner always has one.
@@ -154,11 +162,9 @@ def _contract_record(
         raise ContractRecordError("the reported date selected no policy version")
     attachment_source = _attachment_source(intake["source_id"])
     consumed = {intake["source_id"], attachment_source}
-    unread = sorted(set(documents) - consumed)
-    if unread:
-        raise ContractRecordError(
-            "the case names evidence this step cannot read: " + ", ".join(unread)
-        )
+    customer_texts = _customer_statements(
+        data_dir, [source_id for source_id in documents if source_id not in consumed]
+    )
     intake_text = _document(data_dir, "documents", intake["source_id"])
     attachment_text = _document(data_dir, "documents", attachment_source)
     procedure_text = _document(data_dir, "policies", procedure_id)
@@ -174,6 +180,7 @@ def _contract_record(
             procedure_text=procedure_text,
             policy_text=policy_text,
             transactions_text=transactions_text,
+            customer_texts=customer_texts,
         )
     except ContractError as error:
         raise ContractRecordError from error
@@ -228,11 +235,46 @@ def _read_tool(base_url: str, case_id: str, tool: str) -> bytes:
 
 
 def _document(data_dir: Path, folder: str, source_id: str) -> str:
-    """One evidence source, by the source id that identifies it."""
+    """One evidence source, by the source id that identifies it.
+
+    An id that is not a plain source id is refused before any path is built.
+    """
     try:
-        return (data_dir / folder / f"{source_id}.md").read_text()
+        return _path(data_dir, folder, source_id).read_text(encoding="utf-8")
     except OSError as error:
         raise ContractRecordError from error
+
+
+def _customer_statements(data_dir: Path, source_ids: list[str]) -> list[str]:
+    """The further listed documents, each of which must be a customer statement.
+
+    A listed document that is missing, or whose heading does not mark it as
+    customer correspondence, is evidence this step cannot read, so the case is
+    refused instead of being drafted without it.
+    """
+    statements: list[str] = []
+    unread: list[str] = []
+    for source_id in source_ids:
+        try:
+            text = _path(data_dir, "documents", source_id).read_text(encoding="utf-8")
+        except OSError:
+            unread.append(source_id)
+            continue
+        if text.lstrip().startswith(_CUSTOMER_HEADING):
+            statements.append(text)
+        else:
+            unread.append(source_id)
+    if unread:
+        raise ContractRecordError(
+            "the case names evidence this step cannot read: " + ", ".join(sorted(unread))
+        )
+    return statements
+
+
+def _path(data_dir: Path, folder: str, source_id: str) -> Path:
+    if _SOURCE_ID.fullmatch(source_id) is None:
+        raise ContractRecordError("a source id is not a plain document id")
+    return data_dir / folder / f"{source_id}.md"
 
 
 def _attachment_source(intake_source: str) -> str:
