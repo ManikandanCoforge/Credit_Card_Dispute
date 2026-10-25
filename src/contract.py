@@ -7,9 +7,13 @@ bank. The case runner in src/contract_records.py does the reading.
 A contract that the supplied sources cannot support - no policy version for the
 reported date, a rule line missing from the procedure, a quote that is not in its
 source - raises ContractError instead of being paraphrased.
+
+A supported classification is emitted even when evidence is missing: the draft is
+routed to request_information and carries one targeted question per absent field.
 """
 
 import json
+from collections.abc import Callable
 from datetime import date, timedelta
 from typing import TypedDict
 
@@ -18,11 +22,66 @@ from src.models import Intake, Transaction, WorkingRecord
 # build_records stores an absent intake line as these words, never as an empty value.
 _ABSENT = "not supplied"
 _DENIED = "denied"
+_CONFIRMED = "confirmed"
 _UNAUTHORIZED_DAYS_LABEL = "Unauthorized deadline days:"
+_DUPLICATE_DAYS_LABEL = "Duplicate deadline days:"
+_SERVICE_DAYS_LABEL = "Service deadline days:"
 _UNAUTHORIZED_RULE_ANCHOR = "Use unauthorized"
+_DUPLICATE_RULE_ANCHOR = "Use duplicate_charge"
+_SERVICE_RULE_ANCHOR = "Use service_not_received"
 _ROUTING_RULE_ANCHOR = "Routing precedence:"
 _AMOUNT_LABEL = "Amount:"
+_ATTACHMENT_STATUS_LABEL = "Attachment status:"
 _SOURCE_ID_LABEL = "Source ID:"
+
+# The procedure sentence that supports each classification this step can choose.
+_CLASSIFICATION_ANCHOR = {
+    "unauthorized": _UNAUTHORIZED_RULE_ANCHOR,
+    "duplicate_charge": _DUPLICATE_RULE_ANCHOR,
+    "service_not_received": _SERVICE_RULE_ANCHOR,
+}
+
+# The one policy line that supplies each supported type's day count.
+_DEADLINE_LABEL = {
+    "unauthorized": _UNAUTHORIZED_DAYS_LABEL,
+    "duplicate_charge": _DUPLICATE_DAYS_LABEL,
+    "service_not_received": _SERVICE_DAYS_LABEL,
+}
+
+# The customer statement is matched in lower case against these phrases.
+_DENIES_CHARGE = (
+    "do not recognize",
+    "do not recognise",
+    "did not authorize",
+    "deny authorizing",
+)
+_SERVICE_NOT_DELIVERED = (
+    "not been delivered",
+    "was not delivered",
+    "not delivered",
+    "service was not supplied",
+    "service not supplied",
+)
+_DUPLICATE_CHARGE = ("twice", "two charges", "two transactions", "double charge")
+
+# Reads the intake field each missing-information identifier stands for.
+_INTAKE_VALUE_BY_MISSING_FIELD: dict[str, Callable[[Intake], str]] = {
+    "authorization_confirmation": lambda intake: intake["authorization"],
+    "promised_service_date": lambda intake: intake["promised_service_date"],
+    "purchase_receipt": lambda intake: intake["purchase_receipt"],
+}
+
+# The one targeted question asked for each missing-information identifier. Questions
+# name the evidence to supply and never promise an outcome.
+_QUESTION_BY_MISSING_FIELD = {
+    "authorization_confirmation": (
+        "Can you confirm whether you authorized the named card purchase?"
+    ),
+    "promised_service_date": (
+        "What date did the merchant promise to deliver the service?"
+    ),
+    "purchase_receipt": "Can you provide the purchase receipt for this transaction?",
+}
 
 
 class Facts(TypedDict):
@@ -79,11 +138,17 @@ def assemble_contract(
     json.dumps(body, sort_keys=True). The named charge is cited from it as one
     sorted JSON object, so the amount and currency are tied to that transaction.
 
-    The deadline is the reported date plus the policy's unauthorized day count,
-    with the reported day as day zero.
+    The deadline is the reported date plus the policy's per-type day count, with the
+    reported day as day zero. It is calculated for a supported classification even
+    when evidence is missing.
 
-    Citations are exact slices of the four supplied sources. A slice that cannot
-    be made exactly raises ContractError.
+    Missing information is copied from the working record in its procedure order.
+    Each field gets exactly one targeted question, and a field the intake supplies
+    is refused rather than questioned. Routing is request_information when any
+    field is missing and ready_for_review otherwise.
+
+    Citations are exact slices of the supplied sources. A slice that cannot be
+    made exactly raises ContractError.
     """
     intake = record["intake"]
     if intake is None:
@@ -96,11 +161,11 @@ def assemble_contract(
     reported = _day(intake["reported_date"])
     if reported is None:
         raise ContractError("the intake has no reported date")
-    if record["missing_information"]:
-        raise ContractError("missing information needs targeted questions first")
-    deadline, deadline_quote = _deadline(reported, policy_text)
+    missing_information = list(record["missing_information"])
+    follow_up_questions = _follow_up_questions(intake, missing_information)
+    routing = "request_information" if missing_information else "ready_for_review"
+    deadline, deadline_quote = _deadline(reported, policy_text, classification)
     procedure_source = _source_id(procedure_text)
-    routing = "ready_for_review"
     citations: list[Citation] = [
         {
             "claim": "customer_evidence",
@@ -110,13 +175,13 @@ def assemble_contract(
         {
             "claim": "customer_evidence",
             "source_id": _source_id(attachment_text),
-            "quote": _unique_line(attachment_text, _AMOUNT_LABEL),
+            "quote": _attachment_citation(attachment_text, missing_information),
         },
         _transaction_citation(intake["transaction_id"], transactions_text),
         {
             "claim": "classification",
             "source_id": procedure_source,
-            "quote": _sentence(procedure_text, _UNAUTHORIZED_RULE_ANCHOR),
+            "quote": _sentence(procedure_text, _CLASSIFICATION_ANCHOR[classification]),
         },
         {
             "claim": "routing",
@@ -135,19 +200,65 @@ def assemble_contract(
         "routing": routing,
         "policy_ids": [version_id, procedure_id],
         "facts": _facts(intake, record.get("transactions", [])),
-        "missing_information": [],
+        "missing_information": missing_information,
         "deadline": deadline,
         "citations": citations,
-        "follow_up_questions": [],
-        "narrative": _narrative(record["case_id"], classification, routing, deadline),
+        "follow_up_questions": follow_up_questions,
+        "narrative": _narrative(
+            record["case_id"], classification, routing, deadline, missing_information
+        ),
     }
 
 
 def _classification(intake: Intake) -> str:
-    """A denied authorization is unauthorized. Other types arrive in a later step."""
-    if intake["authorization"] == _DENIED:
+    """Return the supported classification that the intake and statement establish.
+
+    A denied authorization is unauthorized. An absent authorization is the
+    provisional unauthorized only when the statement says the customer does not
+    recognise the charge. A confirmed authorization with an undelivered promised
+    service is service_not_received. A statement reporting two charges for one
+    purchase is duplicate_charge. Anything else raises ContractError: ambiguous,
+    unsupported and conflicting accounts belong to a later step.
+    """
+    authorization = intake["authorization"]
+    statement = intake["statement"].lower()
+    if authorization == _DENIED:
         return "unauthorized"
-    raise ContractError("only a denied authorization is classified in this step")
+    if authorization == _ABSENT and _mentions(statement, _DENIES_CHARGE):
+        return "unauthorized"
+    if authorization == _CONFIRMED and _mentions(statement, _SERVICE_NOT_DELIVERED):
+        return "service_not_received"
+    if _mentions(statement, _DUPLICATE_CHARGE):
+        return "duplicate_charge"
+    raise ContractError("the intake supports no supported classification")
+
+
+def _mentions(statement: str, phrases: tuple[str, ...]) -> bool:
+    """True when the lower-cased customer statement contains any of the phrases."""
+    return any(phrase in statement for phrase in phrases)
+
+
+def _follow_up_questions(
+    intake: Intake, missing_information: list[str]
+) -> list[FollowUpQuestion]:
+    """One targeted question per missing field, in the order the record lists them.
+
+    A field the intake already supplies is refused rather than questioned, and an
+    identifier outside the contract's allowed set is refused rather than guessed.
+    """
+    questions: list[FollowUpQuestion] = []
+    for identifier in missing_information:
+        value = _INTAKE_VALUE_BY_MISSING_FIELD.get(identifier)
+        if value is None:
+            raise ContractError(f"unknown missing information identifier {identifier!r}")
+        if value(intake) != _ABSENT:
+            raise ContractError(
+                f"{identifier} is listed as missing but the intake supplies it"
+            )
+        questions.append(
+            {"field": identifier, "question": _QUESTION_BY_MISSING_FIELD[identifier]}
+        )
+    return questions
 
 
 def _facts(intake: Intake, transactions: list[Transaction]) -> Facts:
@@ -209,21 +320,38 @@ def _transaction_citation(transaction_id: str, transactions_text: str) -> Citati
     return {"claim": claim, "source_id": source_id, "quote": quote}
 
 
-def _deadline(reported: date, policy_text: str) -> tuple[str, str]:
-    """Return the deadline and the policy line it is calculated from."""
-    quote = _unique_line(policy_text, _UNAUTHORIZED_DAYS_LABEL)
+def _deadline(
+    reported: date, policy_text: str, classification: str
+) -> tuple[str, str]:
+    """Return the deadline and the per-type policy line it is calculated from."""
+    quote = _unique_line(policy_text, _DEADLINE_LABEL[classification])
     days = quote.split(":", 1)[1].strip()
     if not days.isdigit():
-        raise ContractError("the unauthorized deadline days are not a number")
+        raise ContractError("the deadline days are not a number")
     return (reported + timedelta(days=int(days))).isoformat(), quote
 
 
-def _narrative(case_id: str, classification: str, routing: str, deadline: str) -> str:
-    """One deterministic sentence, marked as a draft for the human reviewer."""
-    return (
+def _narrative(
+    case_id: str,
+    classification: str,
+    routing: str,
+    deadline: str,
+    missing_information: list[str],
+) -> str:
+    """The deterministic draft sentence, plus outstanding fields when any are missing.
+
+    The first sentence is byte-identical to the no-missing-evidence draft, so an
+    existing ready_for_review answer does not change.
+    """
+    narrative = (
         f"Draft for human review: {case_id} is classified {classification} and routed "
         f"{routing}, with a policy deadline of {deadline}; no case has been created."
     )
+    if missing_information:
+        narrative += (
+            " Outstanding evidence requested: " + ", ".join(missing_information) + "."
+        )
+    return narrative
 
 
 def _day(value: str) -> date | None:
@@ -231,6 +359,18 @@ def _day(value: str) -> date | None:
     if value == _ABSENT:
         return None
     return date.fromisoformat(value)
+
+
+def _attachment_citation(attachment_text: str, missing_information: list[str]) -> str:
+    """The attachment evidence the draft cites.
+
+    A supplied receipt is cited by its amount line. When the receipt itself is
+    missing, the attachment's status line is cited instead, so a missing-evidence
+    draft still quotes the attachment exactly.
+    """
+    if "purchase_receipt" in missing_information:
+        return _unique_line(attachment_text, _ATTACHMENT_STATUS_LABEL)
+    return _unique_line(attachment_text, _AMOUNT_LABEL)
 
 
 def _statement(intake: Intake, intake_text: str) -> str:

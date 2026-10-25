@@ -261,7 +261,7 @@ def test_a_working_record_without_an_intake_is_rejected():
         _assemble(record)
 
 
-def test_a_confirmed_authorization_is_not_classified_by_this_step():
+def test_a_confirmed_authorization_without_a_supported_statement_is_rejected():
     with pytest.raises(ContractError):
         _assemble(_record(authorization="confirmed"))
 
@@ -280,7 +280,7 @@ def test_a_record_without_a_reported_date_is_rejected():
         _assemble(_record(reported_date="not supplied"))
 
 
-def test_missing_required_information_is_rejected_until_questions_exist():
+def test_missing_information_that_the_intake_supplies_is_rejected():
     with pytest.raises(ContractError):
         _assemble(_record(missing_information=["authorization_confirmation"]))
 
