@@ -44,10 +44,12 @@ from src.models import (
     TransactionTool,
     WorkingRecord,
 )
+from src.untrusted import RestrictedValueError, guard
 
 # The case list names an intake and an attachment that share one prefix.
 _INTAKE_SUFFIX = "-INTAKE"
 _ATTACHMENT_SUFFIX = "-ATTACHMENT"
+_CUSTOMER_REFERENCE_LABEL = "Customer reference:"
 # A further listed document is a customer statement when its heading says so.
 _CUSTOMER_HEADING = "# Customer"
 # Source ids become file names, so only plain ids are read. "../x" is never a path.
@@ -171,9 +173,10 @@ def _contract_record(
     policy_text = _document(data_dir, "policies", version_id)
     transactions, transactions_text = _transactions(base_url, record["case_id"])
     enriched = build_transaction(record, transactions)
-    enriched = build_merchant(enriched, _merchant(base_url, record["case_id"]))
+    merchant, private_token = _merchant(base_url, record["case_id"])
+    enriched = build_merchant(enriched, merchant)
     try:
-        return assemble_contract(
+        contract = assemble_contract(
             enriched,
             intake_text=intake_text,
             attachment_text=attachment_text,
@@ -184,6 +187,11 @@ def _contract_record(
         )
     except ContractError as error:
         raise ContractRecordError from error
+    try:
+        guard(contract, known=[private_token, _customer_reference(intake_text)])
+    except RestrictedValueError as error:
+        raise ContractRecordError(str(error)) from None
+    return contract
 
 
 def _transactions(base_url: str, case_id: str) -> tuple[TransactionTool, str]:
@@ -210,20 +218,33 @@ def _transactions(base_url: str, case_id: str) -> tuple[TransactionTool, str]:
     return tool, json.dumps(json.loads(raw), sort_keys=True)
 
 
-def _merchant(base_url: str, case_id: str) -> MerchantTool:
-    """The merchant tool body. The private token is not copied out of it."""
+def _merchant(base_url: str, case_id: str) -> tuple[MerchantTool, str]:
+    """The merchant tool body, and its private token for the restricted-value guard.
+
+    The private token is never copied into the merchant record.
+    """
     try:
         payload = MerchantToolPayload.model_validate_json(
             _read_tool(base_url, case_id, "merchant")
         )
     except ValidationError as error:
         raise ContractRecordError from error
-    return {
+    token = (payload.model_extra or {}).get("private_token")
+    merchant: MerchantTool = {
         "source_id": payload.source_id,
         "merchant_id": payload.merchant_id,
         "display_name": payload.display_name,
         "note": payload.note,
     }
+    return merchant, token if isinstance(token, str) else ""
+
+
+def _customer_reference(intake_text: str) -> str:
+    """The customer reference on the intake form, so the guard can refuse it exactly."""
+    for line in intake_text.splitlines():
+        if line.strip().startswith(_CUSTOMER_REFERENCE_LABEL):
+            return line.strip()[len(_CUSTOMER_REFERENCE_LABEL) :].strip()
+    return ""
 
 
 def _read_tool(base_url: str, case_id: str, tool: str) -> bytes:
