@@ -10,12 +10,14 @@ source - raises ContractError instead of being paraphrased.
 """
 
 import json
+import re
 from collections.abc import Sequence
 from datetime import date, timedelta
 from typing import TypedDict
 
 from src.escalation import Escalation, EscalationError, find_escalation
 from src.models import Intake, Transaction, WorkingRecord
+from src.untrusted import INSTRUCTION_NOTICE, has_instruction
 
 # build_records stores an absent intake line as these words, never as an empty value.
 _ABSENT = "not supplied"
@@ -29,6 +31,26 @@ _EFFECTIVE_THROUGH_LABEL = "Effective through:"
 _AMOUNT_LABEL = "Amount:"
 _SOURCE_ID_LABEL = "Source ID:"
 _MANUAL_REVIEW = "manual_review"
+_DUPLICATE_DAYS_LABEL = "Duplicate deadline days:"
+_DUPLICATE_RULE_ANCHOR = "Use duplicate_charge"
+_DAYS_LABELS = {
+    "unauthorized": _UNAUTHORIZED_DAYS_LABEL,
+    "duplicate_charge": _DUPLICATE_DAYS_LABEL,
+}
+_RULE_ANCHORS = {
+    "unauthorized": _UNAUTHORIZED_RULE_ANCHOR,
+    "duplicate_charge": _DUPLICATE_RULE_ANCHOR,
+}
+# The customer's report of two charges for one purchase, and its negation.
+_DUPLICATE = re.compile(
+    r"\btwice\b|\btwo (?:identical |separate )?charges\b|\bdouble[- ]?charg\w*"
+    r"|\bduplicate (?:charges?|transactions?)\b|\bcharged (?:me )?(?:two|2) times\b",
+    re.IGNORECASE,
+)
+_NOT_DUPLICATE = re.compile(
+    r"\bnot (?:a |an )?(?:double|duplicate)\b|\bnot (?:charged )?twice\b", re.IGNORECASE
+)
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 # One targeted question per missing field that the contract allows.
 _QUESTIONS = {
@@ -134,9 +156,16 @@ def assemble_contract(
         raise ContractError("the intake has no reported date")
     if record["missing_information"]:
         raise ContractError("missing information needs targeted questions first")
-    deadline, deadline_quote = _deadline(reported, policy_text)
+    deadline, deadline_quote = _deadline(reported, policy_text, classification)
     procedure_source = _source_id(procedure_text)
     routing = "ready_for_review"
+    second_charges = (
+        _other_charge_citations(
+            intake["statement"], intake["transaction_id"], transactions_text
+        )
+        if classification == "duplicate_charge"
+        else []
+    )
     citations: list[Citation] = [
         {
             "claim": "customer_evidence",
@@ -149,10 +178,11 @@ def assemble_contract(
             "quote": _unique_line(attachment_text, _AMOUNT_LABEL),
         },
         _transaction_citation(intake["transaction_id"], transactions_text),
+        *second_charges,
         {
             "claim": "classification",
             "source_id": procedure_source,
-            "quote": _sentence(procedure_text, _UNAUTHORIZED_RULE_ANCHOR),
+            "quote": _sentence(procedure_text, _RULE_ANCHORS[classification]),
         },
         {
             "claim": "routing",
@@ -175,7 +205,8 @@ def assemble_contract(
         "deadline": deadline,
         "citations": citations,
         "follow_up_questions": [],
-        "narrative": _narrative(record["case_id"], classification, routing, deadline),
+        "narrative": _narrative(record["case_id"], classification, routing, deadline)
+        + _untrusted_notice(record),
     }
 
 
@@ -252,7 +283,7 @@ def _escalated_contract(
     )
     if missing:
         narrative += f" Missing information is still requested: {', '.join(missing)}."
-    narrative += " No case has been created."
+    narrative += " No case has been created." + _untrusted_notice(record)
     return {
         "case_id": record["case_id"],
         "classification": escalation["classification"],
@@ -270,10 +301,61 @@ def _escalated_contract(
 
 
 def _classification(intake: Intake) -> str:
-    """A denied authorization is unauthorized. Other types arrive in a later step."""
+    """A denied authorization is unauthorized; two charges for one purchase is duplicate_charge.
+
+    A sentence written as an instruction is not read, so "classify this as a
+    double charge" in the customer's text cannot choose the class. Other types
+    arrive in a later step.
+    """
     if intake["authorization"] == _DENIED:
         return "unauthorized"
-    raise ContractError("only a denied authorization is classified in this step")
+    sentences = [
+        sentence
+        for sentence in _SENTENCE_END.split(intake["statement"])
+        if not has_instruction(sentence) and not _NOT_DUPLICATE.search(sentence)
+    ]
+    if any(_DUPLICATE.search(sentence) for sentence in sentences):
+        return "duplicate_charge"
+    raise ContractError("only unauthorized and duplicate_charge are classified in this step")
+
+
+def _other_charge_citations(
+    statement: str, transaction_id: str, transactions_text: str
+) -> list[Citation]:
+    """Cite the second charge of a duplicate, so both transaction records are on file.
+
+    A charge counts when the customer names its transaction id, or when it has the
+    named charge's amount and currency.
+    """
+    source_id, charges = _tool_charges(transactions_text)
+    named = [charge for charge in charges if charge.get("transaction_id") == transaction_id]
+    citations: list[Citation] = []
+    for charge in charges:
+        other_id = charge.get("transaction_id")
+        if not isinstance(other_id, str) or other_id == transaction_id:
+            continue
+        same_charge = any(
+            charge.get("amount") == first.get("amount")
+            and charge.get("currency") == first.get("currency")
+            for first in named
+        )
+        if other_id in statement or same_charge:
+            citations.append(
+                {
+                    "claim": "second_charge",
+                    "source_id": source_id,
+                    "quote": _row_quote(charge),
+                }
+            )
+    return citations
+
+
+def _untrusted_notice(record: WorkingRecord) -> str:
+    """A warning for the reviewer when the merchant text is written as instructions."""
+    merchant = record.get("merchant")
+    if merchant is not None and has_instruction(merchant["note"]):
+        return f" {INSTRUCTION_NOTICE}"
+    return ""
 
 
 def _facts(intake: Intake, transactions: list[Transaction]) -> Facts:
@@ -308,25 +390,11 @@ def _transaction_citation(transaction_id: str, transactions_text: str) -> Citati
     the five the contract cites is refused rather than quoted, so a payload value
     such as a private token cannot ride into a citation.
     """
-    try:
-        body = json.loads(transactions_text)
-        source_id = body["source_id"]
-        charges = body["transactions"]
-    except (ValueError, TypeError, KeyError) as error:
-        raise ContractError("the transactions tool body is not usable") from error
-    if not isinstance(source_id, str) or not isinstance(charges, list):
-        raise ContractError("the transactions tool body is not usable")
-    named = [
-        charge
-        for charge in charges
-        if isinstance(charge, dict) and charge.get("transaction_id") == transaction_id
-    ]
+    source_id, charges = _tool_charges(transactions_text)
+    named = [charge for charge in charges if charge.get("transaction_id") == transaction_id]
     if len(named) == 1:
-        charge = named[0]
-        if set(charge) != _TRANSACTION_ROW_KEYS:
-            raise ContractError("the transaction row is not the five contract fields")
         claim = "transaction_record"
-        quote = json.dumps(charge, sort_keys=True)
+        quote = _row_quote(named[0])
     else:
         claim = "transaction_service_checked"
         quote = json.dumps({"source_id": source_id})[1:-1]
@@ -335,12 +403,36 @@ def _transaction_citation(transaction_id: str, transactions_text: str) -> Citati
     return {"claim": claim, "source_id": source_id, "quote": quote}
 
 
-def _deadline(reported: date, policy_text: str) -> tuple[str, str]:
+def _row_quote(charge: dict[str, object]) -> str:
+    """One transaction row as a sorted JSON quote, only when it is exactly the five contract fields.
+
+    Every row that is quoted, the named charge and a duplicate's second charge
+    alike, passes through here, so no extra payload field can reach a citation.
+    """
+    if set(charge) != _TRANSACTION_ROW_KEYS:
+        raise ContractError("the transaction row is not the five contract fields")
+    return json.dumps(charge, sort_keys=True)
+
+
+def _tool_charges(transactions_text: str) -> tuple[str, list[dict[str, object]]]:
+    """The source id and the charge objects of a transactions tool body."""
+    try:
+        body = json.loads(transactions_text)
+        source_id = body["source_id"]
+        charges = body["transactions"]
+    except (ValueError, TypeError, KeyError) as error:
+        raise ContractError("the transactions tool body is not usable") from error
+    if not isinstance(source_id, str) or not isinstance(charges, list):
+        raise ContractError("the transactions tool body is not usable")
+    return source_id, [charge for charge in charges if isinstance(charge, dict)]
+
+
+def _deadline(reported: date, policy_text: str, classification: str) -> tuple[str, str]:
     """Return the deadline and the policy line it is calculated from."""
-    quote = _unique_line(policy_text, _UNAUTHORIZED_DAYS_LABEL)
+    quote = _unique_line(policy_text, _DAYS_LABELS[classification])
     days = quote.split(":", 1)[1].strip()
     if not days.isdigit():
-        raise ContractError("the unauthorized deadline days are not a number")
+        raise ContractError("the deadline days are not a number")
     return (reported + timedelta(days=int(days))).isoformat(), quote
 
 

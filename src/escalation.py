@@ -16,6 +16,8 @@ deadline, so the order only decides which class is reported.
 import re
 from typing import TypedDict
 
+from src.untrusted import has_instruction
+
 _UNSUPPORTED_RULE_ANCHOR = "Cash withdrawal disputes are unsupported"
 _AMBIGUOUS_RULE_ANCHOR = "If customer accounts conflict about authorization"
 _SOURCE_ID_LABEL = "Source ID:"
@@ -148,10 +150,18 @@ def _prose_sentences(text: str) -> list[str]:
 
 
 def _sentences(line: str) -> list[str]:
-    """The sentences of one prose line. Headings and form lines have none."""
+    """The sentences of one prose line. Headings and form lines have none.
+
+    A sentence written as an instruction is evidence, not the customer's account,
+    so it never counts as a stance or a cash withdrawal.
+    """
     if not line or line.startswith("#") or _LABEL_LINE.match(line):
         return []
-    return [sentence for sentence in _SENTENCE_END.split(line) if sentence]
+    return [
+        sentence
+        for sentence in _SENTENCE_END.split(line)
+        if sentence and not has_instruction(sentence)
+    ]
 
 
 def _rule(procedure_text: str, anchor: str, claim: str) -> Quote:
