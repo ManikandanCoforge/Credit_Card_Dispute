@@ -2,7 +2,10 @@
 .state/
 __pycache__/
 submissions/
-reports/
+reports/*
+!reports/scored-run.md
+!reports/scored-run.json
+!reports/scored-run-meters.json
 *.sqlite
 
 # local agent-skills config

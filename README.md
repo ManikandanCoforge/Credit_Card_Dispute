@@ -35,6 +35,10 @@ uv run --locked python tools/evaluate.py --data data/dev --gold feedback/dev_gol
 
 Development answers are deliberately supplied for feedback; hardcoding case IDs will fail new cases. `examples/worked-case.json` shows one valid output shape. Automated success is only part of the assessment.
 
+### Scored run
+
+Measured on 2026-10-25 across all twelve dev cases: 7 of 12 passed with 0 format errors. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The five failures are proposed exceptions tied to COF-39, COF-40 and COF-43, pending pod agreement.
+
 ## Human approval and recovery
 
 Start review with `POST /v1/reviews`. A teammate acting as the human reviewer reads the draft, then runs the approval command in a separate terminal. Your agent must never invoke this operator command.
