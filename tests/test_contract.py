@@ -142,8 +142,20 @@ CARD_D01_CONTRACT = {
     ],
     "follow_up_questions": [],
     "narrative": (
-        "Draft for human review: CARD-D01 is classified unauthorized and routed "
-        "ready_for_review, with a policy deadline of 2026-10-31; no case has been created."
+        "Draft for human review.\n"
+        "Evidence: CARD-D01 reports transaction TX-D01, reported 2026-10-01. The transaction "
+        "service shows 117 XCR. Cited sources: CARD-D01-INTAKE, CARD-D01-ATTACHMENT, "
+        "CARD-D01-TRANSACTIONS, CARD-PROCEDURE-01, CARD-POLICY-V2.\n"
+        "Uncertainty: None found in the cited sources.\n"
+        "Recommendation: classified unauthorized under CARD-POLICY-V2, CARD-PROCEDURE-01 and "
+        "routed ready_for_review. The policy deadline is 2026-10-31. A reviewer can check the "
+        "cited evidence and decide.\n"
+        "Limitations: prepared only from the cited documents and tool data under the fictional "
+        "bank procedure; no card-network or legal rules were used. No case has been created: a "
+        "person must approve this exact draft first, and any change needs a new approval.\n"
+        "Customer reply (DRAFT, not sent): Thank you for contacting Lumen Bank about "
+        "transaction TX-D01. Your report is with our dispute team for review. We cannot "
+        "confirm an outcome yet."
     ),
 }
 

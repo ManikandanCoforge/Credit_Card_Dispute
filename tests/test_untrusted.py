@@ -93,7 +93,9 @@ def test_the_injected_line_changes_nothing_but_the_reviewer_warning():
         "follow_up_questions",
     ]:
         assert injected[field] == clean[field]
-    assert injected["narrative"] == f"{clean['narrative']} {INSTRUCTION_NOTICE}"
+    assert injected["narrative"] == clean["narrative"].replace(
+        "Uncertainty: None found in the cited sources.", f"Uncertainty: {INSTRUCTION_NOTICE}"
+    )
     assert INSTRUCTION_NOTICE not in clean["narrative"]
 
 
@@ -112,7 +114,7 @@ def test_an_escalated_case_also_warns_about_an_injected_merchant_note():
     )
 
     assert result["routing"] == "manual_review"
-    assert result["narrative"].endswith(INSTRUCTION_NOTICE)
+    assert INSTRUCTION_NOTICE in result["narrative"]
 
 
 def test_an_instruction_in_the_customer_text_cannot_choose_the_class():

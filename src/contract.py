@@ -13,10 +13,10 @@ import json
 import re
 from collections.abc import Sequence
 from datetime import date, timedelta
-from typing import TypedDict
 
 from src.escalation import Escalation, EscalationError, find_escalation
-from src.models import Intake, Transaction, WorkingRecord
+from src.models import Citation, Contract, Facts, Intake, Transaction, WorkingRecord
+from src.narrative import NarrativeMeter, ProseWriter, draft_narrative
 from src.untrusted import INSTRUCTION_NOTICE, has_instruction
 
 # build_records stores an absent intake line as these words, never as an empty value.
@@ -62,37 +62,6 @@ _QUESTIONS = {
 }
 
 
-class Facts(TypedDict):
-    transaction_id: str | None
-    amount: int | None
-    currency: str | None
-    reported_date: str | None
-
-
-class Citation(TypedDict):
-    claim: str
-    source_id: str
-    quote: str
-
-
-class FollowUpQuestion(TypedDict):
-    field: str
-    question: str
-
-
-class Contract(TypedDict):
-    case_id: str
-    classification: str
-    routing: str
-    policy_ids: list[str]
-    facts: Facts
-    missing_information: list[str]
-    deadline: str | None
-    citations: list[Citation]
-    follow_up_questions: list[FollowUpQuestion]
-    narrative: str
-
-
 class ContractError(Exception):
     """A working record cannot become a contract object that its sources support."""
 
@@ -107,7 +76,37 @@ def assemble_contract(
     transactions_text: str,
     customer_texts: Sequence[str] = (),
 ) -> Contract:
-    """Return the contract object for one working record.
+    """Return the contract object for one working record, with the template narrative.
+
+    This path uses no model. See assemble_draft for the arguments.
+    """
+    contract, _meter = assemble_draft(
+        record,
+        intake_text=intake_text,
+        attachment_text=attachment_text,
+        procedure_text=procedure_text,
+        policy_text=policy_text,
+        transactions_text=transactions_text,
+        customer_texts=customer_texts,
+    )
+    return contract
+
+
+def assemble_draft(
+    record: WorkingRecord,
+    *,
+    intake_text: str,
+    attachment_text: str,
+    procedure_text: str,
+    policy_text: str,
+    transactions_text: str,
+    customer_texts: Sequence[str] = (),
+    writer: ProseWriter | None = None,
+) -> tuple[Contract, NarrativeMeter]:
+    """Return the contract object for one working record, and how its narrative was made.
+
+    Every field except narrative comes from the rules below and never from the
+    writer. A writer may only reword the template narrative; see src/narrative.py.
 
     customer_texts are further customer statements about the complaint, such as
     a follow-up email. A cash withdrawal, or customer statements that conflict
@@ -128,6 +127,30 @@ def assemble_contract(
     Citations are exact slices of the four supplied sources. A slice that cannot
     be made exactly raises ContractError.
     """
+    contract, notes = _rules_contract(
+        record,
+        intake_text=intake_text,
+        attachment_text=attachment_text,
+        procedure_text=procedure_text,
+        policy_text=policy_text,
+        transactions_text=transactions_text,
+        customer_texts=customer_texts,
+    )
+    narrative, meter = draft_narrative(contract, notes, writer)
+    return {**contract, "narrative": narrative}, meter
+
+
+def _rules_contract(
+    record: WorkingRecord,
+    *,
+    intake_text: str,
+    attachment_text: str,
+    procedure_text: str,
+    policy_text: str,
+    transactions_text: str,
+    customer_texts: Sequence[str],
+) -> tuple[Contract, list[str]]:
+    """The contract with an empty narrative, and the notes its narrative must carry."""
     intake = record["intake"]
     if intake is None:
         raise ContractError("the working record has no intake")
@@ -195,7 +218,7 @@ def assemble_contract(
             "quote": deadline_quote,
         },
     ]
-    return {
+    contract: Contract = {
         "case_id": record["case_id"],
         "classification": classification,
         "routing": routing,
@@ -205,9 +228,9 @@ def assemble_contract(
         "deadline": deadline,
         "citations": citations,
         "follow_up_questions": [],
-        "narrative": _narrative(record["case_id"], classification, routing, deadline)
-        + _untrusted_notice(record),
+        "narrative": "",
     }
+    return contract, _untrusted_notes(record)
 
 
 def _escalated_contract(
@@ -220,7 +243,7 @@ def _escalated_contract(
     procedure_text: str,
     policy_text: str,
     transactions_text: str,
-) -> Contract:
+) -> tuple[Contract, list[str]]:
     """A complaint the procedure sends to a human.
 
     Routing is manual_review and the deadline is null. Policy ids, facts and the
@@ -276,15 +299,7 @@ def _escalated_contract(
                 "quote": _sentence(procedure_text, _PRECEDENCE_RULE_ANCHOR),
             }
         )
-    narrative = (
-        f"Draft for human review: {record['case_id']} is classified "
-        f"{escalation['classification']} and routed {_MANUAL_REVIEW}. {escalation['reason']} "
-        "No deadline is set because the procedure gives none for this classification."
-    )
-    if missing:
-        narrative += f" Missing information is still requested: {', '.join(missing)}."
-    narrative += " No case has been created." + _untrusted_notice(record)
-    return {
+    contract: Contract = {
         "case_id": record["case_id"],
         "classification": escalation["classification"],
         "routing": _MANUAL_REVIEW,
@@ -296,8 +311,9 @@ def _escalated_contract(
         "follow_up_questions": [
             {"field": field, "question": _QUESTIONS[field]} for field in missing
         ],
-        "narrative": narrative,
+        "narrative": "",
     }
+    return contract, [escalation["reason"], *_untrusted_notes(record)]
 
 
 def _classification(intake: Intake) -> str:
@@ -350,12 +366,12 @@ def _other_charge_citations(
     return citations
 
 
-def _untrusted_notice(record: WorkingRecord) -> str:
+def _untrusted_notes(record: WorkingRecord) -> list[str]:
     """A warning for the reviewer when the merchant text is written as instructions."""
     merchant = record.get("merchant")
     if merchant is not None and has_instruction(merchant["note"]):
-        return f" {INSTRUCTION_NOTICE}"
-    return ""
+        return [INSTRUCTION_NOTICE]
+    return []
 
 
 def _facts(intake: Intake, transactions: list[Transaction]) -> Facts:
@@ -434,14 +450,6 @@ def _deadline(reported: date, policy_text: str, classification: str) -> tuple[st
     if not days.isdigit():
         raise ContractError("the deadline days are not a number")
     return (reported + timedelta(days=int(days))).isoformat(), quote
-
-
-def _narrative(case_id: str, classification: str, routing: str, deadline: str) -> str:
-    """One deterministic sentence, marked as a draft for the human reviewer."""
-    return (
-        f"Draft for human review: {case_id} is classified {classification} and routed "
-        f"{routing}, with a policy deadline of {deadline}; no case has been created."
-    )
 
 
 def _day(value: str) -> date | None:

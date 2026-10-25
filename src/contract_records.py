@@ -10,7 +10,7 @@ load_contract_results
     read every other listed document: a customer statement is kept, anything else refuses the case
     read the intake, attachment, procedure and policy documents
     GET /v1/cases/{case_id}/transactions and /v1/cases/{case_id}/merchant
-    assemble_contract
+    assemble_draft: the rules, then the narrative (template, or a configured writer)
 
 Both tool reads go through the mock service, which audits each one. A failed
 read stops the case: an outage is never treated as an empty transaction history.
@@ -29,7 +29,7 @@ from pydantic import ValidationError
 
 from src.api_models import MerchantToolPayload, TransactionToolPayload
 from src.build_records import build_merchant, build_transaction
-from src.contract import Contract, ContractError, assemble_contract
+from src.contract import Contract, ContractError, assemble_draft
 from src.load_records import (
     BankReadError,
     CaseListError,
@@ -44,6 +44,7 @@ from src.models import (
     TransactionTool,
     WorkingRecord,
 )
+from src.narrative import NarrativeMeter, ProseWriter
 from src.untrusted import RestrictedValueError, guard
 
 # The case list names an intake and an attachment that share one prefix.
@@ -64,14 +65,21 @@ class ContractResult(TypedDict):
     case_id: str
     contract: Contract | None
     error: str | None
+    narrative_meter: NarrativeMeter | None
 
 
-def load_contract_results(base_url: str, data_dir: str | Path) -> list[ContractResult]:
+def load_contract_results(
+    base_url: str, data_dir: str | Path, writer: ProseWriter | None = None
+) -> list[ContractResult]:
     """Return one result per case in the bank case list, in bank order.
 
     A case that cannot be built has a null contract and the reason, and the
     remaining cases still run. The reason is one of this application's own
     messages or an exception class name, never text from a payload or document.
+
+    writer, when given, may reword each narrative; see src/narrative.py. Each
+    built case carries its narrative meter (path, latency, model calls) for the
+    meter line.
     """
     data_dir = Path(data_dir)
     case_list = load_cases(base_url)
@@ -79,15 +87,27 @@ def load_contract_results(base_url: str, data_dir: str | Path) -> list[ContractR
     results: list[ContractResult] = []
     for record in records_from_case_list(case_list, data_dir):
         try:
-            contract = _contract_record(
-                record, base_url, data_dir, documents.get(record["case_id"], [])
+            contract, meter = _contract_record(
+                record, base_url, data_dir, documents.get(record["case_id"], []), writer
             )
         except ContractRecordError as error:
             results.append(
-                {"case_id": record["case_id"], "contract": None, "error": _reason(error)}
+                {
+                    "case_id": record["case_id"],
+                    "contract": None,
+                    "error": _reason(error),
+                    "narrative_meter": None,
+                }
             )
             continue
-        results.append({"case_id": record["case_id"], "contract": contract, "error": None})
+        results.append(
+            {
+                "case_id": record["case_id"],
+                "contract": contract,
+                "error": None,
+                "narrative_meter": meter,
+            }
+        )
     return results
 
 
@@ -146,8 +166,12 @@ def _reason(error: BaseException) -> str:
 
 
 def _contract_record(
-    record: WorkingRecord, base_url: str, data_dir: Path, documents: list[str]
-) -> Contract:
+    record: WorkingRecord,
+    base_url: str,
+    data_dir: Path,
+    documents: list[str],
+    writer: ProseWriter | None,
+) -> tuple[Contract, NarrativeMeter]:
     """Read the evidence and the tools for one case, then assemble its contract.
 
     documents is the evidence the case list names for this case. Besides the
@@ -176,7 +200,7 @@ def _contract_record(
     merchant, private_token = _merchant(base_url, record["case_id"])
     enriched = build_merchant(enriched, merchant)
     try:
-        contract = assemble_contract(
+        contract, meter = assemble_draft(
             enriched,
             intake_text=intake_text,
             attachment_text=attachment_text,
@@ -184,6 +208,7 @@ def _contract_record(
             policy_text=policy_text,
             transactions_text=transactions_text,
             customer_texts=customer_texts,
+            writer=writer,
         )
     except ContractError as error:
         raise ContractRecordError from error
@@ -191,7 +216,7 @@ def _contract_record(
         guard(contract, known=[private_token, _customer_reference(intake_text)])
     except RestrictedValueError as error:
         raise ContractRecordError(str(error)) from None
-    return contract
+    return contract, meter
 
 
 def _transactions(base_url: str, case_id: str) -> tuple[TransactionTool, str]:

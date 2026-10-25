@@ -66,10 +66,10 @@ def test_card_d05_narrative_states_the_conflict_without_resolving_it():
     result, _sources = _assemble_dev("CARD-D05", 185, ["CARD-D05-FOLLOWUP"])
 
     narrative = result["narrative"]
-    assert narrative.startswith("Draft for human review:")
+    assert narrative.startswith("Draft for human review.")
     assert "Denied in CARD-D05-INTAKE; confirmed in CARD-D05-FOLLOWUP." in narrative
     assert "does not decide which statement is correct" in narrative
-    assert "No case has been created." in narrative
+    assert "No case has been created:" in narrative
     assert PROMISES.search(narrative) is None
 
 
