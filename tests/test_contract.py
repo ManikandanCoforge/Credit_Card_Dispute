@@ -11,6 +11,7 @@ from typing import Literal
 import pytest
 from pydantic import BaseModel, ConfigDict
 
+from src import contract, models
 from src.contract import ContractError, assemble_contract
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -154,7 +155,7 @@ CARD_D01_CONTRACT = {
         "bank procedure; no card-network or legal rules were used. No case has been created: a "
         "person must approve this exact draft first, and any change needs a new approval.\n"
         "Customer reply (DRAFT, not sent): Thank you for contacting Lumen Bank about "
-        "transaction TX-D01. Your report is with our dispute team for review. We cannot "
+        "transaction TX-D01. Our dispute team will review your report. We cannot "
         "confirm an outcome yet."
     ),
 }
@@ -295,6 +296,17 @@ def test_a_record_without_a_reported_date_is_rejected():
 def test_missing_required_information_is_rejected_until_questions_exist():
     with pytest.raises(ContractError):
         _assemble(_record(missing_information=["authorization_confirmation"]))
+
+
+def test_a_blank_field_the_classification_does_not_require_is_not_requested():
+    """An unauthorized case needs no service date or receipt, so blank ones change nothing."""
+    record = _record(missing_information=["promised_service_date", "purchase_receipt"])
+    record["intake"].update(promised_service_date="not supplied", purchase_receipt="not supplied")
+
+    result = _assemble(record)
+
+    assert (result["routing"], result["missing_information"]) == ("ready_for_review", [])
+    assert result == _assemble(_record())
 
 
 def test_an_intake_statement_that_is_not_in_the_intake_is_rejected():
@@ -551,3 +563,8 @@ def test_a_transaction_row_with_a_field_outside_the_contract_is_rejected():
         )
 
     assert "SYNTHETIC-PRIVATE" not in str(raised.value)
+
+
+def test_the_contract_types_are_still_importable_from_src_contract():
+    assert contract.FollowUpQuestion is models.FollowUpQuestion
+    assert contract.Contract is models.Contract

@@ -51,10 +51,11 @@ from src.untrusted import RestrictedValueError, guard
 _INTAKE_SUFFIX = "-INTAKE"
 _ATTACHMENT_SUFFIX = "-ATTACHMENT"
 _CUSTOMER_REFERENCE_LABEL = "Customer reference:"
-# A further listed document is a customer statement when its heading says so.
-_CUSTOMER_HEADING = "# Customer"
-# Source ids become file names, so only plain ids are read. "../x" is never a path.
-_SOURCE_ID = re.compile(r"[A-Z0-9][A-Z0-9-]*")
+# A further listed document is a customer statement when its heading says so (any case).
+_CUSTOMER_HEADING = "# customer"
+# Source ids become file names, so only plain ids are read: letters, digits, dot, dash and
+# underscore, starting with a letter or digit, never "..". "../x" or "a/b" is never a path.
+_SOURCE_ID = re.compile(r"(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 class ContractRecordError(Exception):
@@ -78,8 +79,9 @@ def load_contract_results(
     messages or an exception class name, never text from a payload or document.
 
     writer, when given, may reword each narrative; see src/narrative.py. Each
-    built case carries its narrative meter (path, latency, model calls) for the
-    meter line.
+    built case carries its narrative meter (path, latency, model calls), ready for
+    the #45 meter line. main() does not print it, so the meter line must be built
+    from these results.
     """
     data_dir = Path(data_dir)
     case_list = load_cases(base_url)
@@ -306,7 +308,7 @@ def _customer_statements(data_dir: Path, source_ids: list[str]) -> list[str]:
         except OSError:
             unread.append(source_id)
             continue
-        if text.lstrip().startswith(_CUSTOMER_HEADING):
+        if text.lstrip().lower().startswith(_CUSTOMER_HEADING):
             statements.append(text)
         else:
             unread.append(source_id)

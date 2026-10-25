@@ -14,10 +14,32 @@ import re
 from collections.abc import Sequence
 from datetime import date, timedelta
 
-from src.escalation import Escalation, EscalationError, find_escalation
-from src.models import Citation, Contract, Facts, Intake, Transaction, WorkingRecord
+from src.escalation import (
+    Escalation,
+    EscalationError,
+    find_escalation,
+    instruction_holds_cue,
+)
+from src.models import (
+    Citation,
+    Contract,
+    Facts,
+    FollowUpQuestion,
+    Intake,
+    Transaction,
+    WorkingRecord,
+)
 from src.narrative import NarrativeMeter, ProseWriter, draft_narrative
-from src.untrusted import INSTRUCTION_NOTICE, has_instruction
+from src.untrusted import INSTRUCTION_NOTICE, has_instruction, restricted_values
+
+# Contract and FollowUpQuestion now live in src.models; they stay importable from here.
+__all__ = [
+    "Contract",
+    "ContractError",
+    "FollowUpQuestion",
+    "assemble_contract",
+    "assemble_draft",
+]
 
 # build_records stores an absent intake line as these words, never as an empty value.
 _ABSENT = "not supplied"
@@ -42,15 +64,29 @@ _RULE_ANCHORS = {
     "duplicate_charge": _DUPLICATE_RULE_ANCHOR,
 }
 # The customer's report of two charges for one purchase, and its negation.
+# "twice" counts only beside a charging verb ("charged me 236 crowns twice"); "I called
+# twice" or "I called about the charge twice" is not a report of two charges.
 _DUPLICATE = re.compile(
-    r"\btwice\b|\btwo (?:identical |separate )?charges\b|\bdouble[- ]?charg\w*"
-    r"|\bduplicate (?:charges?|transactions?)\b|\bcharged (?:me )?(?:two|2) times\b",
+    r"\b(?:charged|billed|debited|deducted|took|taken)\b[^.!?]*\btwice\b"
+    r"|\bsame (?:charge|payment|transaction)\b[^.!?]*\btwice\b"
+    r"|\btwo (?:identical |separate )?(?:charges|debits|payments)\b|\bdouble[- ]?(?:charg|bill)\w*"
+    r"|\bduplicate (?:charges?|transactions?|payments?)\b|\bcharged (?:me )?(?:two|2) times\b",
     re.IGNORECASE,
 )
 _NOT_DUPLICATE = re.compile(
     r"\bnot (?:a |an )?(?:double|duplicate)\b|\bnot (?:charged )?twice\b", re.IGNORECASE
 )
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+# A complaint that gives a dispute detail inside text addressed to the system.
+_INSTRUCTION_ESCALATION: Escalation = {
+    "classification": "ambiguous",
+    "reason": (
+        "A customer statement gives a dispute detail inside text addressed to the system. "
+        "That text is not read for the dispute type, so a person must classify the case. "
+        "It was treated as evidence and not followed."
+    ),
+    "citations": [],
+}
 
 # One targeted question per missing field that the contract allows.
 _QUESTIONS = {
@@ -59,6 +95,17 @@ _QUESTIONS = {
     ),
     "promised_service_date": "On what date did the merchant promise to supply the service?",
     "purchase_receipt": "Can you send the receipt or order confirmation for this purchase?",
+}
+# The fields each classification requires: "Required fields absent for the chosen type
+# must all be requested." Every intake form carries every field, so a blank field that
+# another type would need is not requested. ambiguous is the procedure's conflict about
+# authorization, so it needs authorization_confirmation; unsupported names no field.
+_REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
+    "unauthorized": ("authorization_confirmation",),
+    "service_not_received": ("promised_service_date", "purchase_receipt"),
+    "duplicate_charge": (),
+    "ambiguous": ("authorization_confirmation",),
+    "unsupported": (),
 }
 
 
@@ -158,6 +205,12 @@ def _rules_contract(
         escalation = find_escalation(intake_text, list(customer_texts), procedure_text)
     except EscalationError as error:
         raise ContractError(str(error)) from error
+    # Text addressed to the system is never read for a cue, and dropping it must not
+    # hide one: when it holds a cue, a person classifies the case. So such text can
+    # only ever send a case to a person, never choose its class or make it ready.
+    statements = [intake_text, *customer_texts]
+    if escalation is None and instruction_holds_cue(statements, _DUPLICATE):
+        escalation = _INSTRUCTION_ESCALATION
     if escalation is not None:
         return _escalated_contract(
             record,
@@ -177,7 +230,7 @@ def _rules_contract(
     reported = _day(intake["reported_date"])
     if reported is None:
         raise ContractError("the intake has no reported date")
-    if record["missing_information"]:
+    if _required_missing(record, classification):
         raise ContractError("missing information needs targeted questions first")
     deadline, deadline_quote = _deadline(reported, policy_text, classification)
     procedure_source = _source_id(procedure_text)
@@ -190,11 +243,7 @@ def _rules_contract(
         else []
     )
     citations: list[Citation] = [
-        {
-            "claim": "customer_evidence",
-            "source_id": _source_id(intake_text),
-            "quote": _statement(intake, intake_text),
-        },
+        _customer_evidence(intake, intake_text),
         {
             "claim": "customer_evidence",
             "source_id": _source_id(attachment_text),
@@ -248,14 +297,15 @@ def _escalated_contract(
 
     Routing is manual_review and the deadline is null. Policy ids, facts and the
     transaction citation are kept, because the escalation does not skip the
-    work. Missing fields are still listed, each with one question, because
-    manual review outranks missing-information routing without hiding it.
+    work. The missing fields this classification requires are still listed,
+    each with one question, because manual review outranks missing-information
+    routing without hiding it.
     """
     version_id = record["policy"]["version_id"]
     procedure_id = record["policy"]["procedure_id"]
     if version_id is None or procedure_id is None:
         raise ContractError("the reported date selected no policy version")
-    missing = list(record["missing_information"])
+    missing = _required_missing(record, escalation["classification"])
     procedure_source = _source_id(procedure_text)
     policy_source = _source_id(policy_text)
     escalation_citations: list[Citation] = [
@@ -263,16 +313,8 @@ def _escalated_contract(
         for quote in escalation["citations"]
     ]
     citations: list[Citation] = [
-        {
-            "claim": "customer_evidence",
-            "source_id": _source_id(intake_text),
-            "quote": _statement(intake, intake_text),
-        },
-        {
-            "claim": "customer_evidence",
-            "source_id": _source_id(attachment_text),
-            "quote": _unique_line(attachment_text, _AMOUNT_LABEL),
-        },
+        _customer_evidence(intake, intake_text),
+        _attachment_citation(attachment_text),
         _transaction_citation(intake["transaction_id"], transactions_text),
         *escalation_citations,
         {
@@ -316,6 +358,37 @@ def _escalated_contract(
     return contract, [escalation["reason"], *_untrusted_notes(record)]
 
 
+def _attachment_citation(attachment_text: str) -> Citation:
+    """The attachment's Amount line when it has exactly one, otherwise its Source ID line.
+
+    Escalation does not rest on the amount, so an attachment without a single
+    Amount line (D12's shape) must not stop the case from being drafted.
+    """
+    source_id = _source_id(attachment_text)
+    amounts = [
+        line.strip()
+        for line in attachment_text.splitlines()
+        if line.strip().startswith(_AMOUNT_LABEL)
+    ]
+    if len(amounts) == 1:
+        quote = amounts[0]
+    else:
+        quote = _unique_line(attachment_text, _SOURCE_ID_LABEL)
+    return {"claim": "customer_evidence", "source_id": source_id, "quote": quote}
+
+
+def _required_missing(record: WorkingRecord, classification: str) -> list[str]:
+    """The record's missing fields that the classification requires, in record order.
+
+    A field outside the contract's allowed set is a contract error, never dropped.
+    """
+    for field in record["missing_information"]:
+        if field not in _QUESTIONS:
+            raise ContractError(f"no question is defined for the missing field {field!r}")
+    required = _REQUIRED_FIELDS[classification]
+    return [field for field in record["missing_information"] if field in required]
+
+
 def _classification(intake: Intake) -> str:
     """A denied authorization is unauthorized; two charges for one purchase is duplicate_charge.
 
@@ -335,35 +408,60 @@ def _classification(intake: Intake) -> str:
     raise ContractError("only unauthorized and duplicate_charge are classified in this step")
 
 
+def _customer_evidence(intake: Intake, intake_text: str) -> Citation:
+    """The customer's own words, quoted exactly; the intake's Source ID line when they hold a
+    restricted value (a card number the customer typed), so the case is drafted, not refused.
+    """
+    statement = _statement(intake, intake_text)
+    if restricted_values(statement):
+        statement = _unique_line(intake_text, _SOURCE_ID_LABEL)
+    return {"claim": "customer_evidence", "source_id": _source_id(intake_text), "quote": statement}
+
+
 def _other_charge_citations(
     statement: str, transaction_id: str, transactions_text: str
 ) -> list[Citation]:
     """Cite the second charge of a duplicate, so both transaction records are on file.
 
-    A charge counts when the customer names its transaction id, or when it has the
-    named charge's amount and currency.
+    At most one row is cited. It must be the five contract fields and either be named
+    by the customer, or match the named charge's merchant, amount and currency and be
+    posted within two days of it. Any other row, even one of the same amount, is
+    unrelated and is never quoted; a row with extra fields is skipped, not fatal.
     """
     source_id, charges = _tool_charges(transactions_text)
-    named = [charge for charge in charges if charge.get("transaction_id") == transaction_id]
-    citations: list[Citation] = []
-    for charge in charges:
-        other_id = charge.get("transaction_id")
-        if not isinstance(other_id, str) or other_id == transaction_id:
-            continue
-        same_charge = any(
-            charge.get("amount") == first.get("amount")
-            and charge.get("currency") == first.get("currency")
-            for first in named
+    named = next((c for c in charges if c.get("transaction_id") == transaction_id), None)
+    if named is None:
+        return []
+    candidates = [
+        charge
+        for charge in charges
+        if isinstance(charge.get("transaction_id"), str)
+        and charge.get("transaction_id") != transaction_id
+        and set(charge) == _TRANSACTION_ROW_KEYS
+    ]
+    ranked = [c for c in candidates if _named_in(str(c["transaction_id"]), statement)] + [
+        c for c in candidates if _same_charge(c, named)
+    ]
+    if not ranked:
+        return []
+    return [{"claim": "second_charge", "source_id": source_id, "quote": _row_quote(ranked[0])}]
+
+
+def _named_in(transaction_id: str, statement: str) -> bool:
+    return re.search(rf"(?<![\w-]){re.escape(transaction_id)}(?![\w-])", statement) is not None
+
+
+def _same_charge(charge: dict[str, object], named: dict[str, object]) -> bool:
+    """Same merchant, amount and currency as the named charge, posted within two days."""
+    if any(charge.get(k) != named.get(k) for k in ("merchant_id", "amount", "currency")):
+        return False
+    try:
+        gap = date.fromisoformat(str(charge.get("posted_date"))) - date.fromisoformat(
+            str(named.get("posted_date"))
         )
-        if other_id in statement or same_charge:
-            citations.append(
-                {
-                    "claim": "second_charge",
-                    "source_id": source_id,
-                    "quote": _row_quote(charge),
-                }
-            )
-    return citations
+    except ValueError:
+        return False
+    return abs(gap.days) <= 2
 
 
 def _untrusted_notes(record: WorkingRecord) -> list[str]:

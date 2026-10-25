@@ -140,7 +140,7 @@ CARD_D01_CONTRACT = {
         "bank procedure; no card-network or legal rules were used. No case has been created: a "
         "person must approve this exact draft first, and any change needs a new approval.\n"
         "Customer reply (DRAFT, not sent): Thank you for contacting Lumen Bank about "
-        "transaction TX-D01. Your report is with our dispute team for review. We cannot "
+        "transaction TX-D01. Our dispute team will review your report. We cannot "
         "confirm an outcome yet."
     ),
 }
@@ -491,6 +491,56 @@ def test_a_listed_follow_up_email_is_read_as_a_customer_statement():
     assert contract["routing"] == "manual_review"
     assert contract["deadline"] is None
     assert "CARD-D05-FOLLOWUP" in {citation["source_id"] for citation in contract["citations"]}
+
+
+def test_a_follow_up_with_a_lowercase_heading_is_still_a_customer_statement(tmp_path):
+    dataset = tmp_path / "data"
+    shutil.copytree(DEV, dataset)
+    followup = dataset / "documents" / "CARD-D05-FOLLOWUP.md"
+    followup.write_text(followup.read_text().replace("# Customer follow-up email", "# customer follow-up email"))
+    case_list = {
+        "cases": [
+            {
+                "case_id": "CARD-D05",
+                "intake_source": "CARD-D05-INTAKE",
+                "documents": ["CARD-D05-INTAKE", "CARD-D05-ATTACHMENT", "CARD-D05-FOLLOWUP"],
+            }
+        ]
+    }
+    tool_bodies = {
+        "/v1/cases/CARD-D05/transactions": {
+            "source_id": "CARD-D05-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D05",
+                    "amount": 185,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+        "/v1/cases/CARD-D05/merchant": TOOL_BODIES[MERCHANT],
+    }
+
+    with _bank(case_list, tool_bodies) as (base_url, _seen):
+        [contract] = load_contract_records(base_url, dataset)
+
+    assert contract["classification"] == "ambiguous"
+
+
+def test_a_versioned_policy_id_with_a_dot_is_read(tmp_path):
+    dataset = tmp_path / "data"
+    shutil.copytree(DEV, dataset)
+    policy = dataset / "policies" / "CARD-POLICY-V2.md"
+    renamed = dataset / "policies" / "CARD-POLICY-V2.1.md"
+    renamed.write_text(policy.read_text().replace("Source ID: CARD-POLICY-V2", "Source ID: CARD-POLICY-V2.1"))
+    policy.unlink()
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        [contract] = load_contract_records(base_url, dataset)
+
+    assert contract["policy_ids"] == ["CARD-POLICY-V2.1", "CARD-PROCEDURE-01"]
 
 
 def test_a_listed_document_that_is_not_customer_correspondence_cannot_escalate(tmp_path):

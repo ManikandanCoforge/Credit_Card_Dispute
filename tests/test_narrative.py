@@ -14,22 +14,32 @@ import pytest
 
 from src.build_records import build_complaint_records
 from src.contract import assemble_contract, assemble_draft
-from src.narrative import (
-    REPLY_MARKER,
-    SECTIONS,
-    draft_narrative,
-    narrative_problems,
-    template_narrative,
-)
+from src.narrative import draft_narrative, narrative_problems, template_narrative
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 PROMISES = re.compile(r"refund|reimburs|guarantee|eligib|approved|success", re.IGNORECASE)
+# The order docs/OUTPUT_CONTRACT.md asks for, written out here rather than imported.
+SPEC_ORDER = (
+    "Evidence:",
+    "Uncertainty:",
+    "Recommendation:",
+    "Limitations:",
+    "Customer reply (DRAFT, not sent):",
+)
+CAVEAT = (
+    "No case has been created: a person must approve this exact draft first, and any change "
+    "needs a new approval."
+)
+ESCALATION_NOTE = (
+    "The customer's statements conflict, and this draft does not decide which statement is "
+    "correct."
+)
 
 
 def test_card_d01_narrative_has_the_four_sections_in_order_then_a_draft_reply():
     narrative = assemble_contract(**_d01_arguments())["narrative"]
 
-    positions = [narrative.index(marker) for marker in (*SECTIONS, REPLY_MARKER)]
+    positions = [narrative.index(marker) for marker in SPEC_ORDER]
     assert positions == sorted(positions)
     assert narrative.startswith("Draft for human review.")
     assert "Customer reply (DRAFT, not sent):" in narrative
@@ -92,6 +102,22 @@ def test_the_model_receives_only_the_template_draft():
         lambda draft: draft + " Your reference is CUST-D01.",
         lambda draft: draft.replace("2026-10-31", "2026-11-30"),
         lambda draft: draft + " The charge was 118 XCR.",
+        # The boundary sentences are kept verbatim.
+        lambda draft: draft.replace(CAVEAT, "A person will look at it."),
+        lambda draft: draft.replace("We cannot confirm an outcome yet.", "We expect good news."),
+        # Facts are kept exactly: none dropped, no currency swapped or removed.
+        lambda draft: draft.replace(" The policy deadline is 2026-10-31.", ""),
+        lambda draft: draft.replace("117 XCR", "117 USD"),
+        lambda draft: draft.replace("117 XCR", "117"),
+        # Classification and routing labels are kept exactly.
+        lambda draft: draft.replace("routed ready_for_review", "routed manual_review"),
+        lambda draft: draft + " It may also be a duplicate_charge.",
+        # Promise wording beyond the procedure's own list.
+        lambda draft: draft + " We will approve your claim.",
+        lambda draft: draft + " You will be paid back.",
+        lambda draft: draft + " We will pay you shortly.",
+        lambda draft: draft + " You may be compensated.",
+        lambda draft: draft + " The money will be paid into your account.",
     ],
 )
 def test_a_model_draft_that_breaks_a_rule_falls_back_to_the_template(rewrite):
@@ -116,6 +142,70 @@ def test_a_model_that_fails_falls_back_to_the_template(failure):
 
     assert meter["narrative_path"] == "template_fallback"
     assert contract == template
+
+
+@pytest.mark.parametrize("returned", [42, None, b"bytes", ["a draft"]])
+def test_a_model_that_returns_something_other_than_text_falls_back_to_the_template(returned):
+    contract = assemble_contract(**_d01_arguments())
+
+    text, meter = draft_narrative(contract, writer=lambda _draft: returned)
+
+    assert meter["narrative_path"] == "template_fallback"
+    assert text == template_narrative(contract)
+
+
+def test_a_model_may_not_reword_an_escalation_note_into_a_decision():
+    contract = assemble_contract(**_d01_arguments())
+    template = template_narrative(contract, [ESCALATION_NOTE])
+    decided = template.replace("this draft does not decide", "this draft decides")
+
+    text, meter = draft_narrative(contract, [ESCALATION_NOTE], writer=lambda _draft: decided)
+
+    assert meter["narrative_path"] == "template_fallback"
+    assert text == template
+    assert narrative_problems(decided, template, [ESCALATION_NOTE]) == [
+        "a boundary sentence or note is missing or reworded"
+    ]
+
+
+def test_a_model_that_keeps_the_note_verbatim_is_used():
+    contract = assemble_contract(**_d01_arguments())
+    template = template_narrative(contract, [ESCALATION_NOTE])
+    reworded = template.replace("Draft for human review.", "Draft for a reviewer.")
+
+    text, meter = draft_narrative(contract, [ESCALATION_NOTE], writer=lambda _draft: reworded)
+
+    assert meter["narrative_path"] == "model"
+    assert text == reworded
+
+
+def test_each_broken_rule_is_named():
+    template = template_narrative(assemble_contract(**_d01_arguments()))
+    broken = (
+        template.replace("Limitations:", "Notes:")
+        .replace(CAVEAT, "")
+        .replace("117 XCR", "117 USD")
+        .replace("routed ready_for_review", "routed manual_review")
+        + " We will pay you. Your reference is CUST-D01."
+    )
+
+    assert narrative_problems(broken, template) == [
+        "the four sections and the draft reply are not all present in order",
+        "a boundary sentence or note is missing or reworded",
+        "the draft makes a promise",
+        "the draft carries a restricted value",
+        "the draft adds or drops a date, number, id or currency",
+        "the draft changes a classification or routing label",
+    ]
+
+
+def test_the_reply_does_not_say_a_case_exists():
+    narrative = assemble_contract(**_d01_arguments())["narrative"]
+    reply = narrative[narrative.index(SPEC_ORDER[-1]) :]
+
+    assert "Our dispute team will review your report." in reply
+    assert "is with our dispute team" not in reply
+    assert reply.endswith("We cannot confirm an outcome yet.")
 
 
 def test_latency_is_measured_with_the_supplied_clock_on_both_paths():

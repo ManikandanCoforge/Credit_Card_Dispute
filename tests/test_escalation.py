@@ -104,11 +104,21 @@ def test_card_d06_cash_withdrawal_is_unsupported_and_keeps_its_facts():
 
 
 def test_manual_review_outranks_missing_information_and_still_lists_the_fields():
+    """An ambiguous case requires the customer's confirmation, so a blank one is still asked."""
     record = _record(authorization="not supplied", missing=["authorization_confirmation"])
+    followup = (
+        "# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\n"
+        "I did authorize this purchase after all.\n"
+    )
 
-    result = _assemble(record, statement="I took cash out at an ATM and none came out.")
+    result = _assemble(
+        record,
+        statement="I do not recognize this charge.",
+        authorization="not supplied",
+        customer_texts=[followup],
+    )
 
-    assert result["routing"] == "manual_review"
+    assert (result["classification"], result["routing"]) == ("ambiguous", "manual_review")
     assert result["missing_information"] == ["authorization_confirmation"]
     assert result["follow_up_questions"] == [
         {
@@ -136,30 +146,41 @@ def test_manual_review_outranks_missing_information_and_still_lists_the_fields()
     "statement",
     [
         "My ATM withdrawal for 90 crowns did not dispense cash.",
-        "I withdrew 90 crowns in cash and the machine gave me nothing.",
+        "The ATM did not dispense cash.",
+        "I took cash out at an ATM and none came out.",
+        "I tried to withdraw 90 crowns in cash and the machine gave me nothing.",
         "The cash machine kept my money.",
-        "A cash withdrawal of 90 crowns appeared twice.",
         "The atm never dispensed the notes.",
     ],
 )
-def test_a_cash_withdrawal_in_any_wording_is_unsupported(statement):
+def test_cash_that_did_not_come_out_of_a_machine_is_unsupported(statement):
+    """The procedure's case: cash withdrawn, or meant to be. How customers say it, not the regex's branches."""
     assert _assemble(_record(), statement=statement)["classification"] == "unsupported"
 
 
 @pytest.mark.parametrize(
     "statement",
     [
+        "I used my ATM card at Morrow Supplies. I do not recognize the charge.",
+        "The merchant did not dispense the service I paid for. I do not recognize the charge.",
+        "I paid cash at the shop and my card was charged as well. I do not recognize it.",
         "I found a card purchase I do not recognize.",
         "I paid for a service that never arrived.",
         "The merchant charged me twice for one purchase.",
     ],
 )
-def test_a_card_purchase_is_not_escalated(statement):
-    escalation = find_escalation(
-        _intake(statement, authorization="denied"), [], PROCEDURE_TEXT
-    )
+def test_a_card_purchase_that_mentions_an_atm_card_or_dispensing_is_not_escalated(statement):
+    assert find_escalation(_intake(statement, authorization="denied"), [], PROCEDURE_TEXT) is None
 
-    assert escalation is None
+
+def test_an_atm_card_purchase_stays_a_normal_unauthorized_draft():
+    result = _assemble(_record(), statement="I used my ATM card at Morrow Supplies. I do not recognize the charge.")
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "unauthorized",
+        "ready_for_review",
+        "2026-10-31",
+    )
 
 
 def test_form_lines_alone_can_conflict():
@@ -214,13 +235,111 @@ def test_unsupported_is_reported_when_a_cash_complaint_also_conflicts():
     assert result["classification"] == "unsupported"
 
 
-def test_headings_and_form_lines_are_not_read_as_customer_prose():
+def test_a_heading_is_not_read_as_customer_prose():
     intake = (
-        "# ATM notice\n\nSource ID: TEST-INTAKE\n\nReported date: 2026-10-01\n"
-        "Merchant note: cash withdrawal\nAuthorization: denied\nI do not recognize it.\n"
+        "# ATM withdrawal dispute form\n\nSource ID: TEST-INTAKE\n\nReported date: 2026-10-01\n"
+        "Authorization: denied\nI do not recognize it.\n"
     )
 
     assert find_escalation(intake, [], PROCEDURE_TEXT) is None
+
+
+def test_a_complaint_written_as_a_form_keeps_its_cash_cue():
+    intake = "Source ID: TEST-INTAKE\n\nTransaction type: ATM withdrawal\nAuthorization: confirmed\n"
+
+    escalation = find_escalation(intake, [], PROCEDURE_TEXT)
+
+    assert escalation is not None and escalation["classification"] == "unsupported"
+    assert escalation["citations"][0]["quote"] == "ATM withdrawal"
+
+
+def test_a_complaint_written_as_a_form_keeps_its_denial():
+    intake = "Source ID: TEST-INTAKE\n\nNote: I did not authorize this charge.\nAuthorization: confirmed\n"
+
+    escalation = find_escalation(intake, [], PROCEDURE_TEXT)
+
+    assert escalation is not None and escalation["classification"] == "ambiguous"
+    assert "I did not authorize this charge." in [c["quote"] for c in escalation["citations"]]
+
+
+def test_one_sentence_that_both_denies_and_confirms_is_ambiguous():
+    intake = (
+        "Source ID: TEST-INTAKE\n\n"
+        "I did not authorize it, but I made this purchase with my wife's card.\n"
+        "Authorization: not supplied\n"
+    )
+
+    escalation = find_escalation(intake, [], PROCEDURE_TEXT)
+
+    assert escalation is not None and escalation["classification"] == "ambiguous"
+    assert [c["claim"] for c in escalation["citations"]][:2] == [
+        "authorization_denied",
+        "authorization_confirmed",
+    ]
+
+
+def test_a_follow_up_that_reveals_a_cash_withdrawal_escalates():
+    followup = (
+        "# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\n"
+        "Actually it was an ATM withdrawal and the machine paid out nothing.\n"
+    )
+
+    escalation = find_escalation(
+        _intake("I do not recognize this charge.", authorization="denied"), [followup], PROCEDURE_TEXT
+    )
+
+    assert escalation is not None and escalation["classification"] == "unsupported"
+    assert escalation["citations"][0]["source_id"] == "TEST-FOLLOWUP"
+
+
+def test_an_escalated_case_with_no_single_amount_line_is_still_drafted():
+    attachment = "# Purchase supporting material\n\nSource ID: TEST-ATTACHMENT\n"
+
+    result = _assemble(_record(), statement="My ATM withdrawal failed.", attachment_text=attachment)
+
+    assert result["classification"] == "unsupported" and result["routing"] == "manual_review"
+    assert {"claim": "customer_evidence", "source_id": "TEST-ATTACHMENT", "quote": "Source ID: TEST-ATTACHMENT"} in (
+        result["citations"]
+    )
+
+
+def test_an_unsupported_case_requests_no_field_even_when_the_form_is_blank():
+    """A cash withdrawal has no required field, so blank form lines are not questioned."""
+    record = _record(
+        authorization="not supplied",
+        missing=["authorization_confirmation", "promised_service_date", "purchase_receipt"],
+    )
+
+    result = _assemble(
+        record, statement="I took cash out at an ATM and none came out.", authorization="not supplied"
+    )
+
+    assert (result["classification"], result["routing"]) == ("unsupported", "manual_review")
+    assert result["missing_information"] == []
+    assert result["follow_up_questions"] == []
+    assert not any(c["quote"].startswith("Manual review takes precedence") for c in result["citations"])
+    assert "Missing information" not in result["narrative"]
+
+
+def test_an_ambiguous_case_does_not_request_a_field_another_type_needs():
+    followup = "# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\nAuthorization: confirmed\n"
+
+    result = _assemble(
+        _record(missing=["promised_service_date", "purchase_receipt"]),
+        statement="Please look at this charge.",
+        customer_texts=[followup],
+    )
+
+    assert result["classification"] == "ambiguous"
+    assert result["missing_information"] == []
+    assert result["follow_up_questions"] == []
+
+
+def test_a_missing_field_without_a_question_is_a_contract_error():
+    record = _record(missing=["receipt_photo"])
+
+    with pytest.raises(ContractError, match="no question is defined"):
+        _assemble(record, statement="My ATM withdrawal failed.")
 
 
 @pytest.mark.parametrize(
@@ -301,12 +420,13 @@ def _assemble(
     authorization="denied",
     customer_texts=(),
     procedure_text=PROCEDURE_TEXT,
+    attachment_text="Source ID: TEST-ATTACHMENT\nAmount: 90 XCR\n",
 ):
     record["intake"]["statement"] = statement
     return assemble_contract(
         record,
         intake_text=_intake(statement, authorization),
-        attachment_text="Source ID: TEST-ATTACHMENT\nAmount: 90 XCR\n",
+        attachment_text=attachment_text,
         procedure_text=procedure_text,
         policy_text=POLICY_TEXT,
         transactions_text=json.dumps(
