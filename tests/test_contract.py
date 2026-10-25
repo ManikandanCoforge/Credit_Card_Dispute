@@ -524,3 +524,18 @@ _ROUTING_RULE = (
     "ready_for_review.\n"
 )
 _PROCEDURE_TEXT = _PROCEDURE_HEADER + _UNAUTHORIZED_RULE + _ROUTING_RULE
+
+
+def test_a_transaction_row_with_a_field_outside_the_contract_is_rejected():
+    charge = {**_charge("TX-TEST", 11), "private_token": "SYNTHETIC-PRIVATE-CARD-TEST"}
+    text = json.dumps(
+        {"source_id": "TEST-TRANSACTIONS", "transactions": [charge]}, sort_keys=True
+    )
+
+    with pytest.raises(ContractError) as raised:
+        _assemble(
+            _record(transaction_id="TX-TEST", transactions=[_charge("TX-TEST", 11)]),
+            transactions_text=text,
+        )
+
+    assert "SYNTHETIC-PRIVATE" not in str(raised.value)

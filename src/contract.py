@@ -169,11 +169,18 @@ def _facts(intake: Intake, transactions: list[Transaction]) -> Facts:
     }
 
 
+_TRANSACTION_ROW_KEYS = frozenset(
+    {"transaction_id", "amount", "currency", "merchant_id", "posted_date"}
+)
+
+
 def _transaction_citation(transaction_id: str, transactions_text: str) -> Citation:
     """Cite the named charge from the tool body, or the body's source id when it is absent.
 
     The quote is json.dumps(charge, sort_keys=True), which is an exact slice of a
-    body that was itself dumped with sorted keys.
+    body that was itself dumped with sorted keys. A row carrying any field outside
+    the five the contract cites is refused rather than quoted, so a payload value
+    such as a private token cannot ride into a citation.
     """
     try:
         body = json.loads(transactions_text)
@@ -189,8 +196,11 @@ def _transaction_citation(transaction_id: str, transactions_text: str) -> Citati
         if isinstance(charge, dict) and charge.get("transaction_id") == transaction_id
     ]
     if len(named) == 1:
+        charge = named[0]
+        if set(charge) != _TRANSACTION_ROW_KEYS:
+            raise ContractError("the transaction row is not the five contract fields")
         claim = "transaction_record"
-        quote = json.dumps(named[0], sort_keys=True)
+        quote = json.dumps(charge, sort_keys=True)
     else:
         claim = "transaction_service_checked"
         quote = json.dumps({"source_id": source_id})[1:-1]
