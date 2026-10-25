@@ -194,6 +194,48 @@ def test_connection_failure_does_not_open_the_dataset(tmp_path):
         load_complaint_records(_closed_bank(), dataset)
 
 
+@pytest.mark.parametrize("base_url", ["ftp://127.0.0.1", "http://"])
+def test_unusable_bank_url_does_not_open_the_dataset(tmp_path, base_url):
+    dataset = tmp_path / "dataset"
+    dataset.write_text("not a directory")
+
+    with pytest.raises(CaseListError):
+        load_complaint_records(base_url, dataset)
+
+
+@pytest.mark.parametrize(
+    ("base_url", "connection_name", "port"),
+    [
+        ("http://127.0.0.1", "HTTPConnection", 80),
+        ("https://127.0.0.1", "HTTPSConnection", 443),
+    ],
+)
+def test_url_without_a_port_uses_the_default_port(
+    tmp_path, monkeypatch, base_url, connection_name, port
+):
+    seen = {}
+
+    class Probe:
+        def __init__(self, host, bound_port):
+            seen["host"] = host
+            seen["port"] = bound_port
+
+        def request(self, method, path):
+            raise OSError("closed")
+
+        def close(self):
+            return
+
+    monkeypatch.setattr(f"src.load_records.{connection_name}", Probe)
+    dataset = tmp_path / "dataset"
+    dataset.write_text("not a directory")
+
+    with pytest.raises(CaseListError):
+        load_complaint_records(base_url, dataset)
+
+    assert seen == {"host": "127.0.0.1", "port": port}
+
+
 def _closed_bank():
     server = ThreadingHTTPServer(("127.0.0.1", 0), BaseHTTPRequestHandler)
     host, port = server.server_address

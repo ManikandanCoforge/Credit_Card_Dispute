@@ -48,8 +48,7 @@ jobs:
           python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
-      # Exit code 5 means pytest collected nothing. An empty suite is success.
-      - run: uv run --locked pytest || [ $? -eq 5 ]
+      - run: uv run --locked pytest --cov=src --cov-report=term-missing --cov-fail-under=100
 
   env-files:
     runs-on: ubuntu-26.04
