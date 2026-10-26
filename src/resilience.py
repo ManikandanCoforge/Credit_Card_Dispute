@@ -1,19 +1,22 @@
 """Retry a transient tool timeout, then stop calling a dead dependency.
 
 CARD-PROCEDURE-01 allows three total attempts. Between those attempts the
-wait grows by powers of two, plus a fraction of a second of jitter. The
-failure that reaches that cap opens the circuit breaker. A later call on the
-same breaker fails immediately and leaves the tool untouched. The caller
-treats that stop as unknown evidence and routes to manual review.
+wait is 2**attempt seconds plus a fraction of a second of jitter. With
+three attempts the waits are about 1s, then about 2s.
 
-The case runner gives each complaint its own breaker. One case's outage does
-not skip the next case's transaction read, because the mock faults each case
-on its own.
+Not wired into the case runner yet. When it is, keep one breaker per tool for
+the whole run. The breaker counts complaints that used all three attempts. It
+opens after three such complaints in a row, and any answered read resets that
+count. After the cooldown, one probe is allowed. AttemptsExhausted and
+CircuitOpen are the signals a caller uses to keep amount and currency unknown
+and route to manual review, instead of treating the failure as an empty
+transaction list.
 """
 
 import secrets
 import time
 from collections.abc import Callable
+from threading import Lock
 from typing import Literal
 
 # One try and two retries. The procedure's cap, not a tuning guess.
@@ -53,11 +56,13 @@ class AttemptsExhausted(DependencyUnavailable):
 
 
 class CircuitBreaker:
-    """Stop calling a dependency after it has failed its attempt budget.
+    """Stop calling a dependency after complaints in a row exhaust their budget.
 
-    Closed is normal operation. Open rejects calls until the reset timeout
+    Closed is normal operation. One timeout does not open the breaker: the
+    retry loop owns the three attempts, and the breaker counts how many
+    callers used all of them. Open rejects calls until the reset timeout
     passes. Half-open allows one probe. A probe that returns closes the
-    breaker. A probe that times out opens it again.
+    breaker. A probe that raises anything opens it again.
     """
 
     def __init__(
@@ -76,31 +81,65 @@ class CircuitBreaker:
         self.state: State = "closed"
         self.opened_at = 0.0
         self._clock = clock
+        self._probing = False
+        self._lock = Lock()
 
     def call[T](self, func: Callable[[], T]) -> T:
-        """Call func once, unless the breaker is open."""
-        if self.state == "open":
-            if self._clock() - self.opened_at > self.reset_timeout:
-                self.state = "half-open"
-            else:
-                raise CircuitOpen()
+        """Call func once, unless the breaker is open or a probe is in flight.
+
+        A TransientFailure is handed back to the retry loop and does not, by
+        itself, open the breaker. Any exception from the single half-open
+        probe opens the breaker and starts the reset timeout over.
+        """
+        probing = self._admit()
         try:
             result = func()
-        except TransientFailure:
-            self._record_failure()
+        except Exception as error:
+            self._on_error(probing, error)
             raise
-        self._record_success()
+        self._on_success()
         return result
 
-    def _record_success(self) -> None:
-        self.failure_count = 0
-        self.state = "closed"
+    def _admit(self) -> bool:
+        """Reserve the one half-open probe, or refuse the call."""
+        with self._lock:
+            if self.state == "open":
+                if self._clock() - self.opened_at > self.reset_timeout:
+                    self.state = "half-open"
+                else:
+                    raise CircuitOpen()
+            if self.state == "half-open":
+                if self._probing:
+                    raise CircuitOpen()
+                self._probing = True
+                return True
+            return False
 
-    def _record_failure(self) -> None:
-        self.failure_count += 1
-        if self.failure_count >= self.failure_threshold:
-            self.state = "open"
-            self.opened_at = self._clock()
+    def _on_success(self) -> None:
+        with self._lock:
+            self._probing = False
+            self.failure_count = 0
+            self.state = "closed"
+
+    def _on_error(self, probing: bool, error: Exception) -> None:
+        with self._lock:
+            if probing:
+                self._open()
+                return
+            if isinstance(error, TransientFailure):
+                return
+
+    def _record_exhausted(self) -> None:
+        """Count one caller that used its whole attempt budget."""
+        with self._lock:
+            self.failure_count += 1
+            if self.failure_count >= self.failure_threshold:
+                self._open()
+
+    def _open(self) -> None:
+        self._probing = False
+        self.state = "open"
+        self.opened_at = self._clock()
 
 
 def call_with_backoff[T](
@@ -114,9 +153,10 @@ def call_with_backoff[T](
     """Call func until it returns or the dependency is unavailable.
 
     A transient failure waits ``2**attempt`` seconds plus jitter, then tries
-    again. The waits are about 1s, then 2s, then 4s. The last attempt does
-    not wait, and neither does a failure that opens the breaker. Any other
-    exception propagates on the attempt that raised it.
+    again. With three attempts the waits are about 1s, then about 2s. The
+    last attempt does not wait. The caller that uses the whole budget counts
+    once toward opening the breaker. Any exception other than
+    TransientFailure propagates on the attempt that raised it.
     """
     if max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
@@ -129,6 +169,8 @@ def call_with_backoff[T](
         except TransientFailure as caught:
             error = caught
             if breaker.state == "open" or attempt + 1 == max_attempts:
+                if breaker.state != "open":
+                    breaker._record_exhausted()
                 break
             wait((2**attempt) + pause())
     raise AttemptsExhausted(attempt + 1) from error
