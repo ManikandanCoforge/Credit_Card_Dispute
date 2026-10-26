@@ -36,6 +36,16 @@ CARD_D11 = {
     "intake_source": "CARD-D11-INTAKE",
     "documents": ["CARD-D11-INTAKE", "CARD-D11-ATTACHMENT"],
 }
+CARD_D04 = {
+    "case_id": "CARD-D04",
+    "intake_source": "CARD-D04-INTAKE",
+    "documents": ["CARD-D04-INTAKE", "CARD-D04-ATTACHMENT"],
+}
+CARD_D12 = {
+    "case_id": "CARD-D12",
+    "intake_source": "CARD-D12-INTAKE",
+    "documents": ["CARD-D12-INTAKE", "CARD-D12-ATTACHMENT"],
+}
 
 TRANSACTIONS = "/v1/cases/CARD-D01/transactions"
 MERCHANT = "/v1/cases/CARD-D01/merchant"
@@ -454,6 +464,90 @@ class _refusing_connection:
 
     def close(self):
         return
+
+
+def test_cases_with_missing_evidence_are_emitted_with_targeted_questions():
+    case_list = {"cases": [CARD_D04, CARD_D12]}
+    tool_bodies = {
+        "/v1/cases/CARD-D04/transactions": {
+            "source_id": "CARD-D04-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D04",
+                    "amount": 168,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+        "/v1/cases/CARD-D04/merchant": {
+            "source_id": "CARD-D04-MERCHANT",
+            "merchant_id": "MER-MORROW",
+            "display_name": "Morrow Supplies",
+            "note": (
+                "Morrow Supplies sells home services and supplies. "
+                "Merchant category: general services."
+            ),
+            "private_token": "SYNTHETIC-PRIVATE-CARD-D04",
+        },
+        "/v1/cases/CARD-D12/transactions": {
+            "source_id": "CARD-D12-TRANSACTIONS",
+            "transactions": [
+                {
+                    "transaction_id": "TX-D12",
+                    "amount": 304,
+                    "currency": "XCR",
+                    "merchant_id": "MER-MORROW",
+                    "posted_date": "2026-08-19",
+                }
+            ],
+        },
+        "/v1/cases/CARD-D12/merchant": {
+            "source_id": "CARD-D12-MERCHANT",
+            "merchant_id": "MER-MORROW",
+            "display_name": "Morrow Supplies",
+            "note": (
+                "Morrow Supplies sells home services and supplies. "
+                "Merchant category: general services."
+            ),
+            "private_token": "SYNTHETIC-PRIVATE-CARD-D12",
+        },
+    }
+
+    with _bank(case_list, tool_bodies) as (base_url, seen):
+        result = load_contract_records(base_url, DEV)
+
+    assert [contract["case_id"] for contract in result] == ["CARD-D04", "CARD-D12"]
+    assert result[0]["classification"] == "unauthorized"
+    assert result[1]["classification"] == "service_not_received"
+    assert [contract["routing"] for contract in result] == [
+        "request_information",
+        "request_information",
+    ]
+    assert result[0]["missing_information"] == ["authorization_confirmation"]
+    assert result[1]["missing_information"] == [
+        "promised_service_date",
+        "purchase_receipt",
+    ]
+    assert [question["field"] for question in result[0]["follow_up_questions"]] == [
+        "authorization_confirmation"
+    ]
+    assert [question["field"] for question in result[1]["follow_up_questions"]] == [
+        "promised_service_date",
+        "purchase_receipt",
+    ]
+    assert [contract["deadline"] for contract in result] == [
+        "2026-10-31",
+        "2026-12-03",
+    ]
+    assert seen == [
+        "/v1/cases",
+        "/v1/cases/CARD-D04/transactions",
+        "/v1/cases/CARD-D04/merchant",
+        "/v1/cases/CARD-D12/transactions",
+        "/v1/cases/CARD-D12/merchant",
+    ]
 
 
 def _d01_and_d11_bodies():
