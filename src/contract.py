@@ -59,8 +59,12 @@ _DENIES_CHARGE = (
 _SERVICE_NOT_DELIVERED = (
     "not been delivered",
     "not delivered",
+    "not received",
+    "never arrived",
+    "never delivered",
     "service was not supplied",
     "service not supplied",
+    "service was never supplied",
 )
 # "twice" counts only when the statement ties it to a charge: a charging verb, a
 # charge noun that appears, shows, is listed or posted twice, or "put ... through".
@@ -73,6 +77,22 @@ _DUPLICATE_CHARGE = re.compile(
     r"|\btwo (?:identical |separate )?(?:charges|debits|payments)\b"
     r"|\bdouble[- ]?charg\w*|\bduplicate (?:charges?|transactions?|payments?)\b"
     r"|\bcharged (?:me )?(?:two|2) times\b",
+    re.IGNORECASE,
+)
+# A denial of the duplicate itself is not a report of one. It is checked on the
+# same sentence as the cue, so "charged twice, not a double charge" stays reported.
+_NOT_DUPLICATE = re.compile(
+    r"\b(?:not|never|no)\b[^.!?]{0,25}\b(?:charged|billed|debited)\b"
+    r"[^.!?]{0,25}\btwice\b"
+    r"|\b(?:not|never|no)\b\s+(?:a\s+|an\s+|the\s+)?"
+    r"(?:double|duplicate)[- ]?(?:charge|charges|transaction|transactions|payment|payments)\b",
+    re.IGNORECASE,
+)
+# An instruction-shaped sentence is not the customer's account of the facts.
+_INSTRUCTION_SENTENCE = re.compile(
+    r"\b(?:system override|file this|classify this|mark this|treat this|record this"
+    r"|ignore (?:all |the )?(?:above|previous|earlier)"
+    r"|disregard (?:all |the )?(?:above|previous|earlier))\b",
     re.IGNORECASE,
 )
 # The missing fields each supported classification may ask about. The procedure
@@ -256,7 +276,7 @@ def _classification(intake: Intake) -> str:
         return "unauthorized"
     if _mentions(statement, _SERVICE_NOT_DELIVERED):
         return "service_not_received"
-    if _DUPLICATE_CHARGE.search(statement):
+    if _reports_duplicate_charge(statement):
         return "duplicate_charge"
     raise ContractError("the intake supports no supported classification")
 
@@ -273,6 +293,22 @@ def _required_missing(intake: Intake, classification: str) -> list[str]:
 def _mentions(statement: str, phrases: tuple[str, ...]) -> bool:
     """True when the lower-cased customer statement contains any of the phrases."""
     return any(phrase in statement for phrase in phrases)
+
+
+def _reports_duplicate_charge(statement: str) -> bool:
+    """True when one customer sentence reports a charge twice without denying it.
+
+    Instruction-shaped sentences are not the customer's account, and a sentence
+    that denies the duplicate does not report one.
+    """
+    for sentence in re.split(r"(?<=[.!?])\s+|\n", statement):
+        if _INSTRUCTION_SENTENCE.search(sentence):
+            continue
+        if _NOT_DUPLICATE.search(sentence):
+            continue
+        if _DUPLICATE_CHARGE.search(sentence):
+            return True
+    return False
 
 
 def _follow_up_questions(
@@ -405,9 +441,16 @@ def _attachment_citation(attachment_text: str, missing_information: list[str]) -
     missing, the attachment's status line is cited instead, so a missing-evidence
     draft still quotes the attachment exactly.
     """
-    if "purchase_receipt" in missing_information:
-        return _unique_line(attachment_text, _ATTACHMENT_STATUS_LABEL)
-    return _unique_line(attachment_text, _AMOUNT_LABEL)
+    if "purchase_receipt" not in missing_information:
+        return _unique_line(attachment_text, _AMOUNT_LABEL)
+    lines = [
+        line.strip()
+        for line in attachment_text.splitlines()
+        if line.strip().startswith(_ATTACHMENT_STATUS_LABEL)
+    ]
+    if len(lines) == 1:
+        return lines[0]
+    return _unique_line(attachment_text, _SOURCE_ID_LABEL)
 
 
 def _statement(intake: Intake, intake_text: str) -> str:
