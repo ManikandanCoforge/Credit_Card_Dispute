@@ -1,0 +1,428 @@
+{
+  "model": "replay/gpt-6-luna",
+  "suites": [
+    {
+      "suite": "dev",
+      "rules": {
+        "passed": 9,
+        "total": 12,
+        "failed": {
+          "CARD-D07": [
+            "submitted"
+          ],
+          "CARD-D09": [
+            "submitted"
+          ],
+          "CARD-D10": [
+            "submitted"
+          ]
+        },
+        "not_built_reasons": {
+          "CARD-D07": "BankReadError",
+          "CARD-D09": "the intake statement is not an exact excerpt of the intake",
+          "CARD-D10": "BankReadError"
+        },
+        "wrong_ready": [],
+        "manual_review": 2,
+        "not_built": [
+          "CARD-D07",
+          "CARD-D09",
+          "CARD-D10"
+        ],
+        "format_errors": [],
+        "model_calls": 0,
+        "model_answers": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "hybrid": {
+        "passed": 9,
+        "total": 12,
+        "failed": {
+          "CARD-D07": [
+            "submitted"
+          ],
+          "CARD-D09": [
+            "submitted"
+          ],
+          "CARD-D10": [
+            "submitted"
+          ]
+        },
+        "not_built_reasons": {
+          "CARD-D07": "BankReadError",
+          "CARD-D09": "the intake statement is not an exact excerpt of the intake",
+          "CARD-D10": "BankReadError"
+        },
+        "wrong_ready": [],
+        "manual_review": 2,
+        "not_built": [
+          "CARD-D07",
+          "CARD-D09",
+          "CARD-D10"
+        ],
+        "format_errors": [],
+        "model_calls": 5,
+        "model_answers": 4,
+        "input_tokens": 544,
+        "output_tokens": 132
+      }
+    },
+    {
+      "suite": "synth",
+      "rules": {
+        "passed": 15,
+        "total": 31,
+        "failed": {
+          "SYN-S03": [
+            "submitted"
+          ],
+          "SYN-S04": [
+            "submitted"
+          ],
+          "SYN-S05": [
+            "submitted"
+          ],
+          "SYN-S07": [
+            "submitted"
+          ],
+          "SYN-S11": [
+            "submitted"
+          ],
+          "SYN-S13": [
+            "submitted"
+          ],
+          "SYN-S14": [
+            "submitted"
+          ],
+          "SYN-S15": [
+            "submitted"
+          ],
+          "SYN-S16": [
+            "submitted"
+          ],
+          "SYN-S17": [
+            "routing"
+          ],
+          "SYN-S18": [
+            "submitted"
+          ],
+          "SYN-S20": [
+            "classification",
+            "deadline",
+            "required_evidence",
+            "routing"
+          ],
+          "SYN-S21": [
+            "submitted"
+          ],
+          "SYN-S24": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "SYN-S26": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "SYN-S31": [
+            "submitted"
+          ]
+        },
+        "not_built_reasons": {
+          "SYN-S03": "the intake supports no supported classification",
+          "SYN-S04": "the intake supports no supported classification",
+          "SYN-S05": "the intake supports no supported classification",
+          "SYN-S07": "the intake supports no supported classification",
+          "SYN-S11": "the reported date selected no policy version",
+          "SYN-S13": "the reported date selected no policy version",
+          "SYN-S14": "BankReadError",
+          "SYN-S15": "BankReadError",
+          "SYN-S16": "BankReadError",
+          "SYN-S18": "BankReadError",
+          "SYN-S21": "expected exactly one 'Amount:' line in the source",
+          "SYN-S31": "the intake supports no supported classification"
+        },
+        "wrong_ready": [
+          "SYN-S17",
+          "SYN-S20",
+          "SYN-S24"
+        ],
+        "manual_review": 3,
+        "not_built": [
+          "SYN-S03",
+          "SYN-S04",
+          "SYN-S05",
+          "SYN-S07",
+          "SYN-S11",
+          "SYN-S13",
+          "SYN-S14",
+          "SYN-S15",
+          "SYN-S16",
+          "SYN-S18",
+          "SYN-S21",
+          "SYN-S31"
+        ],
+        "format_errors": [],
+        "model_calls": 0,
+        "model_answers": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "hybrid": {
+        "passed": 19,
+        "total": 31,
+        "failed": {
+          "SYN-S03": [
+            "submitted"
+          ],
+          "SYN-S11": [
+            "submitted"
+          ],
+          "SYN-S13": [
+            "submitted"
+          ],
+          "SYN-S14": [
+            "submitted"
+          ],
+          "SYN-S15": [
+            "submitted"
+          ],
+          "SYN-S16": [
+            "submitted"
+          ],
+          "SYN-S17": [
+            "routing"
+          ],
+          "SYN-S18": [
+            "submitted"
+          ],
+          "SYN-S20": [
+            "classification",
+            "deadline",
+            "required_evidence",
+            "routing"
+          ],
+          "SYN-S21": [
+            "submitted"
+          ],
+          "SYN-S24": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "SYN-S26": [
+            "classification",
+            "deadline",
+            "routing"
+          ]
+        },
+        "not_built_reasons": {
+          "SYN-S03": "the intake supports no supported classification, and the model gave no usable answer: no_recording",
+          "SYN-S11": "the reported date selected no policy version",
+          "SYN-S13": "the reported date selected no policy version",
+          "SYN-S14": "BankReadError",
+          "SYN-S15": "BankReadError",
+          "SYN-S16": "BankReadError",
+          "SYN-S18": "BankReadError",
+          "SYN-S21": "expected exactly one 'Amount:' line in the source"
+        },
+        "wrong_ready": [
+          "SYN-S17",
+          "SYN-S20",
+          "SYN-S24"
+        ],
+        "manual_review": 5,
+        "not_built": [
+          "SYN-S03",
+          "SYN-S11",
+          "SYN-S13",
+          "SYN-S14",
+          "SYN-S15",
+          "SYN-S16",
+          "SYN-S18",
+          "SYN-S21"
+        ],
+        "format_errors": [],
+        "model_calls": 22,
+        "model_answers": 17,
+        "input_tokens": 3528,
+        "output_tokens": 572
+      }
+    },
+    {
+      "suite": "stress",
+      "rules": {
+        "passed": 5,
+        "total": 16,
+        "failed": {
+          "STR-P03": [
+            "submitted"
+          ],
+          "STR-P05": [
+            "submitted"
+          ],
+          "STR-P06": [
+            "submitted"
+          ],
+          "STR-P07": [
+            "submitted"
+          ],
+          "STR-P08": [
+            "submitted"
+          ],
+          "STR-P09": [
+            "submitted"
+          ],
+          "STR-P10": [
+            "submitted"
+          ],
+          "STR-P11": [
+            "submitted"
+          ],
+          "STR-P12": [
+            "submitted"
+          ],
+          "STR-P14": [
+            "submitted"
+          ],
+          "STR-P15": [
+            "classification",
+            "deadline",
+            "routing"
+          ]
+        },
+        "not_built_reasons": {
+          "STR-P03": "the intake supports no supported classification",
+          "STR-P05": "the intake supports no supported classification",
+          "STR-P06": "the intake supports no supported classification",
+          "STR-P07": "the intake supports no supported classification",
+          "STR-P08": "the intake supports no supported classification",
+          "STR-P09": "the intake supports no supported classification",
+          "STR-P10": "the intake supports no supported classification",
+          "STR-P11": "the intake supports no supported classification",
+          "STR-P12": "the intake supports no supported classification",
+          "STR-P14": "the intake supports no supported classification"
+        },
+        "wrong_ready": [
+          "STR-P15"
+        ],
+        "manual_review": 1,
+        "not_built": [
+          "STR-P03",
+          "STR-P05",
+          "STR-P06",
+          "STR-P07",
+          "STR-P08",
+          "STR-P09",
+          "STR-P10",
+          "STR-P11",
+          "STR-P12",
+          "STR-P14"
+        ],
+        "format_errors": [],
+        "model_calls": 0,
+        "model_answers": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "hybrid": {
+        "passed": 16,
+        "total": 16,
+        "failed": {},
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 8,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 16,
+        "model_answers": 16,
+        "input_tokens": 5585,
+        "output_tokens": 647
+      }
+    },
+    {
+      "suite": "holdout",
+      "rules": {
+        "passed": 3,
+        "total": 8,
+        "failed": {
+          "HLD-H01": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "HLD-H05": [
+            "submitted"
+          ],
+          "HLD-H06": [
+            "submitted"
+          ],
+          "HLD-H07": [
+            "submitted"
+          ],
+          "HLD-H08": [
+            "submitted"
+          ]
+        },
+        "not_built_reasons": {
+          "HLD-H05": "expected exactly one 'Amount:' line in the source",
+          "HLD-H06": "the intake supports no supported classification",
+          "HLD-H07": "the intake supports no supported classification",
+          "HLD-H08": "the intake supports no supported classification"
+        },
+        "wrong_ready": [],
+        "manual_review": 1,
+        "not_built": [
+          "HLD-H05",
+          "HLD-H06",
+          "HLD-H07",
+          "HLD-H08"
+        ],
+        "format_errors": [],
+        "model_calls": 0,
+        "model_answers": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "hybrid": {
+        "passed": 4,
+        "total": 8,
+        "failed": {
+          "HLD-H01": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "HLD-H05": [
+            "submitted"
+          ],
+          "HLD-H07": [
+            "submitted"
+          ],
+          "HLD-H08": [
+            "submitted"
+          ]
+        },
+        "not_built_reasons": {
+          "HLD-H05": "expected exactly one 'Amount:' line in the source",
+          "HLD-H07": "the intake supports no supported classification, and the model gave no usable answer: no_recording",
+          "HLD-H08": "the intake supports no supported classification, and the model gave no usable answer: no_recording"
+        },
+        "wrong_ready": [],
+        "manual_review": 2,
+        "not_built": [
+          "HLD-H05",
+          "HLD-H07",
+          "HLD-H08"
+        ],
+        "format_errors": [],
+        "model_calls": 5,
+        "model_answers": 3,
+        "input_tokens": 747,
+        "output_tokens": 133
+      }
+    }
+  ]
+}
