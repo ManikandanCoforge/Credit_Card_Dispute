@@ -51,3 +51,11 @@ uv run --locked python tools/runtime.py audit > reports/audit.json
 
 Replace REVIEW_ID with the returned identifier. Create `reports/` before redirecting the audit. To reject, use `reject` with the same arguments. For a fresh run, stop clients and use `uv run --locked python tools/runtime.py reset --confirm`.
 This CLI simulates a human boundary, not production identity. During assessment the assessor controls approval and state. Do not expose the service to the public internet.
+
+## Defence pack
+
+- [ADR-001: Model narrative boundary](docs/decisions/ADR-001-model-narrative-boundary.md)
+- [ADR-002: Policy version selection](docs/decisions/ADR-002-policy-version-selection.md)
+- [Limitations](docs/LIMITATIONS.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Contribution map](docs/CONTRIBUTION.md)
