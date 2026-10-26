@@ -5,14 +5,14 @@ Three people, three lanes from the pod operating plan. Each person owns exactly 
 | Person | GitHub | Pod lane | Live-change module | What they can demo | What they can change live |
 |---|---|---|---|---|---|
 | Ken | `kenmann01` | Lead: scope, interfaces, rules engine, integration | `src/contract.py`: rules contract and assembly | Build the `CARD-D01` contract from the supplied text: classification, routing, six exact citations, deadline 2026-10-31, and the template narrative. | Change a citation claim and its expectation in a scratch branch, then show the new contract and the focused test result. |
-| Mani | `ManikandanCoforge` | Evidence: retrieval, tool client, draft assembly, citations, missing evidence | `src/contract_records.py`: retrieval and tool integration | Run the case list, document reads, and the `transactions` and `merchant` reads, then show one failed case reported while the other cases still build. | Add a tool read or a case-level error reason, then show the mock audit records the read and the remaining cases are unaffected. |
-| Zach | `zacharybonagura-coforge` | Eval and operations: harness, CI, cost and latency, deployment, redacted logs, runbook | `tools/evaluate.py`: evaluation harness, gated by `.github/workflows/checks.yml` | Run the evaluator on a submission, show the per-check output and one failing citation, then show the CI job enforcing 100 percent line coverage of `src`. | Add an evaluator check or tighten a CI gate, then show the new report and the workflow result. |
+| Mani | `ManikandanCoforge` | Evidence: retrieval, tool client, draft assembly, citations, missing evidence | `src/untrusted.py` and `src/escalation.py`: restricted values, instruction handling, conflict and out-of-scope escalation (PR #52, #53) | Show the cash-withdrawal intake (`CARD-D06`) escalating to `unsupported` with a null deadline, then show a merchant note that tries to give an instruction: it is flagged and never quoted. | Add an instruction phrase or a cash cue, show the escalation test go green, and show which case now routes to `manual_review` instead of being misclassified. |
+| Zach | `zacharybonagura-coforge` | Eval and operations: harness, CI, cost and latency, deployment, redacted logs, runbook | `src/resilience.py`: bounded retry, backoff, and circuit breaker (PR #56) | Show a transient tool timeout retried, then the breaker opening after three failures, admitting one probe when half-open, and closing on success. | Change `MAX_ATTEMPTS` or the failure threshold, then show which tests fail and why. |
 
 ## Why these modules
 
 - **Ken** owns the deterministic rules and assembly surface. The contract shape, classification, routing, citations, deadline, and template narrative meet in `src/contract.py`. That matches the Lead lane for interfaces and the rules engine.
-- **Mani** owns the read path. `src/contract_records.py` joins the bank case list, the evidence documents, and the tool responses before assembly. That matches the Evidence lane for retrieval, tool client, and draft assembly.
-- **Zach** owns the evaluation and operations gate. `tools/evaluate.py` produces the per-case evidence checks, and the pytest job in `.github/workflows/checks.yml` fails below 100 percent line coverage. That matches the Eval and operations lane for harness and CI.
+- **Mani** owns the evidence boundary. `src/untrusted.py` finds restricted values and instruction-shaped evidence, and `src/escalation.py` decides when a case leaves the ordinary path. The read path itself, `src/contract_records.py`, was re-landed from his COF-36 work in PR #49. That matches the Evidence lane for retrieval, citations, and missing evidence.
+- **Zach** owns the resilience and CI gate. `src/resilience.py` bounds tool faults, and the pytest job in `.github/workflows/checks.yml` fails below 100 percent line coverage. `tools/evaluate.py` is the supplied grader, unchanged, so it is not presented as his module. That matches the Eval and operations lane for harness and CI.
 
 ## Git evidence
 
@@ -21,8 +21,8 @@ Ownership is accountability for the module, not exclusive authorship. The substa
 | Module | Ownership evidence |
 |---|---|
 | `src/contract.py` | Ken, commits `4e684cf` and `01c3044` |
-| `src/contract_records.py` | Mani, COF-36 tool-read and case-continuation work in PR #49, re-landed in `01c3044` |
-| Evaluation harness: `tools/evaluate.py`, gated by `.github/workflows/checks.yml` | Zachary, commits `664b0f3` and `44799a7`, plus the earlier CI commits |
+| `src/untrusted.py`, `src/escalation.py` | Mani, PR #52 (conflict and out-of-scope escalation) and PR #53 (untrusted evidence and restricted values) |
+| `src/resilience.py` | Zachary, PR #56 (`13d4910`): bounded retry with backoff and a circuit breaker, plus the earlier CI commits `664b0f3` and `44799a7` |
 
 ## Review and demo rules
 

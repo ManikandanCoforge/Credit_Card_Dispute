@@ -40,7 +40,7 @@ Every narrative remains a draft for human review and is labelled as a draft.
 | Missing information and questions | Rules code | `src/build_records.py` `_missing_information`; contract assembly | No |
 | Approval | Mock review service and operator CLI | `POST /v1/reviews`, draft hash, `tools/runtime.py` | No |
 | Record creation | Service code and idempotency | `POST /v1/records`, `Idempotency-Key`, duplicate check | No |
-| Narrative | Deterministic template now; optional model later | `src/contract.py` `_narrative` | Prose only |
+| Narrative | Deterministic template now (`src/contract.py` `_narrative`); four-section draft behind an unwired seam in #54 (`src/narrative.py`) | `src/contract.py` `_narrative`; `src/narrative.py` `assemble_draft` | Prose only |
 
 ## Rejected alternative
 
@@ -51,7 +51,7 @@ Let the model decide classification and routing, and let it generate the citatio
 - **Ungrounded decisions.** The model would infer from ordinary meaning rather than the supplied policy and procedure. Hidden cases combine missing evidence, conflicts, outages, and hostile attachments. A plausible answer is not the same as a rule-bound answer.
 - **Non-reproducible results.** Sampling, provider changes, model upgrades, and prompt edits can change the classification, route, deadline, or citation set for the same evidence. The same input must produce the same contract so that a reviewer, an auditor, or a rerun can compare drafts.
 - **The audit cannot bind to exact source slices.** The approval hash binds the reviewer to the canonical JSON of the draft, but a model-generated quote has no deterministic position in a source document. A reviewer could not prove which words supported which claim, and a changed draft could not be traced back to a source slice. Deterministic extraction fails closed with `ContractError` when an exact slice cannot be made.
-- **Prompt injection becomes an instruction path.** Merchant notes and attachments are untrusted data. Deterministic code quotes them as evidence. A model that follows text inside them could change a route or a claim, which is a critical failure in the assessment.
+- **Prompt injection becomes an instruction path.** Merchant notes and attachments are untrusted data. Deterministic code never quotes a merchant note or an attachment sentence as evidence: the citation slices are the intake statement, the source-id line, the transaction body, the procedure, and the policy, and #53 flags instruction-shaped evidence with a warning instead of quoting it. A model that follows text inside untrusted evidence could change a route or a claim, which is a critical failure in the assessment.
 - **Dates and policy rules are fixed.** Deadline arithmetic must be checkable against the selected policy version. Model arithmetic or model-selected policy versions cannot be accepted, even when the prose reads well.
 - **The evaluator checks exact strings.** `tools/evaluate.py` validates citations by exact substring and validates policy ids against the expected set. A generated quote may pass by coincidence or fail without warning; neither outcome demonstrates grounding.
 
@@ -61,19 +61,21 @@ The shipped path is the deterministic template.
 
 `assemble_contract` calls `_narrative`, which returns a fixed template sentence containing the case id, classification, routing, deadline, and the fact that no case has been created. A second template sentence names the outstanding fields when evidence is missing. There is no model client, model credential, prompt, model network call, or sampling step in this repository. `README.md` states that the package has no LLM account or model credits.
 
+#54 builds the four-section draft (summary, evidence, missing information, next step) in `src/narrative.py`. `assemble_draft` accepts an optional `ProseWriter` and validates the writer's text against `narrative_problems` before using it; the seam is unwired and no production path calls a writer. The writer receives the template text only, not the raw evidence documents, so a model never selects which evidence appears. Steps 3-6 below exist as that validation and fallback; step 7 and any model route remain open.
+
 The model route is optional and gated on client approval. It does not ship by default. The pod plan records the model approval as the riskiest unknown and requires an answer before the template path is replaced. If the client does not approve the route, the template remains the narrative.
 
 If the route is approved later, it must be implemented behind this boundary:
 
 1. Compute and freeze every deterministic field first.
-2. Pass only the already-selected evidence text to the model.
+2. Pass only frozen, deterministic prose and fields; never pass merchant notes, attachments, or other raw evidence text.
 3. Treat model output as untrusted input, not as a contract field.
 4. Reject output that introduces a fact, source id, citation, date, amount, policy id, missing field, or outcome promise.
 5. Keep every citation unchanged and separately verified as an exact slice.
 6. Label the result as a draft and keep the template as the fallback for model errors, timeouts, or validation failures.
 7. Record the model identifier, prompt version, and validation result before the route is enabled.
 
-None of those steps is claimed as implemented today.
+Step 1 holds by construction: every deterministic field is fixed before the narrative. Steps 3-6 exist in #54 as validation and fallback around an unwired seam. Step 7 is not implemented, no model client ships, and the route stays gated on client approval.
 
 ## Consequences
 
