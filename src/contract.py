@@ -13,6 +13,7 @@ routed to request_information and carries one targeted question per absent field
 """
 
 import json
+import re
 from collections.abc import Callable
 from datetime import date, timedelta
 from typing import TypedDict
@@ -57,12 +58,30 @@ _DENIES_CHARGE = (
 )
 _SERVICE_NOT_DELIVERED = (
     "not been delivered",
-    "was not delivered",
     "not delivered",
     "service was not supplied",
     "service not supplied",
 )
-_DUPLICATE_CHARGE = ("twice", "two charges", "two transactions", "double charge")
+# "twice" counts only when the statement ties it to a charge: a charging verb, a
+# charge noun that appears, shows, is listed or posted twice, or "put ... through".
+# A call to customer service twice is not a duplicate charge.
+_DUPLICATE_CHARGE = re.compile(
+    r"\b(?:charged|billed|debited|deducted|took|taken|ran)\b[^.!?]*\btwice\b"
+    r"|\bput\b[^.!?]*\bthrough\b[^.!?]*\btwice\b"
+    r"|\b(?:charge|payment|transaction|debit|bill)\b[^.!?]*"
+    r"\b(?:appears?|appeared|shows?|showed|listed|posted)\b[^.!?]*\btwice\b"
+    r"|\btwo (?:identical |separate )?(?:charges|debits|payments)\b"
+    r"|\bdouble[- ]?charg\w*|\bduplicate (?:charges?|transactions?|payments?)\b"
+    r"|\bcharged (?:me )?(?:two|2) times\b",
+    re.IGNORECASE,
+)
+# The missing fields each supported classification may ask about. The procedure
+# requires evidence for the chosen type only, so an unrelated absent line stays out.
+_REQUIRED_MISSING_INFORMATION: dict[str, tuple[str, ...]] = {
+    "unauthorized": ("authorization_confirmation",),
+    "duplicate_charge": (),
+    "service_not_received": ("promised_service_date", "purchase_receipt"),
+}
 
 # Reads the intake field each missing-information identifier stands for.
 _INTAKE_VALUE_BY_MISSING_FIELD: dict[str, Callable[[Intake], str]] = {
@@ -142,10 +161,11 @@ def assemble_contract(
     reported day as day zero. It is calculated for a supported classification even
     when evidence is missing.
 
-    Missing information is copied from the working record in its procedure order.
-    Each field gets exactly one targeted question, and a field the intake supplies
-    is refused rather than questioned. Routing is request_information when any
-    field is missing and ready_for_review otherwise.
+    Missing information starts from the working record in its procedure order, keeps
+    only the fields the chosen classification requires, and adds any required field
+    that the record left out. Each field gets exactly one targeted question, and a
+    field the intake supplies is refused rather than questioned. Routing is
+    request_information when any field is missing and ready_for_review otherwise.
 
     Citations are exact slices of the supplied sources. A slice that cannot be
     made exactly raises ContractError.
@@ -161,8 +181,17 @@ def assemble_contract(
     reported = _day(intake["reported_date"])
     if reported is None:
         raise ContractError("the intake has no reported date")
-    missing_information = list(record["missing_information"])
-    follow_up_questions = _follow_up_questions(intake, missing_information)
+    listed = list(record["missing_information"])
+    asked = _follow_up_questions(intake, listed)
+    required = _required_missing(intake, classification)
+    missing_information = [identifier for identifier in listed if identifier in required]
+    missing_information += [field for field in required if field not in missing_information]
+    follow_up_questions = [q for q in asked if q["field"] in missing_information]
+    follow_up_questions += [
+        {"field": field, "question": _QUESTION_BY_MISSING_FIELD[field]}
+        for field in missing_information
+        if field not in {q["field"] for q in follow_up_questions}
+    ]
     routing = "request_information" if missing_information else "ready_for_review"
     deadline, deadline_quote = _deadline(reported, policy_text, classification)
     procedure_source = _source_id(procedure_text)
@@ -214,23 +243,31 @@ def _classification(intake: Intake) -> str:
     """Return the supported classification that the intake and statement establish.
 
     A denied authorization is unauthorized. An absent authorization is the
-    provisional unauthorized only when the statement says the customer does not
-    recognise the charge. A confirmed authorization with an undelivered promised
-    service is service_not_received. A statement reporting two charges for one
-    purchase is duplicate_charge. Anything else raises ContractError: ambiguous,
-    unsupported and conflicting accounts belong to a later step.
+    provisional unauthorized that asks for confirmation, as the procedure requires;
+    the statement does not have to deny the charge. A confirmed authorization with an
+    undelivered promised service is service_not_received. A confirmed authorization
+    with two charges for one purchase is duplicate_charge; without that confirmation
+    the report stays provisional unauthorized. Anything else raises ContractError:
+    ambiguous, unsupported and conflicting accounts belong to a later step.
     """
     authorization = intake["authorization"]
     statement = intake["statement"].lower()
-    if authorization == _DENIED:
+    if authorization in (_DENIED, _ABSENT):
         return "unauthorized"
-    if authorization == _ABSENT and _mentions(statement, _DENIES_CHARGE):
-        return "unauthorized"
-    if authorization == _CONFIRMED and _mentions(statement, _SERVICE_NOT_DELIVERED):
+    if _mentions(statement, _SERVICE_NOT_DELIVERED):
         return "service_not_received"
-    if _mentions(statement, _DUPLICATE_CHARGE):
+    if _DUPLICATE_CHARGE.search(statement):
         return "duplicate_charge"
     raise ContractError("the intake supports no supported classification")
+
+
+def _required_missing(intake: Intake, classification: str) -> list[str]:
+    """The required evidence fields that the intake does not supply, in order."""
+    return [
+        field
+        for field in _REQUIRED_MISSING_INFORMATION[classification]
+        if _INTAKE_VALUE_BY_MISSING_FIELD[field](intake) == _ABSENT
+    ]
 
 
 def _mentions(statement: str, phrases: tuple[str, ...]) -> bool:

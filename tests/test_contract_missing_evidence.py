@@ -484,6 +484,111 @@ def test_a_missing_evidence_contract_survives_a_json_round_trip(build, expected)
     assert not isinstance(emitted["facts"]["amount"], bool)
 
 
+def _d04_like_text(statement, *, authorization, promised_service_date="2026-08-20"):
+    return (
+        "# Customer complaint and intake form\n\n"
+        "Source ID: CARD-D04-INTAKE\n\n"
+        f"{statement}\n\n"
+        "Reported date: 2026-10-01\n"
+        "Transaction ID: TX-D04\n"
+        "Customer reference: CUST-D04\n"
+        f"Authorization: {authorization}\n"
+        f"Promised service date: {promised_service_date}\n"
+        "Purchase receipt: attached\n"
+        "Submission reference: dispute-d04\n"
+    )
+
+
+def _d04_like(
+    statement, *, authorization, promised_service_date="2026-08-20", missing=None
+):
+    record = _d04_record()
+    record["intake"]["statement"] = statement
+    record["intake"]["authorization"] = authorization
+    record["intake"]["promised_service_date"] = promised_service_date
+    record["missing_information"] = list(missing or [])
+    return record
+
+
+def _assemble_d04_like(record, *, promised_service_date="2026-08-20"):
+    return _assemble(
+        record,
+        intake_text=_d04_like_text(
+            record["intake"]["statement"],
+            authorization=record["intake"]["authorization"],
+            promised_service_date=promised_service_date,
+        ),
+        attachment_text=D04_ATTACHMENT_TEXT,
+        transactions_text=_transactions_text("CARD-D04-TRANSACTIONS", [D04_CHARGE]),
+    )
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "My charge appears twice on my statement.",
+        "They ran my card twice.",
+        "The merchant put the charge through twice.",
+        "Morrow Supplies charged me 168 crowns twice for one purchase.",
+    ],
+)
+def test_a_charge_reported_twice_is_duplicate_charge(statement):
+    result = _assemble_d04_like(_d04_like(statement, authorization="confirmed"))
+
+    assert result["classification"] == "duplicate_charge"
+    assert result["routing"] == "ready_for_review"
+    assert result["missing_information"] == []
+
+
+def test_a_call_to_customer_service_twice_is_not_a_duplicate_charge():
+    statement = (
+        "I called customer service twice about this charge and it is still on my "
+        "card. I authorized it."
+    )
+
+    with pytest.raises(ContractError, match="no supported classification"):
+        _assemble_d04_like(_d04_like(statement, authorization="confirmed"))
+
+
+def test_absent_authorization_is_provisional_unauthorized_without_a_denial():
+    statement = "They ran my card twice."
+
+    result = _assemble_d04_like(_d04_like(statement, authorization="not supplied"))
+
+    assert result["classification"] == "unauthorized"
+    assert result["missing_information"] == ["authorization_confirmation"]
+    assert result["deadline"] == "2026-10-31"
+
+
+def test_a_required_absent_field_is_questioned_when_the_record_omits_it():
+    statement = "I do not recognize this charge."
+
+    result = _assemble_d04_like(_d04_like(statement, authorization="not supplied"))
+
+    assert result["missing_information"] == ["authorization_confirmation"]
+    assert [q["field"] for q in result["follow_up_questions"]] == [
+        "authorization_confirmation"
+    ]
+    assert result["routing"] == "request_information"
+
+
+def test_an_unrequired_absent_field_is_not_questioned():
+    statement = "Morrow Supplies charged me 168 crowns twice for one purchase."
+    record = _d04_like(
+        statement,
+        authorization="confirmed",
+        promised_service_date="not supplied",
+        missing=["promised_service_date"],
+    )
+
+    result = _assemble_d04_like(record, promised_service_date="not supplied")
+
+    assert result["missing_information"] == []
+    assert result["follow_up_questions"] == []
+    assert result["routing"] == "ready_for_review"
+
+
+
 @pytest.mark.parametrize("build", [_card_d04, _card_d12], ids=["D04", "D12"])
 def test_every_missing_field_has_exactly_one_targeted_question(build):
     result = build()
