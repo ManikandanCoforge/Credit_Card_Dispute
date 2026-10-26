@@ -59,3 +59,4 @@ This CLI simulates a human boundary, not production identity. During assessment 
 - [Limitations](docs/LIMITATIONS.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Contribution map](docs/CONTRIBUTION.md)
+- [Demo rehearsal pack](docs/DEMO_REHEARSAL.md)
