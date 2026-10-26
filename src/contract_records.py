@@ -57,6 +57,50 @@ class ContractResult(TypedDict):
     error: str | None
 
 
+class CasePlan(TypedDict):
+    """One case's working record and the evidence the case list names for it."""
+
+    record: WorkingRecord
+    documents: list[str]
+
+
+def contract_case_plans(base_url: str, data_dir: str | Path) -> list[CasePlan]:
+    """Read the case list and pair each working record with its named evidence.
+
+    No document or tool read happens here, so a caller that times cases measures
+    each case's evidence reads without the shared case-list read. A case still
+    names its own documents in bank order.
+    """
+    data_dir = Path(data_dir)
+    case_list = load_cases(base_url)
+    documents = {case.case_id: case.documents for case in case_list.cases}
+    return [
+        {"record": record, "documents": documents.get(record["case_id"], [])}
+        for record in records_from_case_list(case_list, data_dir)
+    ]
+
+
+def build_contract_result(
+    plan: CasePlan, base_url: str, data_dir: str | Path
+) -> ContractResult:
+    """Build one case's contract from the bank and the dataset, or report the reason.
+
+    The reason is one of this application's own messages or an exception class
+    name, never text from a payload or document.
+    """
+    try:
+        contract = _contract_record(
+            plan["record"], base_url, Path(data_dir), plan["documents"]
+        )
+    except ContractRecordError as error:
+        return {
+            "case_id": plan["record"]["case_id"],
+            "contract": None,
+            "error": _reason(error),
+        }
+    return {"case_id": plan["record"]["case_id"], "contract": contract, "error": None}
+
+
 def load_contract_results(base_url: str, data_dir: str | Path) -> list[ContractResult]:
     """Return one result per case in the bank case list, in bank order.
 
@@ -65,21 +109,10 @@ def load_contract_results(base_url: str, data_dir: str | Path) -> list[ContractR
     messages or an exception class name, never text from a payload or document.
     """
     data_dir = Path(data_dir)
-    case_list = load_cases(base_url)
-    documents = {case.case_id: case.documents for case in case_list.cases}
-    results: list[ContractResult] = []
-    for record in records_from_case_list(case_list, data_dir):
-        try:
-            contract = _contract_record(
-                record, base_url, data_dir, documents.get(record["case_id"], [])
-            )
-        except ContractRecordError as error:
-            results.append(
-                {"case_id": record["case_id"], "contract": None, "error": _reason(error)}
-            )
-            continue
-        results.append({"case_id": record["case_id"], "contract": contract, "error": None})
-    return results
+    return [
+        build_contract_result(plan, base_url, data_dir)
+        for plan in contract_case_plans(base_url, data_dir)
+    ]
 
 
 def load_contract_records(base_url: str, data_dir: str | Path) -> list[Contract]:

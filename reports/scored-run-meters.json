@@ -1,0 +1,110 @@
+[
+  {
+    "case_id": "CARD-D01",
+    "duration_ms": 8.528,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D02",
+    "duration_ms": 8.873,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D03",
+    "duration_ms": 8.855,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D04",
+    "duration_ms": 8.899,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D05",
+    "duration_ms": 0.017,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D06",
+    "duration_ms": 9.228,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D07",
+    "duration_ms": 4.832,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D08",
+    "duration_ms": 8.289,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D09",
+    "duration_ms": 9.559,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D10",
+    "duration_ms": 5.148,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D11",
+    "duration_ms": 8.813,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  },
+  {
+    "case_id": "CARD-D12",
+    "duration_ms": 8.842,
+    "model_calls": 0,
+    "model_tokens_in": 0,
+    "model_tokens_out": 0,
+    "cost_usd": 0.0,
+    "path": "deterministic_template"
+  }
+]
