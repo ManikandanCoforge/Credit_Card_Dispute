@@ -11,8 +11,8 @@ Artifacts:
   reports/scored-run.md           human-readable report
   submissions/scored-run.json     the evaluator submission array
 
-Exit status is 0 only when all twelve cases pass. Every artifact is still
-written when they do not.
+Exit status is 0 only when every case in the case list passes. Every artifact
+is still written when they do not.
 """
 
 import argparse
@@ -146,13 +146,22 @@ def failed_checks(checks: Mapping[str, bool]) -> list[str]:
     return sorted(name for name, passed in checks.items() if not passed)
 
 
-def proposed_exception(case_id: str) -> tuple[str, str] | None:
+def proposed_exception(
+    case_id: str, failed_checks: Sequence[str] | None = None
+) -> tuple[str, str] | None:
     """The pending ticket and note for a known failing case, or None.
 
-    The mapping is intentionally narrow: an unexpected failure is left unmapped
-    so it stays visible as an unplanned failure instead of being excused.
+    The mapping is intentionally narrow: it applies only when the case has no
+    contract at all (the single failed check "submitted"). Any other failure of
+    the same case is left unmapped so it stays visible as an unplanned failure
+    instead of being excused.
     """
-    return _PROPOSED_EXCEPTIONS.get(case_id)
+    mapping = _PROPOSED_EXCEPTIONS.get(case_id)
+    if mapping is None:
+        return None
+    if failed_checks is not None and list(failed_checks) != ["submitted"]:
+        return None
+    return mapping
 
 
 def measure_cases(
@@ -225,9 +234,10 @@ def build_case_reports(
 def meter_rows(case_reports: Sequence[CaseReport]) -> list[MeterRow]:
     """One measured meter row per case.
 
-    The deterministic template path makes no model call. The model-call and token
-    counts are therefore exactly zero, so the cost is exactly 0.00 USD. No model
-    price is assumed. These are counts of calls the run actually made.
+    The deterministic template path makes no model call, so these rows record 0
+    model calls and 0 tokens and the cost is 0.00 USD by construction. That is
+    the absence of a model path, not a measurement of one. No model price is
+    assumed.
     """
     return [
         {
@@ -254,7 +264,7 @@ def exception_list(case_reports: Sequence[CaseReport]) -> list[ExceptionEntry]:
     for case in case_reports:
         if case["passed"]:
             continue
-        mapping = proposed_exception(case["case_id"])
+        mapping = proposed_exception(case["case_id"], case["failed_checks"])
         if mapping is None:
             continue
         ticket, note = mapping
@@ -280,17 +290,20 @@ def unplanned_failures(case_reports: Sequence[CaseReport]) -> list[dict[str, Any
             "error": case["error"],
         }
         for case in case_reports
-        if not case["passed"] and proposed_exception(case["case_id"]) is None
+        if not case["passed"]
+        and proposed_exception(case["case_id"], case["failed_checks"]) is None
     ]
 
 
 def run_succeeded(report: Mapping[str, Any]) -> bool:
-    """True only when all twelve cases passed with no format errors."""
-    return (
-        report["total_cases"] == EXPECTED_CASES
-        and report["pass_count"] == EXPECTED_CASES
-        and not report["format_errors"]
-    )
+    """True only when every case in the case list passed with no format errors.
+
+    The case count comes from the case list, not a hard-coded twelve, so the
+    tool also works on a smaller fixture set. Twelve is the dev expectation and
+    is asserted in the tests, not used as a gate here.
+    """
+    total = report["total_cases"]
+    return total > 0 and report["pass_count"] == total and not report["format_errors"]
 
 
 def assemble_report(
@@ -341,8 +354,8 @@ def assemble_report(
         "cost_note": (
             "Read from reports/scored-run-meters.json. The deterministic template "
             "path makes no model call, so every row records 0 model calls and 0 "
-            "tokens and the cost is exactly 0.00 USD. No model price is assumed "
-            "or estimated."
+            "tokens and the cost is 0.00 USD by construction, not by measurement. "
+            "No model price is assumed or estimated."
         ),
         "cases": list(case_reports),
         "exceptions": exception_list(case_reports),
@@ -385,6 +398,11 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         "",
         f"- Pass: {report['pass_count']} / {total}",
         f"- Format errors: {len(report['format_errors'])}",
+        *(
+            [f"- Run error: {report['run_error']}"]
+            if report.get("run_error")
+            else []
+        ),
         (
             f"- p95 draft latency: {_fmt_ms(report['p95_latency_ms'])} "
             "(nearest-rank over the measured durations)"
@@ -426,7 +444,7 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
                 f"{_md_cell(case['error'] or '-')} |"
             )
     else:
-        lines.append("None. All twelve cases passed.")
+        lines.append("None. Every case passed.")
 
     lines += [
         "",
@@ -475,8 +493,8 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
             "Latency and cost come from `reports/scored-run-meters.json`, one "
             "row per case. The path is `deterministic_template`, so "
             "`model_calls`, `model_tokens_in` and `model_tokens_out` are 0 and "
-            "the cost is exactly 0.00 USD. The meter records the calls the run "
-            "actually made; it does not assume a model price."
+            "the cost is 0.00 USD by construction: this run wires no model call, "
+            "so the meter shows what the run did, not what a model would cost."
         ),
         "",
         (
@@ -586,8 +604,9 @@ def run_scored(
 ) -> int:
     """Run every case, score the submission and write every artifact.
 
-    Returns 0 only when all twelve cases pass. The artifacts are written before
-    the status is returned, so a failing run still publishes its numbers.
+    Returns 0 only when every case in the case list passes. The artifacts are
+    written before the status is returned, so a failing run still publishes its
+    numbers.
     """
     dataset = json.loads((data_dir / "dataset.json").read_text(encoding="utf-8"))
     gold = json.loads(gold_path.read_text(encoding="utf-8"))
@@ -600,16 +619,6 @@ def run_scored(
         run_error = f"{type(error).__name__}: the bank case list could not be read"
 
     measured = measure_cases(plans, base_url, data_dir)
-    if run_error is not None and not measured:
-        measured = [
-            {
-                "case_id": case_id,
-                "duration_ms": 0.0,
-                "contract": None,
-                "error": run_error,
-            }
-            for case_id in gold
-        ]
 
     submissions: list[Contract] = [
         case["contract"] for case in measured if case["contract"] is not None

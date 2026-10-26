@@ -86,6 +86,11 @@ def test_a_passing_case_has_no_proposed_ticket():
     assert proposed_exception("CARD-D01") is None
 
 
+def test_another_failure_of_a_mapped_case_is_not_excused():
+    assert proposed_exception("CARD-D05", ["submitted"]) is not None
+    assert proposed_exception("CARD-D05", ["transaction_facts"]) is None
+
+
 def test_exception_entries_are_explicitly_pending_pod_agreement():
     reports = [
         _case(
@@ -261,10 +266,11 @@ def test_assemble_report_carries_counts_p95_and_measured_zero_cost():
         (12, 12, ["Unexpected case: X"], False),
         (11, 12, [], False),
         (0, 12, [], False),
-        (7, 7, [], False),
+        (7, 7, [], True),
+        (0, 0, [], False),
     ],
 )
-def test_exit_is_success_only_when_all_twelve_pass(
+def test_exit_is_success_only_when_every_case_passes(
     pass_count, total_cases, format_errors, expected
 ):
     report = {
