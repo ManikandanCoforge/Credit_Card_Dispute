@@ -12,7 +12,7 @@ source - raises ContractError instead of being paraphrased.
 import json
 import re
 from collections.abc import Sequence
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from src.escalation import (
     Escalation,
@@ -64,17 +64,23 @@ _RULE_ANCHORS = {
     "duplicate_charge": _DUPLICATE_RULE_ANCHOR,
 }
 # The customer's report of two charges for one purchase, and its negation.
-# "twice" counts only beside a charging verb ("charged me 236 crowns twice"); "I called
+# "twice" counts only beside a charging verb ("charged me 236 crowns twice") or when the
+# charge itself appears twice ("my charge appears twice on my statement"); "I called
 # twice" or "I called about the charge twice" is not a report of two charges.
 _DUPLICATE = re.compile(
     r"\b(?:charged|billed|debited|deducted|took|taken)\b[^.!?]*\btwice\b"
+    r"|\b(?:charge|payment|transaction|debit|bill)s?\b[^.!?]*"
+    r"\b(?:appears?|appeared|shows?|showed|shown|listed|posted|went through)\s+twice\b"
     r"|\bsame (?:charge|payment|transaction)\b[^.!?]*\btwice\b"
     r"|\btwo (?:identical |separate )?(?:charges|debits|payments)\b|\bdouble[- ]?(?:charg|bill)\w*"
     r"|\bduplicate (?:charges?|transactions?|payments?)\b|\bcharged (?:me )?(?:two|2) times\b",
     re.IGNORECASE,
 )
 _NOT_DUPLICATE = re.compile(
-    r"\bnot (?:a |an )?(?:double|duplicate)\b|\bnot (?:charged )?twice\b", re.IGNORECASE
+    r"\bnot (?:a |an )?(?:double|duplicate)\b|\bnot (?:charged )?twice\b"
+    r"|(?:\bnot|n't|\bnever)\s+(?:appear\w*|show\w*|listed|posted|go through|went through)"
+    r"\s+twice\b",
+    re.IGNORECASE,
 )
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 # A complaint that gives a dispute detail inside text addressed to the system.
@@ -452,16 +458,22 @@ def _named_in(transaction_id: str, statement: str) -> bool:
 
 
 def _same_charge(charge: dict[str, object], named: dict[str, object]) -> bool:
-    """Same merchant, amount and currency as the named charge, posted within two days."""
+    """Same merchant, amount and currency as the named charge, posted within two days.
+
+    A posted date may be a plain date or a full ISO datetime ("2025-03-02T09:00:00"); only
+    the calendar day counts. An unreadable date is not the same charge.
+    """
     if any(charge.get(k) != named.get(k) for k in ("merchant_id", "amount", "currency")):
         return False
     try:
-        gap = date.fromisoformat(str(charge.get("posted_date"))) - date.fromisoformat(
-            str(named.get("posted_date"))
-        )
+        gap = _posted_day(charge.get("posted_date")) - _posted_day(named.get("posted_date"))
     except ValueError:
         return False
     return abs(gap.days) <= 2
+
+
+def _posted_day(value: object) -> date:
+    return datetime.fromisoformat(str(value)).date()
 
 
 def _untrusted_notes(record: WorkingRecord) -> list[str]:

@@ -206,12 +206,17 @@ def _sentences(line: str) -> list[str]:
 def _split(line: str) -> list[str]:
     """The sentences of one line. A heading has none; a form label is dropped and its value kept.
 
-    The sentences are exact slices of the line, so they can be quoted.
+    A label that itself carries a cue ("Cash withdrawal: the machine gave me nothing.") is
+    kept with its value, so the cue is not lost with the label. The sentences are exact
+    slices of the line, so they can be quoted.
     """
     if not line or line.startswith("#"):
         return []
     label = _LABEL.match(line)
-    value = line[label.end() :] if label else line
+    cue_in_label = label is not None and any(
+        pattern.search(label.group(0)) for pattern in (_CASH, _DENIES, _CONFIRMS)
+    )
+    value = line[label.end() :] if label and not cue_in_label else line
     return [sentence for sentence in _SENTENCE_END.split(value) if sentence]
 
 

@@ -54,6 +54,17 @@ _LABEL_TOKEN = re.compile(
     r"\b(?:unauthorized|duplicate_charge|service_not_received|ambiguous|unsupported"
     r"|ready_for_review|request_information|manual_review)\b"
 )
+# Wording that states a decision or an outcome. Checked only in sentences the writer changed,
+# so the template's own "does not decide which statement is correct" never trips it.
+_DECISION = re.compile(
+    r"\bdecid(?:ed|es)\b|\bin (?:your|the customer'?s|their) favou?r\b"
+    r"|\b(?:is|was|are|were) (?:correct|right|wrong|valid|invalid|true|false|accurate)\b"
+    r"|\bwe (?:have )?(?:determined|concluded|confirmed|verified|found that)\b"
+    r"|\bhas been (?:accepted|resolved|upheld|granted|rejected|denied|settled|closed)\b"
+    r"|\b(?:the )?outcome is\b",
+    re.IGNORECASE,
+)
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 _ACTIONS = {
     "ready_for_review": "A reviewer can check the cited evidence and decide.",
     "request_information": "Ask the customer the follow-up questions before review.",
@@ -158,6 +169,7 @@ def narrative_problems(text: str, template: str, notes: Sequence[str] = ()) -> l
         problems.append("the four sections and the draft reply are not all present in order")
     if any(sentence not in text for sentence in (APPROVAL_CAVEAT, NO_OUTCOME, *notes)):
         problems.append("a boundary sentence or note is missing or reworded")
+    problems += _shape_problems(text, template)
     if _PROMISE.search(text):
         problems.append("the draft makes a promise")
     if restricted_values(text):
@@ -166,4 +178,33 @@ def narrative_problems(text: str, template: str, notes: Sequence[str] = ()) -> l
         problems.append("the draft adds or drops a date, number, id or currency")
     if set(_LABEL_TOKEN.findall(text)) != set(_LABEL_TOKEN.findall(template)):
         problems.append("the draft changes a classification or routing label")
+    return problems
+
+
+def _shape_problems(text: str, template: str) -> list[str]:
+    """The writer may reword sentences, never add, drop, merge or reorder them.
+
+    Line for line and sentence for sentence, the draft must match the template's shape.
+    A reworded sentence keeps its own dates, numbers, ids and labels, and states no
+    decision or outcome. Containment alone is not enough: the template plus "The
+    follow-up statement is correct." contains every required sentence.
+    """
+    drafted, expected = text.split("\n"), template.split("\n")
+    if len(drafted) != len(expected):
+        return ["the draft adds, drops or merges a line or sentence"]
+    pairs: list[tuple[str, str]] = []
+    for line, model in zip(drafted, expected, strict=True):
+        sentences, wanted = _SENTENCE_END.split(line), _SENTENCE_END.split(model)
+        if len(sentences) != len(wanted):
+            return ["the draft adds, drops or merges a line or sentence"]
+        pairs += [(s, w) for s, w in zip(sentences, wanted, strict=True) if s != w]
+    problems: list[str] = []
+    if any(
+        sorted(_FACT_TOKEN.findall(s)) != sorted(_FACT_TOKEN.findall(w))
+        or sorted(_LABEL_TOKEN.findall(s)) != sorted(_LABEL_TOKEN.findall(w))
+        for s, w in pairs
+    ):
+        problems.append("a reworded sentence moves a date, number, id or label")
+    if any(_DECISION.search(s) for s, _w in pairs):
+        problems.append("a reworded sentence states a decision or an outcome")
     return problems

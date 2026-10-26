@@ -39,13 +39,15 @@ _TOKENS = re.compile(
     r"SYNTHETIC-PRIVATE-[A-Za-z0-9-]+"  # synthetic private token
     r"|\bCUST-[A-Za-z0-9-]+"  # customer reference, treated as an account number
 )
-# 13 to 19 plain digits, or a card grouping with one consistent separator (space, dot or
-# dash): 4-4-4-4(-3) or Amex 4-6-5. Two dates side by side are not a grouping. A card only
-# when the Luhn check also passes, so a timestamp is not one.
+# 15 to 19 plain digits, or a card grouping with one consistent separator (a run of
+# whitespace, a dot or a dash, the same each time): 4-4-4-4(-3) or Amex 4-6-5. Two dates
+# side by side are not a grouping. A card only when the Luhn check also passes. Plain
+# digits start at 15 (Amex) so a 13-digit millisecond timestamp or reference that happens
+# to pass Luhn is not a card; a grouped 13-digit card is still caught.
 _CARD_LIKE = re.compile(
-    r"(?<![\w-])(?<!\d\.)(?:\d{13,19}"
-    r"|\d{4}(?P<s>[ .-])\d{4}(?P=s)\d{4}(?P=s)\d{1,7}"
-    r"|\d{4}(?P<a>[ .-])\d{6}(?P=a)\d{5})(?![\w-])(?!\.\d)"
+    r"(?<![\w-])(?<!\d\.)(?:\d{15,19}"
+    r"|\d{4}(?P<s>\s+|[.-])\d{4}(?P=s)\d{4}(?P=s)\d{1,7}"
+    r"|\d{4}(?P<a>\s+|[.-])\d{6}(?P=a)\d{5})(?![\w-])(?!\.\d)"
 )
 
 INSTRUCTION_NOTICE = (
@@ -72,12 +74,13 @@ def has_instruction(text: str) -> bool:
 
 
 def restricted_values(value: object, known: Iterable[str] = ()) -> list[str]:
-    """Every restricted value in the strings of value, in order of appearance.
+    """Every restricted value in value, in order of appearance.
 
-    Only strings are scanned, so a numeric field such as a timestamp is never
-    mistaken for a card. known adds exact values, such as the private token a
-    tool body carried; each is matched as a whole word, so "1234" is not found
-    inside "12346".
+    Strings and numbers are scanned, so a card carried as an integer is caught too.
+    A timestamp in seconds or milliseconds has at most 13 digits and is never a card;
+    write finer timestamps as text or seconds. known adds exact values, such as the
+    private token a tool body carried; each is matched as a whole word, so "1234" is
+    not found inside "12346".
     """
     found: list[str] = []
     secrets = [secret for secret in known if secret]
@@ -112,9 +115,14 @@ def safe_line(event: dict[str, object], known: Iterable[str] = ()) -> str:
 
 
 def _strings(value: object) -> Iterator[str]:
-    """Every string in a JSON-shaped value: dict keys and values, list items, scalars."""
+    """Every string in a JSON-shaped value: dict keys and values, list items, scalars.
+
+    Integers and floats are yielded in their text form; booleans are not numbers here.
+    """
     if isinstance(value, str):
         yield value
+    elif isinstance(value, int | float) and not isinstance(value, bool):
+        yield str(value)
     elif isinstance(value, dict):
         for key, item in value.items():
             yield str(key)

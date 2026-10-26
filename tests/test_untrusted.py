@@ -138,10 +138,21 @@ def test_an_instruction_and_a_real_cue_in_one_sentence_is_drafted_for_a_person()
         "I was billed twice for the same order.",
         "The same charge appears twice on my statement.",
         "There are two identical charges for one purchase.",
+        # The charge as the subject (Kanit's finding 4 on #52).
+        "My charge appears twice on my statement.",
+        "The payment is listed twice on my statement.",
+        "The transaction shows twice in my banking app.",
     ],
 )
 def test_a_report_of_two_charges_is_a_duplicate(statement):
     assert _assemble_statement(statement)["classification"] == "duplicate_charge"
+
+
+def test_a_charge_that_appears_twice_with_no_authorization_answer_is_a_duplicate():
+    """Kanit's repro: this raised ContractError at 7886a2b."""
+    result = _assemble_statement("My charge appears twice on my statement.", "not supplied")
+
+    assert result["classification"] == "duplicate_charge"
 
 
 @pytest.mark.parametrize(
@@ -219,6 +230,8 @@ def test_an_instruction_in_the_customer_text_cannot_escalate():
     [
         "This is not a double charge, but I want to understand it.",
         "I was not charged twice; the amount is wrong.",
+        "My charge does not appear twice; the amount is wrong.",
+        "The payment doesn't show twice, it is simply too high.",
     ],
 )
 def test_a_denied_duplicate_is_not_a_duplicate(statement):
@@ -275,6 +288,32 @@ def test_a_second_charge_carrying_an_extra_field_is_skipped_not_quoted_and_not_f
     assert result["classification"] == "duplicate_charge"
     assert not [c for c in result["citations"] if c["claim"] == "second_charge"]
     assert PRIVATE_TOKEN not in json.dumps(result)
+
+
+@pytest.mark.parametrize(
+    ("posted_date", "cited"),
+    [
+        ("2026-08-21T09:00:00", True),       # an ISO datetime, two days after the named charge
+        ("2026-08-21T23:59:59Z", True),      # with a time zone
+        ("2026-08-21", True),                # the +2 day boundary is inside
+        ("2026-08-17", True),                # ...on both sides
+        ("2026-08-22", False),               # +3 days is another purchase
+        ("2026-08-22T00:00:01", False),
+        ("yesterday", False),                # an unreadable date is never the same charge
+    ],
+)
+def test_a_second_charge_is_matched_by_calendar_day_within_two_days(posted_date, cited):
+    record = _d08_record(CLEAN_NOTE)
+    record["intake"]["statement"] = "Morrow Supplies charged me 236 crowns twice for one purchase."
+    body = {
+        "source_id": "CARD-D08-TRANSACTIONS",
+        "transactions": [_charge("TX-D08", 236), {**_charge("TX-D08-B", 236), "posted_date": posted_date}],
+    }
+
+    result = _assemble(record, transactions_text=json.dumps(body, sort_keys=True))
+
+    second = [c for c in result["citations"] if c["claim"] == "second_charge"]
+    assert bool(second) is cited
 
 
 def test_an_unrelated_charge_of_the_same_amount_is_never_cited_as_the_duplicate():
@@ -382,14 +421,51 @@ def test_genuine_customer_and_merchant_text_is_not_flagged(text):
         ("Amex 3782 822463 10005", ["3782 822463 10005"]),
         ("dotted 4111.1111.1111.1111", ["4111.1111.1111.1111"]),
         ({"at": "1761433200000"}, []),                  # an epoch-millisecond string fails the Luhn check
-        ({"at": 1761433200000}, []),                    # numbers are never scanned
+        ({"at": 1761433200000}, []),                    # a millisecond timestamp has 13 digits
+        ("ref 1750000000009", []),                      # 13 plain digits that pass Luhn: a reference
+        ({"at": 1761433200.123, "ok": True}, []),       # floats and booleans are not cards
         ("my card 4111 1111 1111 1111.", ["4111 1111 1111 1111"]),   # a full stop ends the sentence
         ("version 1.4111111111111111", []),             # part of a longer dotted number
         ({"card 4111111111111111": "key, not value"}, ["4111111111111111"]),
+        ("card 3782  822463  10005 used", ["3782  822463  10005"]),  # Amex, double spaces
+        ("card 3782\t822463\t10005 used", ["3782\t822463\t10005"]),  # Amex, tabs
+        ("card 4111  1111  1111  1111", ["4111  1111  1111  1111"]),  # 4-4-4-4, double spaces
+        ({"card": 378282246310005}, ["378282246310005"]),             # a card carried as a number
+        ([4111111111111111], ["4111111111111111"]),
     ],
 )
 def test_restricted_values_are_found_by_pattern(value, found):
     assert restricted_values(value) == found
+
+
+def test_safe_line_refuses_a_card_carried_as_a_number():
+    with pytest.raises(RestrictedValueError):
+        safe_line({"card": 378282246310005})
+
+
+def test_a_known_value_is_matched_in_its_numeric_form():
+    assert restricted_values({"tool": {"id": 90210}}, known=["90210"]) == ["90210"]
+
+
+def test_a_card_typed_with_double_spaces_never_reaches_the_contract():
+    record = _d08_record(CLEAN_NOTE)
+    statement = "Morrow Supplies charged me 236 crowns twice on card 3782  822463  10005."
+    record["intake"]["statement"] = statement
+    intake = (DEV / "documents" / "CARD-D08-INTAKE.md").read_text(encoding="utf-8").replace(
+        "Morrow Supplies charged me 236 crowns twice for one purchase.", statement
+    )
+
+    result = assemble_contract(
+        record,
+        intake_text=intake,
+        attachment_text=(DEV / "documents" / "CARD-D08-ATTACHMENT.md").read_text(encoding="utf-8"),
+        procedure_text=PROCEDURE_TEXT,
+        policy_text=POLICY_TEXT,
+        transactions_text=_transactions_text(),
+    )
+
+    assert "822463" not in json.dumps(result)
+    assert restricted_values(result) == []
 
 
 def test_a_known_value_is_found_even_without_the_usual_pattern():

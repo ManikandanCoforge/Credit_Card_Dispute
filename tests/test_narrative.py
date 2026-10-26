@@ -164,7 +164,8 @@ def test_a_model_may_not_reword_an_escalation_note_into_a_decision():
     assert meter["narrative_path"] == "template_fallback"
     assert text == template
     assert narrative_problems(decided, template, [ESCALATION_NOTE]) == [
-        "a boundary sentence or note is missing or reworded"
+        "a boundary sentence or note is missing or reworded",
+        "a reworded sentence states a decision or an outcome",
     ]
 
 
@@ -177,6 +178,51 @@ def test_a_model_that_keeps_the_note_verbatim_is_used():
 
     assert meter["narrative_path"] == "model"
     assert text == reworded
+
+
+@pytest.mark.parametrize(
+    ("rewrite", "problem"),
+    [
+        # Kanit's repro on #52: every required sentence is still contained.
+        (lambda d: d + " The follow-up statement is correct.",
+         "the draft adds, drops or merges a line or sentence"),
+        (lambda d: d.replace("Our dispute team will review your report.",
+                             "The case has been decided in your favor."),
+         "a reworded sentence states a decision or an outcome"),
+        (lambda d: d.replace("Our dispute team will review your report.",
+                             "We have determined the charge was not yours."),
+         "a reworded sentence states a decision or an outcome"),
+        (lambda d: d.replace("decide.\nLimitations:", "decide. Your dispute is valid.\nLimitations:"),
+         "the draft adds, drops or merges a line or sentence"),
+        (lambda d: d.replace("\nUncertainty:", " Uncertainty:"),
+         "the draft adds, drops or merges a line or sentence"),
+        # Two sentences swapped: the count holds, but each sentence's facts moved.
+        (lambda d: re.sub(r"(The transaction service shows 117 XCR\.) (Cited sources: [^\n]*?\.)(\n)",
+                          r"\2 \1\3", d),
+         "a reworded sentence moves a date, number, id or label"),
+        (lambda d: d.replace("The policy deadline is 2026-10-31. A reviewer can check the cited evidence",
+                             "The policy deadline is set. A reviewer can check the cited evidence by 2026-10-31"),
+         "a reworded sentence moves a date, number, id or label"),
+    ],
+)
+def test_a_model_draft_must_keep_the_template_shape(rewrite, problem):
+    template = template_narrative(assemble_contract(**_d01_arguments()))
+    drafted = rewrite(template)
+
+    assert drafted != template
+    assert problem in narrative_problems(drafted, template)
+    text, meter = draft_narrative(assemble_contract(**_d01_arguments()), writer=lambda _d: drafted)
+    assert meter["narrative_path"] == "template_fallback"
+    assert text == template
+
+
+def test_a_sentence_reworded_in_place_is_still_accepted():
+    template = template_narrative(assemble_contract(**_d01_arguments()))
+    reworded = template.replace(
+        "Our dispute team will review your report.", "A member of our dispute team will look at your report."
+    )
+
+    assert narrative_problems(reworded, template) == []
 
 
 def test_each_broken_rule_is_named():
@@ -192,6 +238,7 @@ def test_each_broken_rule_is_named():
     assert narrative_problems(broken, template) == [
         "the four sections and the draft reply are not all present in order",
         "a boundary sentence or note is missing or reworded",
+        "the draft adds, drops or merges a line or sentence",
         "the draft makes a promise",
         "the draft carries a restricted value",
         "the draft adds or drops a date, number, id or currency",

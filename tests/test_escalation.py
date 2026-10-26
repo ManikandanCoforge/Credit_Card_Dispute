@@ -253,6 +253,39 @@ def test_a_complaint_written_as_a_form_keeps_its_cash_cue():
     assert escalation["citations"][0]["quote"] == "ATM withdrawal"
 
 
+@pytest.mark.parametrize("authorization", ["denied", "confirmed"])
+def test_a_cue_in_the_label_itself_is_not_lost(authorization):
+    """Kanit's repro on #52: the only cash cue is the label text."""
+    intake = (
+        "Source ID: TEST-INTAKE\n\nCash withdrawal: the machine gave me nothing.\n"
+        f"Authorization: {authorization}\n"
+    )
+
+    escalation = find_escalation(intake, [], PROCEDURE_TEXT)
+
+    assert escalation is not None and escalation["classification"] == "unsupported"
+    assert escalation["citations"][0]["quote"] == "Cash withdrawal: the machine gave me nothing."
+    assert escalation["citations"][0]["quote"] in intake
+
+
+def test_a_cash_label_line_escalates_the_whole_contract():
+    record = _record(authorization="denied")
+
+    result = _assemble(record, statement="Cash withdrawal: the machine gave me nothing.")
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "unsupported",
+        "manual_review",
+        None,
+    )
+
+
+def test_a_plain_form_label_is_still_dropped():
+    intake = "Source ID: TEST-INTAKE\n\nMerchant category: cash and carry store.\nAuthorization: denied\n"
+
+    assert find_escalation(intake, [], PROCEDURE_TEXT) is None
+
+
 def test_a_complaint_written_as_a_form_keeps_its_denial():
     intake = "Source ID: TEST-INTAKE\n\nNote: I did not authorize this charge.\nAuthorization: confirmed\n"
 
