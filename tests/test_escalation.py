@@ -123,10 +123,7 @@ def test_manual_review_outranks_missing_information_and_still_lists_the_fields()
     assert result["follow_up_questions"] == [
         {
             "field": "authorization_confirmation",
-            "question": (
-                "Can you confirm whether you authorized the card transaction named in your "
-                "complaint?"
-            ),
+            "question": "Can you confirm whether you authorized the named card purchase?",
         }
     ]
     assert {
@@ -371,7 +368,7 @@ def test_an_ambiguous_case_does_not_request_a_field_another_type_needs():
 def test_a_missing_field_without_a_question_is_a_contract_error():
     record = _record(missing=["receipt_photo"])
 
-    with pytest.raises(ContractError, match="no question is defined"):
+    with pytest.raises(ContractError, match="unknown missing information identifier"):
         _assemble(record, statement="My ATM withdrawal failed.")
 
 
@@ -479,6 +476,9 @@ def _intake(statement, authorization):
 
 
 def _record(authorization="denied", missing=None):
+    # build_records lists a field as missing only when its intake line is absent, so a
+    # listed form field is blank here too.
+    missing = [] if missing is None else missing
     return {
         "case_id": "TEST-CASE",
         "intake": {
@@ -487,12 +487,14 @@ def _record(authorization="denied", missing=None):
             "reported_date": "2026-10-01",
             "transaction_id": "TX-TEST",
             "authorization": authorization,
-            "promised_service_date": "2026-08-20",
-            "purchase_receipt": "attached",
+            "promised_service_date": (
+                "not supplied" if "promised_service_date" in missing else "2026-08-20"
+            ),
+            "purchase_receipt": "not supplied" if "purchase_receipt" in missing else "attached",
             "submission_reference": "dispute-test",
         },
         "policy": {"version_id": "CARD-POLICY-V2", "procedure_id": "CARD-PROCEDURE-01"},
-        "missing_information": [] if missing is None else missing,
+        "missing_information": missing,
         "routing": None,
         "transactions": [
             {

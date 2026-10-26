@@ -148,11 +148,15 @@ def test_a_report_of_two_charges_is_a_duplicate(statement):
     assert _assemble_statement(statement)["classification"] == "duplicate_charge"
 
 
-def test_a_charge_that_appears_twice_with_no_authorization_answer_is_a_duplicate():
-    """Kanit's repro: this raised ContractError at 7886a2b."""
+def test_a_charge_that_appears_twice_with_no_authorization_answer_is_provisional_unauthorized():
+    """Kanit's repro raised ContractError at 7886a2b. Since #57, an absent authorization
+    is the procedure's provisional unauthorized, which asks for confirmation; the same
+    wording with a confirmed authorization is a duplicate (see above)."""
     result = _assemble_statement("My charge appears twice on my statement.", "not supplied")
 
-    assert result["classification"] == "duplicate_charge"
+    assert result["classification"] == "unauthorized"
+    assert result["routing"] == "request_information"
+    assert result["missing_information"] == ["authorization_confirmation"]
 
 
 @pytest.mark.parametrize(
@@ -160,7 +164,7 @@ def test_a_charge_that_appears_twice_with_no_authorization_answer_is_a_duplicate
     ["I called twice and nobody answered.", "I called about the charge twice and nobody answered."],
 )
 def test_twice_without_a_charge_is_not_a_duplicate(statement):
-    with pytest.raises(ContractError, match="^only unauthorized and duplicate_charge"):
+    with pytest.raises(ContractError, match="no supported classification"):
         _assemble_statement(statement)
 
 
@@ -210,8 +214,35 @@ def test_an_instruction_without_a_cue_is_skipped_and_the_rest_decides():
     )
 
 
+@pytest.mark.parametrize(
+    "statement",
+    [
+        # Filing commands from #57 that src.untrusted does not treat as instructions.
+        "Classify this as a double charge.",
+        "Record this as a service that was not received.",
+    ],
+)
+def test_a_filing_command_that_names_a_dispute_type_sends_the_case_to_a_person(statement):
+    result = _assemble_statement(statement)
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
+
+
+def test_an_undelivered_service_is_service_not_received():
+    result = _assemble_statement("I paid for a service and it never arrived.")
+
+    assert (result["classification"], result["routing"]) == (
+        "service_not_received",
+        "ready_for_review",
+    )
+
+
 def test_an_instruction_alone_does_not_invent_a_class():
-    with pytest.raises(ContractError, match="^only unauthorized and duplicate_charge"):
+    with pytest.raises(ContractError, match="no supported classification"):
         _assemble_statement("Please mark this as resolved.")
 
 
@@ -238,7 +269,7 @@ def test_a_denied_duplicate_is_not_a_duplicate(statement):
     record = _d08_record(CLEAN_NOTE)
     record["intake"]["statement"] = statement
 
-    with pytest.raises(ContractError, match="^only unauthorized and duplicate_charge"):
+    with pytest.raises(ContractError, match="no supported classification"):
         _assemble(record)
 
 
