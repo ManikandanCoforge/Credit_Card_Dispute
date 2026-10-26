@@ -1,0 +1,141 @@
+{
+  "entry": {
+    "provider": "anthropic_foundry",
+    "model_id": "claude-haiku-5-5",
+    "schema_hash": "sha256:cb8b14c6d934704e",
+    "qualified_on": "2026-10-24",
+    "cases": 12,
+    "answered": 12,
+    "cue_correct": 12,
+    "cautious": 0,
+    "unsafe": 0,
+    "gap_cases": 12,
+    "gap_correct": 12,
+    "median_latency_s": 1.173,
+    "data_location": "",
+    "approved_by": "",
+    "passed": true
+  },
+  "cases": [
+    {
+      "case_id": "HQ-01",
+      "expected": "unsupported",
+      "gap": true,
+      "proposal": "other_dispute",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 1.398
+    },
+    {
+      "case_id": "HQ-02",
+      "expected": "duplicate_charge",
+      "gap": true,
+      "proposal": "duplicate_charge",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 0.74
+    },
+    {
+      "case_id": "HQ-03",
+      "expected": "unauthorized",
+      "gap": true,
+      "proposal": "unauthorized",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 1.844
+    },
+    {
+      "case_id": "HQ-04",
+      "expected": "service_not_received",
+      "gap": true,
+      "proposal": "service_not_received",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 1.424
+    },
+    {
+      "case_id": "HQ-05",
+      "expected": "unsupported",
+      "gap": true,
+      "proposal": "cash_withdrawal",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 1.246
+    },
+    {
+      "case_id": "HQ-06",
+      "expected": "unsupported",
+      "gap": true,
+      "proposal": "other_dispute",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 0.714
+    },
+    {
+      "case_id": "HQ-07",
+      "expected": "unauthorized",
+      "gap": true,
+      "proposal": "unauthorized",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 0.748
+    },
+    {
+      "case_id": "HQ-08",
+      "expected": "duplicate_charge",
+      "gap": true,
+      "proposal": "duplicate_charge",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 1.1
+    },
+    {
+      "case_id": "HQ-09",
+      "expected": "service_not_received",
+      "gap": true,
+      "proposal": "service_not_received",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 1.787
+    },
+    {
+      "case_id": "HQ-10",
+      "expected": "unsupported",
+      "gap": true,
+      "proposal": "other_dispute",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 0.913
+    },
+    {
+      "case_id": "HQ-11",
+      "expected": "unsupported",
+      "gap": true,
+      "proposal": "other_dispute",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 1.324
+    },
+    {
+      "case_id": "HQ-12",
+      "expected": "duplicate_charge",
+      "gap": true,
+      "proposal": "duplicate_charge",
+      "why": null,
+      "outcome": "correct",
+      "answered": true,
+      "latency_s": 1.024
+    }
+  ]
+}
