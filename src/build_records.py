@@ -227,7 +227,15 @@ def _field(text: str, label: str) -> str:
 
 
 def _day(value: str) -> date | None:
-    """Parse a YYYY-MM-DD day. A field that is not supplied is not a day."""
+    """Parse a YYYY-MM-DD day. A field that is not supplied, or not an ISO date, is not a day.
+
+    An intake that writes "October 3, 2026" then selects no policy version, so only that
+    case stops, and a policy with an unreadable window is skipped like one with none.
+    Raising here would stop every case in the case list.
+    """
     if value == _NOT_SUPPLIED:
         return None
-    return date.fromisoformat(value)
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
