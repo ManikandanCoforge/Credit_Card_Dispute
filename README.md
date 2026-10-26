@@ -37,7 +37,7 @@ Development answers are deliberately supplied for feedback; hardcoding case IDs 
 
 ### Scored run
 
-Measured on 2026-10-25 across all twelve dev cases: 7 of 12 passed with 0 format errors. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The five failures are proposed exceptions tied to COF-39, COF-40 and COF-43, pending pod agreement.
+Measured on 2026-10-26 across all twelve dev cases from a clean tree at commit `f50c1f4`: 7 of 12 passed with 0 format errors. These numbers move once #52 (escalation and unsupported classification) lands, so regenerate them with the command in the report rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The five failures are proposed exceptions tied to COF-39, COF-40 and COF-43, pending pod agreement.
 
 ## Human approval and recovery
 
