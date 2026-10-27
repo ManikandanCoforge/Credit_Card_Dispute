@@ -24,13 +24,21 @@ class BankUnavailable(BankReadError):
     """A read that a later attempt may answer: a dropped connection, or a 503 marked retryable."""
 
 
-def read_body(base_url: str, path: str) -> bytes:
+# A bank that accepts the connection and never answers must not hold one attempt
+# open. The wait is bounded per read, so a retry is possible rather than a stall.
+_SOCKET_TIMEOUT_SECONDS = 5.0
+
+
+def read_body(
+    base_url: str, path: str, *, timeout: float = _SOCKET_TIMEOUT_SECONDS
+) -> bytes:
     """GET one bank path and return the body of a 200 response.
 
-    A URL that is not http(s), a connection failure, or any other status raises
-    BankReadError, so a failed read can never be mistaken for an empty result.
-    A connection failure, and a 503 whose body says "retryable": true, raise the
-    subclass BankUnavailable, so a caller can retry those and nothing else.
+    A URL that is not http(s), or any other status, raises BankReadError, so a
+    failed read can never be mistaken for an empty result. A connection failure, a
+    read that does not answer within timeout seconds, and a 503 whose body says
+    "retryable": true raise the subclass BankUnavailable, so a caller can retry
+    those and nothing else.
     """
     origin = urlparse(base_url)
     hostname = origin.hostname
@@ -40,7 +48,7 @@ def read_body(base_url: str, path: str) -> bytes:
     if port is None:
         port = 443 if origin.scheme == "https" else 80
     connection_cls = HTTPSConnection if origin.scheme == "https" else HTTPConnection
-    connection = connection_cls(hostname, port)
+    connection = connection_cls(hostname, port, timeout=timeout)
     try:
         connection.request("GET", path)
         response = connection.getresponse()

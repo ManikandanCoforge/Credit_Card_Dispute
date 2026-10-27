@@ -24,6 +24,7 @@ from src.contract_records import (
     load_contract_results,
     main,
 )
+from src.load_records import BankReadError, BankUnavailable
 from src.model_clients import request_key
 from src.model_cue import MULTI_SCHEMA, MULTI_SYSTEM, evidence, statement_lines
 from tools.runtime import create_server
@@ -842,7 +843,7 @@ def test_a_merchant_body_without_a_token_and_an_intake_without_a_reference_still
 
 
 class _refusing_connection:
-    def __init__(self, host, port):
+    def __init__(self, host, port, timeout=None):
         assert (host, port) == ("127.0.0.1", 8765)
 
     def request(self, method, path):
@@ -1095,6 +1096,46 @@ def test_a_retryable_timeout_is_read_again_and_the_case_is_built():
     assert seen == ["/v1/cases", TRANSACTIONS, TRANSACTIONS, MERCHANT]
     assert len(waits) == 1
     assert 1 <= waits[0] < 2
+
+
+def test_a_tool_that_answers_on_the_third_attempt_is_built_after_two_waits():
+    retry, waits = _retry()
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES, timeouts={TRANSACTIONS: 2}) as (
+        base_url,
+        seen,
+    ):
+        [result] = load_contract_results(base_url, DEV, retry=retry)
+
+    # The successful read is the one that is built: a retry is not a second case.
+    assert result["contract"] == CARD_D01_CONTRACT
+    assert result["error"] is None
+    assert seen == ["/v1/cases", TRANSACTIONS, TRANSACTIONS, TRANSACTIONS, MERCHANT]
+    assert [int(wait) for wait in waits] == [1, 2]
+
+
+def test_a_permanent_failure_ends_the_retry_without_a_further_read(monkeypatch):
+    retry, waits = _retry()
+    reads = []
+
+    def fail_once_then_give_up(base_url, path):
+        reads.append(path)
+        if len(reads) == 1:
+            raise BankUnavailable
+        raise BankReadError
+
+    monkeypatch.setattr("src.contract_records.read_body", fail_once_then_give_up)
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, seen):
+        [result] = load_contract_results(base_url, DEV, retry=retry)
+
+    # A transient failure is tried once more; the permanent one is not retried, and
+    # the case stops before the merchant service is touched.
+    assert reads == [TRANSACTIONS, TRANSACTIONS]
+    assert [int(wait) for wait in waits] == [1]
+    assert result["contract"] is None
+    assert result["error"] == "BankReadError"
+    assert seen == ["/v1/cases"]
 
 
 def test_a_transaction_service_that_never_answers_is_read_three_times_and_sent_to_a_person():

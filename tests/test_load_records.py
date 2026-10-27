@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -222,7 +223,7 @@ def test_url_without_a_port_uses_the_default_port(
     seen = {}
 
     class Probe:
-        def __init__(self, host, bound_port):
+        def __init__(self, host, bound_port, timeout=None):
             seen["host"] = host
             seen["port"] = bound_port
 
@@ -267,7 +268,7 @@ def test_a_503_whose_body_is_not_json_is_not_retryable(monkeypatch):
             return b"Service Unavailable"
 
     class Gateway:
-        def __init__(self, host, port):
+        def __init__(self, host, port, timeout=None):
             return
 
         def request(self, method, path):
@@ -290,6 +291,32 @@ def test_a_503_whose_body_is_not_json_is_not_retryable(monkeypatch):
 def test_a_dropped_connection_is_a_read_a_later_attempt_may_answer():
     with pytest.raises(BankUnavailable):
         read_body(_closed_bank(), "/v1/cases")
+
+
+def test_a_bank_that_never_answers_is_a_read_a_later_attempt_may_answer():
+    release = threading.Event()
+
+    class Silent(BaseHTTPRequestHandler):
+        def do_GET(self):
+            release.wait(timeout=5)
+
+        def log_message(self, format, *args):
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Silent)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    started = time.monotonic()
+    try:
+        with pytest.raises(BankUnavailable):
+            read_body(f"http://{host}:{port}", "/v1/cases", timeout=0.2)
+        assert time.monotonic() - started < 2.0
+    finally:
+        release.set()
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
 
 
 def _closed_bank():

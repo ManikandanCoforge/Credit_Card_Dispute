@@ -370,13 +370,6 @@ def _rules_contract(
             transactions_text=transactions_text,
             known=known,
         )
-    escalated = {
-        "intake_text": intake_text,
-        "attachment_text": attachment_text,
-        "procedure_text": procedure_text,
-        "policy_text": policy_text,
-        "transactions_text": transactions_text,
-    }
     notes: list[str] = []
     model_citations: list[Citation] = []
     provisional = False
@@ -403,7 +396,16 @@ def _rules_contract(
         model_escalation = _model_escalation(answer, intake, statements, procedure_text, known)
         if model_escalation is not None:
             return _escalated_contract(
-                record, intake, model_escalation, **escalated, known=known, notes=notes
+                record,
+                intake,
+                model_escalation,
+                intake_text=intake_text,
+                attachment_text=attachment_text,
+                procedure_text=procedure_text,
+                policy_text=policy_text,
+                transactions_text=transactions_text,
+                known=known,
+                notes=notes,
             )
         classification = answer["type"]
         model_citations.append(
@@ -505,7 +507,16 @@ def _rules_contract(
             if multiple:
                 escalation = {**_MULTIPLE_PROBLEMS_ESCALATION, "citations": [*model_citations]}
                 return _escalated_contract(
-                    record, intake, escalation, **escalated, known=known, notes=notes
+                    record,
+                    intake,
+                    escalation,
+                    intake_text=intake_text,
+                    attachment_text=attachment_text,
+                    procedure_text=procedure_text,
+                    policy_text=policy_text,
+                    transactions_text=transactions_text,
+                    known=known,
+                    notes=notes,
                 )
     return contract, [*notes, *_untrusted_notes(record, attachment_text)]
 
