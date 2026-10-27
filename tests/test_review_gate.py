@@ -408,6 +408,34 @@ def test_a_malformed_record_body_is_refused():
         assert raised.value.__cause__ is None
 
 
+def test_the_stub_bank_reads_a_create_body_before_it_answers():
+    # Windows resets a connection closed with unread bytes still in the
+    # socket, which raced the test's own reads. The stub must read the body.
+    from http.client import HTTPConnection
+    from urllib.parse import urlparse
+
+    # 16 MB is larger than the Windows socket buffer, so a handler that
+    # answers without reading the body forces a reset instead of a FIN.
+    body = json.dumps({"case_id": "CARD-D01", "draft": "x" * 16_000_000}).encode()
+    with _stub_bank(
+        review_status=200, record_status=200, record_body=b'{"id":"nope"}'
+    ) as base_url:
+        origin = urlparse(base_url)
+        connection = HTTPConnection(origin.hostname, origin.port, timeout=5.0)
+        try:
+            connection.request(
+                "POST",
+                "/v1/records",
+                body=body,
+                headers={"Content-Type": "application/json"},
+            )
+            response = connection.getresponse()
+            assert response.status == 409
+            assert json.loads(response.read()) == {"error": "idempotency_conflict"}
+        finally:
+            connection.close()
+
+
 def test_a_slow_bank_is_refused_when_the_socket_timeout_elapses(monkeypatch):
     monkeypatch.setattr("src.review_gate._SOCKET_TIMEOUT_SECONDS", 0.05)
     with _stub_bank(review_status=201, pause=0.3) as base_url:
@@ -459,6 +487,7 @@ def _stub_bank(
             self._reply(review_status, b"")
 
         def do_POST(self):
+            self._read_body()
             if pause:
                 time.sleep(pause)
             if self.path == "/v1/reviews":
@@ -467,6 +496,18 @@ def _stub_bank(
                 return
             body = json.dumps({"error": "idempotency_conflict"}).encode()
             self._reply(409, body)
+
+        def _read_body(self):
+            # A handler that answers before it reads the body makes Windows
+            # reset the connection while the client is still reading the
+            # answer, which is what made this stub intermittently unreachable.
+            length = self.headers.get("Content-Length")
+            remaining = int(length) if length and length.isdigit() else 0
+            while remaining > 0:
+                chunk = self.rfile.read(min(remaining, 65536))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
 
         def _reply(self, status, body):
             self.send_response(status)
