@@ -16,6 +16,10 @@ Exit status is 0 only when every case in the case list passes. Every artifact
 is still written when they do not. When the case list cannot be read, nothing
 is written and the exit status is 1, so an unreachable bank never replaces the
 committed report with an empty one.
+
+The p50 and p95 latency in the report are read back from the meter file this
+run wrote, not recomputed from the in-process durations, so the one published
+number has one source.
 """
 
 import argparse
@@ -34,6 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from evals.metrics.pii import artifact_checks
 from src.contract import Contract
 from src.contract_records import (
     CasePlan,
@@ -42,6 +47,7 @@ from src.contract_records import (
     contract_case_plans,
 )
 from src.load_records import BankReadError
+from src.meters import LatencyPercentiles, latency_percentiles
 from tools.evaluate import evaluate
 
 EXPECTED_CASES = 12
@@ -130,20 +136,6 @@ class ExceptionEntry(TypedDict):
     failed_checks: list[str]
     error: str | None
     note: str
-
-
-def p95_nearest_rank(durations: Sequence[float]) -> float | None:
-    """Return the nearest-rank 95th percentile, or None when nothing was measured.
-
-    Rank is ceil(0.95 * n), computed with integers so the result is exactly
-    reproducible and does not depend on floating-point rounding. Over the twelve
-    measured cases the rank is twelve, which is the slowest case.
-    """
-    values = sorted(durations)
-    if not values:
-        return None
-    rank = max(1, (95 * len(values) + 99) // 100)
-    return float(values[rank - 1])
 
 
 def failed_checks(checks: Mapping[str, bool]) -> list[str]:
@@ -324,15 +316,18 @@ def assemble_report(
     git_dirty: bool,
     base_url: str,
     dataset_name: str,
+    latencies: LatencyPercentiles,
     meters: Sequence[MeterRow] | None = None,
 ) -> dict[str, Any]:
     """Assemble the scored-run report from measured cases and evaluator output.
 
-    Cost and latency are read from the meter rows, the one artifact the report
-    claims as their source. When meters are not supplied they are derived from
-    the case reports, so a caller cannot silently report a different cost.
+    Cost is read from the meter rows and the percentiles are the ones the caller
+    read from the generated redacted meter file, the artifacts the report claims
+    as their source. Neither number is recomputed here from the in-process
+    durations, so the report cannot publish a second, hand-computed latency.
+    When meters are not supplied they are derived from the case reports, so a
+    caller cannot silently report a different cost.
     """
-    durations = [case["duration_ms"] for case in case_reports]
     total_cases = len(case_reports)
     meter_rows_used = list(meters) if meters is not None else meter_rows(case_reports)
     total_cost = round(sum(row["cost_usd"] for row in meter_rows_used), 6)
@@ -354,7 +349,8 @@ def assemble_report(
         "pass_count": sum(1 for case in case_reports if case["passed"]),
         "total_cases": total_cases,
         "format_errors": list(evaluation["format_errors"]),
-        "p95_latency_ms": p95_nearest_rank(durations),
+        "p50_latency_ms": latencies["p50"],
+        "p95_latency_ms": latencies["p95"],
         "cost_per_case_usd": (
             0.0 if total_cases == 0 else round(total_cost / total_cases, 6)
         ),
@@ -404,8 +400,12 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         f"- Pass: {report['pass_count']} / {total}",
         f"- Format errors: {len(report['format_errors'])}",
         (
+            f"- p50 draft latency: {_fmt_ms(report['p50_latency_ms'])} "
+            "(nearest-rank over the latency_ms values in reports/meters.jsonl)"
+        ),
+        (
             f"- p95 draft latency: {_fmt_ms(report['p95_latency_ms'])} "
-            "(nearest-rank over the measured durations)"
+            "(nearest-rank over the latency_ms values in reports/meters.jsonl)"
         ),
         (
             f"- Cost per case: {report['cost_per_case_usd']:.2f} USD "
@@ -490,11 +490,13 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         "## Metered cost",
         "",
         (
-            "Latency and cost come from `reports/scored-run-meters.json`, one "
-            "row per case. The path is `deterministic_template`, so "
-            "`model_calls`, `model_tokens_in` and `model_tokens_out` are 0 and "
-            "the cost is 0.00 USD by construction: this run wires no model call, "
-            "so the meter shows what the run did, not what a model would cost."
+            "Cost comes from `reports/scored-run-meters.json`, one row per case. "
+            "The p50 and p95 in the result section are read from "
+            "`reports/meters.jsonl`, the redacted per-case meter file. The path "
+            "is `deterministic_template`, so `model_calls`, `model_tokens_in` "
+            "and `model_tokens_out` are 0 and the cost is 0.00 USD by "
+            "construction: this run wires no model call, so the meter shows what "
+            "the run did, not what a model would cost."
         ),
         "",
         (
@@ -621,7 +623,9 @@ def run_scored(
     Returns 0 only when every case in the case list passes. The artifacts are
     written before the status is returned, so a failing run still publishes its
     numbers. When the case list cannot be read there are no numbers to publish:
-    nothing is written, the reason goes to stderr, and the status is 1.
+    nothing is written, the reason goes to stderr, and the status is 1. When
+    the meter file the run wrote holds a restricted value, the run is refused
+    the same way: the reason names the file and the case.
     """
     dataset = json.loads((data_dir / "dataset.json").read_text(encoding="utf-8"))
     gold = json.loads(gold_path.read_text(encoding="utf-8"))
@@ -647,6 +651,25 @@ def run_scored(
         data_dir,
         meter_path=destination,
     )
+    latencies = latency_percentiles(destination)
+
+    leaks = [
+        check
+        for check in artifact_checks(
+            str(destination),
+            destination.read_text(encoding="utf-8").splitlines(),
+            gold,
+        )
+        if not check.passed
+    ]
+    for check in leaks:
+        print(
+            f"{destination}: case {check.case_id}: {check.metric} found a "
+            "restricted value. The run is refused and no report was written.",
+            file=sys.stderr,
+        )
+    if leaks:
+        return 1
 
     submissions: list[Contract] = [
         case["contract"] for case in measured if case["contract"] is not None
@@ -663,6 +686,7 @@ def run_scored(
         git_dirty=git_dirty,
         base_url=base_url,
         dataset_name=dataset["name"],
+        latencies=latencies,
         meters=meters,
     )
     _write_json(report_path, report)
@@ -673,6 +697,7 @@ def run_scored(
     print(
         f"{report['pass_count']} / {report['total_cases']} cases passed; "
         f"{len(report['format_errors'])} format errors; "
+        f"p50 {_fmt_ms(report['p50_latency_ms'])}; "
         f"p95 {_fmt_ms(report['p95_latency_ms'])}; "
         f"cost per case {report['cost_per_case_usd']:.2f} USD"
     )

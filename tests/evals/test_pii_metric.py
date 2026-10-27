@@ -7,6 +7,7 @@ checks in a fixed order: restricted values first, synthetic patterns second.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -227,3 +228,94 @@ def test_a_numeric_restricted_value_is_still_matched():
 
     assert restricted.passed is False
     assert restricted.evidence["leaked"] == [4111111111111111]
+
+METER = "reports/meters.jsonl"
+"""The generated artifact the scored run writes one redacted line to."""
+
+
+def meter_line(**overrides: Any) -> str:
+    """Return one generated meter line, with any field overridden."""
+    line: dict[str, Any] = {
+        "case_id": "CASE-1",
+        "route": "ready_for_review",
+        "started_at": "2026-10-27T18:00:00.000Z",
+        "latency_ms": 12,
+        "model_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "tool_attempts": 1,
+        "retry_count": 0,
+    }
+    line.update(overrides)
+    return json.dumps(line)
+
+
+def test_a_clean_generated_meter_line_passes_the_artifact_scan():
+    checks = pii.artifact_checks(METER, [meter_line()], {"CASE-1": GOLD})
+
+    assert [check.metric for check in checks] == [
+        "pii.restricted_values",
+        "pii.synthetic_patterns",
+    ]
+    assert [check.case_id for check in checks] == ["CASE-1", "CASE-1"]
+    assert all(check.passed for check in checks)
+    assert [check.evidence for check in checks] == [
+        {"source": METER, "leaked": []},
+        {"source": METER, "matches": []},
+    ]
+
+
+def test_a_grouped_card_in_a_generated_meter_line_fails_the_artifact_scan():
+    restricted, synthetic = pii.artifact_checks(
+        METER, [meter_line(route="4111-1111-1111-1111")], {"CASE-1": GOLD}
+    )
+
+    assert restricted.passed is True
+    assert synthetic.passed is False
+    assert synthetic.evidence["matches"] == ["4111-1111-1111-1111"]
+    assert METER in synthetic.reason
+
+
+def test_a_gold_restricted_value_in_a_generated_meter_line_fails_the_artifact_scan():
+    gold = {"CASE-1": gold_with(["Ada Lovelace"])}
+    restricted, synthetic = pii.artifact_checks(
+        METER, [meter_line(route="Ada Lovelace")], gold
+    )
+
+    assert restricted.passed is False
+    assert restricted.evidence["leaked"] == ["Ada Lovelace"]
+    assert METER in restricted.reason
+    assert synthetic.passed is True
+
+
+def test_a_line_that_is_not_a_meter_row_is_scanned_as_unknown():
+    checks = pii.artifact_checks(
+        METER, ["a redacted log line with SYNTHETIC-PRIVATE-LOG-9"], {}
+    )
+
+    restricted, synthetic = checks
+    assert [check.case_id for check in checks] == ["unknown", "unknown"]
+    assert restricted.passed is True
+    assert synthetic.passed is False
+    assert synthetic.evidence["matches"] == ["SYNTHETIC-PRIVATE-LOG-9"]
+    assert METER in synthetic.reason
+
+
+def test_a_meter_row_without_a_case_id_is_scanned_as_unknown():
+    checks = pii.artifact_checks(METER, [json.dumps({"route": "ready_for_review"})], {})
+
+    assert [check.case_id for check in checks] == ["unknown", "unknown"]
+    assert all(check.passed for check in checks)
+
+
+def test_every_generated_line_gets_both_checks_in_order():
+    checks = pii.artifact_checks(
+        METER, [meter_line(), meter_line(case_id="CARD-D02")], {}
+    )
+
+    assert [check.case_id for check in checks] == [
+        "CASE-1",
+        "CASE-1",
+        "CARD-D02",
+        "CARD-D02",
+    ]

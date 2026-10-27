@@ -13,10 +13,14 @@ from src.untrusted import restricted_values
 
 
 class LatencyPercentiles(TypedDict):
-    """Nearest-rank latency percentiles read from a meter file."""
+    """Nearest-rank latency percentiles read from a meter file.
 
-    p50: int
-    p95: int
+    Both are None when the meter file holds no case, so a zero-case run reports
+    a missing latency instead of raising.
+    """
+
+    p50: int | None
+    p95: int | None
 
 
 class MeterLeak(Exception):
@@ -58,11 +62,18 @@ def record_case_meter(
 
 
 def latency_percentiles(path: Path) -> LatencyPercentiles:
-    """Return nearest-rank p50 and p95 of latency_ms from the meter file."""
+    """Return nearest-rank p50 and p95 of latency_ms from the meter file.
+
+    Returns None for both when the file holds no line, which is what a run over
+    an empty case list writes, so the caller reports a missing latency instead
+    of raising IndexError.
+    """
     latencies = [
         int(json.loads(line)["latency_ms"])
         for line in path.read_text(encoding="utf-8").splitlines()
     ]
+    if not latencies:
+        return {"p50": None, "p95": None}
     return {"p50": _nearest_rank(latencies, 50), "p95": _nearest_rank(latencies, 95)}
 
 

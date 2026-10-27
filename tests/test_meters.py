@@ -102,6 +102,12 @@ def test_p50_and_p95_are_read_from_the_meter_file(tmp_path: Path) -> None:
     assert latency_percentiles(path) == {"p50": 20, "p95": 40}
 
 
+def test_latency_percentiles_of_an_empty_meter_file_are_none(tmp_path: Path) -> None:
+    path = tmp_path / "meters.jsonl"
+    path.write_text("", encoding="utf-8")
+    assert latency_percentiles(path) == {"p50": None, "p95": None}
+
+
 def test_evidence_text_is_refused_and_the_file_stays_unchanged(tmp_path: Path) -> None:
     path = tmp_path / "meters.jsonl"
     record_case_meter(
