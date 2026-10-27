@@ -244,6 +244,13 @@ def test_a_card_carried_as_an_integer_is_refused(tmp_path: Path) -> None:
 def test_a_card_broken_by_a_zero_width_space_is_refused(tmp_path: Path) -> None:
     _refuses(tmp_path / "meters.jsonl", case_id="4111\u200b1111\u200b1111\u200b1111")
 
+def test_a_ten_digit_case_id_is_not_a_restricted_value(tmp_path: Path) -> None:
+    path = tmp_path / "meters.jsonl"
+    _record(path, case_id="CARD-1234567890")
+    [line] = path.read_text(encoding="utf-8").splitlines()
+    assert json.loads(line)["case_id"] == "CARD-1234567890"
+
+
 def test_a_restricted_value_is_refused_and_the_file_stays_unchanged(tmp_path: Path) -> None:
     path = tmp_path / "meters.jsonl"
     record_case_meter(

@@ -17,12 +17,14 @@ from pathlib import Path
 
 import pytest
 
+from src import contract_records
 from src.contract_records import (
     ContractRecordError,
     load_contract_records,
     load_contract_results,
     main,
 )
+from src.meters import MeterLeak
 from src.model_clients import request_key
 from src.model_cue import MULTI_SCHEMA, MULTI_SYSTEM, evidence, statement_lines
 
@@ -207,6 +209,29 @@ def test_a_stopped_case_still_writes_one_meter_line(tmp_path):
     )
     assert "SYNTHETIC-PRIVATE" not in path.read_text(encoding="utf-8")
 
+
+
+
+def test_a_refused_meter_line_is_typed_and_the_other_cases_still_run(tmp_path, monkeypatch):
+    path = tmp_path / "meters.jsonl"
+    real = contract_records.record_case_meter
+
+    def refuse_one(meter_path, **line):
+        if line["case_id"] == "CARD-D01":
+            raise MeterLeak
+        real(meter_path, **line)
+
+    monkeypatch.setattr(contract_records, "record_case_meter", refuse_one)
+    case_list = {"cases": [CARD_D01, CARD_D11]}
+
+    with _bank(case_list, _d01_and_d11_bodies()) as (base_url, _seen):
+        results = load_contract_results(base_url, DEV, meter_path=path)
+
+    assert [result["meter_error"] for result in results] == ["MeterLeak", None]
+    assert all(result["contract"] is not None for result in results)
+    assert [json.loads(line)["case_id"] for line in path.read_text(encoding="utf-8").splitlines()] == [
+        "CARD-D11"
+    ]
 
 def test_a_second_run_replaces_the_meter_file(tmp_path):
     path = tmp_path / "meters.jsonl"
@@ -446,6 +471,7 @@ def test_the_reason_is_the_applications_own_message_when_there_is_one(tmp_path):
             "error": "expected exactly one 'Amount:' line in the source",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
 
@@ -804,6 +830,7 @@ def test_a_listed_document_that_is_not_customer_correspondence_cannot_escalate(t
             "error": "the case names evidence this step cannot read: CARD-D01-NOTE",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
     assert seen == ["/v1/cases"]
@@ -822,6 +849,7 @@ def test_a_listed_document_id_that_is_not_a_plain_id_is_never_opened():
             "error": "a source id is not a plain document id",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
     assert seen == ["/v1/cases"]
@@ -899,6 +927,7 @@ def test_a_contract_that_would_carry_a_restricted_value_is_not_emitted():
             "error": "a restricted value was about to be emitted",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
 
@@ -1156,6 +1185,7 @@ def test_a_case_that_names_evidence_this_step_cannot_read_is_not_built():
             "error": "the case names evidence this step cannot read: CARD-D01-FOLLOWUP",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
     assert seen == ["/v1/cases"]

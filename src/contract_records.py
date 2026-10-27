@@ -41,7 +41,7 @@ from src.load_records import (
     read_body,
     records_from_case_list,
 )
-from src.meters import record_case_meter
+from src.meters import MeterLeak, record_case_meter
 from src.model_clients import ModelSetupError, model_from_env
 from src.model_cue import ModelCall, ModelClient
 from src.models import (
@@ -70,11 +70,18 @@ class ContractRecordError(Exception):
 
 
 class ContractResult(TypedDict):
+    """One case's contract, its reason when it could not be built, and its meter.
+
+    meter_error names the error that refused this case's meter line, or is None.
+    A refused line never stops the run and never discards the case's result.
+    """
+
     case_id: str
     contract: Contract | None
     error: str | None
     narrative_meter: NarrativeMeter | None
     model_calls: list[ModelCall]
+    meter_error: str | None
 
 
 class CasePlan(TypedDict):
@@ -118,7 +125,9 @@ def build_contract_result(
     because they were still made.
 
     When meter_path is set, one meter line is appended for this case after it
-    finishes, including a case that stops.
+    finishes, including a case that stops. A line that would carry a restricted
+    value is refused: the case keeps its result and meter_error names "MeterLeak",
+    so one refused line never stops the run.
     """
     started_at = datetime.now(UTC)
     started = time.perf_counter()
@@ -143,6 +152,7 @@ def build_contract_result(
             "error": _reason(error),
             "narrative_meter": None,
             "model_calls": calls,
+            "meter_error": None,
         }
     else:
         result = {
@@ -151,23 +161,27 @@ def build_contract_result(
             "error": None,
             "narrative_meter": meter,
             "model_calls": calls,
+            "meter_error": None,
         }
     if meter_path is not None:
         finished = result["contract"]
         narrative = result["narrative_meter"]
-        record_case_meter(
-            meter_path,
-            case_id=result["case_id"],
-            route=finished["routing"] if finished is not None else "not_built",
-            started_at=started_at,
-            latency_ms=round((time.perf_counter() - started) * 1000),
-            model_calls=len(calls)
-            + (0 if narrative is None else narrative["model_calls"]),
-            input_tokens=sum(call["input_tokens"] or 0 for call in calls),
-            output_tokens=sum(call["output_tokens"] or 0 for call in calls),
-            tool_attempts=tally["tool_attempts"],
-            retry_count=tally["retry_count"],
-        )
+        try:
+            record_case_meter(
+                meter_path,
+                case_id=result["case_id"],
+                route=finished["routing"] if finished is not None else "not_built",
+                started_at=started_at,
+                latency_ms=round((time.perf_counter() - started) * 1000),
+                model_calls=len(calls)
+                + (0 if narrative is None else narrative["model_calls"]),
+                input_tokens=sum(call["input_tokens"] or 0 for call in calls),
+                output_tokens=sum(call["output_tokens"] or 0 for call in calls),
+                tool_attempts=tally["tool_attempts"],
+                retry_count=tally["retry_count"],
+            )
+        except MeterLeak:
+            result["meter_error"] = "MeterLeak"
     return result
 
 
@@ -191,8 +205,10 @@ def load_contract_results(
     built case carries its narrative meter (path, latency, model calls). model,
     when given, may answer the hybrid's questions, and each result lists the calls
     made for its case. The meter line records every model call made for the case
-    (the hybrid's and the narrative writer's); token counts stay 0 because this
-    meter does not count tokens.
+    (the hybrid's and the narrative writer's) and sums their input and output
+    tokens, counting a call that reported no count as 0. A meter line that would
+    carry a restricted value is skipped for that case, and its result carries
+    "MeterLeak" in meter_error.
     """
     data_dir = Path(data_dir)
     plans = contract_case_plans(base_url, data_dir)
