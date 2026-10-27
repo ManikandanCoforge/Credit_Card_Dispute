@@ -46,12 +46,19 @@ def test_main_prints_working_records_for_the_given_bank(capsys, monkeypatch):
 
 
 def test_main_uses_the_local_mock_and_data_dev_by_default(capsys, monkeypatch):
-    monkeypatch.chdir(ROOT)
-    with _bank(_card_d01_case_list(), port=8765) as base_url:
-        assert base_url == "http://127.0.0.1:8765"
-        monkeypatch.setattr(sys, "argv", ["app"])
-        main()
+    # The defaults are checked without binding port 8765, where the README runs the
+    # mock, so the tests pass while that mock is up.
+    seen = []
 
+    def prepare(base_url, data_dir):
+        seen.append((base_url, data_dir))
+        return [CARD_D01]
+
+    monkeypatch.setattr("src.app.prepare_complaints", prepare)
+    monkeypatch.setattr(sys, "argv", ["app"])
+    main()
+
+    assert seen == [("http://127.0.0.1:8765", "data/dev")]
     assert capsys.readouterr().out == _printed([CARD_D01])
 
 
@@ -80,7 +87,7 @@ def _card_d01_case_list():
 
 
 @contextmanager
-def _bank(body, port=0):
+def _bank(body):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path != "/v1/cases":
@@ -96,7 +103,7 @@ def _bank(body, port=0):
         def log_message(self, format, *args):
             return
 
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     host, bound_port = server.server_address

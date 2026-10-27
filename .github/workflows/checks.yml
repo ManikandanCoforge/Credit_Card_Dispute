@@ -21,8 +21,8 @@ jobs:
           python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
-      - run: uv run --locked mypy src evals
-      - run: uv run --locked ruff check src evals
+      - run: uv run --locked mypy src tools evals
+      - run: uv run --locked ruff check src tools evals
 
   bandit:
     runs-on: ubuntu-26.04
@@ -35,7 +35,7 @@ jobs:
           python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
-      - run: uv run --locked bandit -r src evals
+      - run: uv run --locked bandit -c pyproject.toml -r src tools evals
 
   pytest:
     runs-on: ubuntu-26.04
@@ -48,7 +48,8 @@ jobs:
           python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
-      - run: uv run --locked pytest --cov=src --cov=evals --cov-report=term-missing --cov-fail-under=100
+      # The coverage sources and the 100% gate are in pyproject.toml's addopts.
+      - run: uv run --locked pytest
 
   env-files:
     runs-on: ubuntu-26.04
