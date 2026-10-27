@@ -41,12 +41,24 @@ Measured on 2026-10-27 across all twelve dev cases from a clean tree at commit `
 
 ## Human approval and recovery
 
-Start review with `POST /v1/reviews`. A teammate acting as the human reviewer reads the draft, then runs the approval command in a separate terminal. Your agent must never invoke this operator command.
+Open the reviews from the application. `submit` sends each finished draft to `POST /v1/reviews`, every case unless you name some with `--case`. It keeps each review id and draft hash with its draft in `reports/reviews.json`:
+
+```sh
+uv run --locked python -m src.review_runner submit --case CARD-D01
+```
+
+A teammate acting as the human reviewer reads the draft, then runs the approval command in a separate terminal. Your agent must never invoke this operator command.
 
 ```sh
 uv run --locked python tools/runtime.py pending
 uv run --locked python tools/runtime.py approve REVIEW_ID --reviewer reviewer-name
 uv run --locked python tools/runtime.py audit > reports/audit.json
+```
+
+Then record the approved drafts. `check` reads each pending review every 2 seconds until all are decided or `--wait` seconds have passed. It creates a record only for an approved, unchanged draft, keyed `case_id:review_id`, and exits 1 while any review is pending or refused. A rejected draft goes back with no record, and running `check` again never creates a second record:
+
+```sh
+uv run --locked python -m src.review_runner check --wait 120
 ```
 
 Replace REVIEW_ID with the returned identifier. Create `reports/` before redirecting the audit. To reject, use `reject` with the same arguments. For a fresh run, stop clients and use `uv run --locked python tools/runtime.py reset --confirm`.
