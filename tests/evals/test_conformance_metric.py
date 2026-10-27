@@ -64,12 +64,18 @@ def test_baseline_passes_every_sub_check() -> None:
     """The default fixture, once conforming, fails nothing at all."""
     assert conformance.NAME == "conformance"
     checks = conformance.run(make_run([make_case(contract=baseline_contract())]))
+    expected = ["submitted", *SUB_CHECKS]
     assert [check.metric for check in checks] == [
-        f"conformance.{name}" for name in SUB_CHECKS
+        f"conformance.{name}" for name in expected
     ]
-    assert [check.case_id for check in checks] == ["CASE-1"] * len(SUB_CHECKS)
+    assert [check.case_id for check in checks] == ["CASE-1"] * len(expected)
     assert failed_sub_checks(checks) == set()
     assert all(check.passed for check in checks)
+    assert all(
+        check.evidence["reported"]
+        for check in checks
+        if check.metric != "conformance.submitted"
+    )
     assert all(check.evidence["build_error"] is None for check in checks)
 
 
@@ -84,6 +90,7 @@ def test_wrong_deadline_fails_only_deadline() -> None:
     assert failed.evidence == {
         "subcheck": "deadline",
         "value": False,
+        "reported": True,
         "build_error": None,
     }
 
@@ -111,6 +118,7 @@ def test_unbuilt_case_fails_submitted_with_the_build_error() -> None:
     assert check.evidence == {
         "subcheck": "submitted",
         "value": False,
+        "reported": True,
         "build_error": "build failed: transactions tool timed out",
     }
     assert "transactions tool timed out" in check.reason
@@ -128,10 +136,34 @@ def test_multi_case_run_keeps_verdicts_separate() -> None:
         {**DATASET_CASE, "case_id": "CASE-2", "logical_key": "dispute-2"},
     ]
     checks = conformance.run(make_run([good, bad], dataset_cases=dataset_cases))
-    assert len(checks) == 2 * len(SUB_CHECKS)
+    assert len(checks) == 2 * (len(SUB_CHECKS) + 1)
     assert {check.case_id for check in checks} == {"CASE-1", "CASE-2"}
     assert failed_sub_checks(checks, "CASE-1") == set()
     assert failed_sub_checks(checks, "CASE-2") == {"routing"}
+
+
+def test_a_not_built_case_fails_every_sub_check_its_neighbours_report() -> None:
+    """A missing contract must not shrink the denominator."""
+    good = make_case(contract=baseline_contract())
+    missing = make_case("CASE-2", build_error="transactions never answered")
+    dataset_cases = [
+        DATASET_CASE,
+        {**DATASET_CASE, "case_id": "CASE-2", "logical_key": "dispute-2"},
+    ]
+    checks = conformance.run(make_run([good, missing], dataset_cases=dataset_cases))
+    for_case = [check for check in checks if check.case_id == "CASE-2"]
+    assert len(for_case) == len(SUB_CHECKS) + 1
+    assert all(not check.passed for check in for_case)
+    assert all(
+        check.evidence["reported"] is False
+        for check in for_case
+        if check.metric != "conformance.submitted"
+    )
+    assert any(
+        check.metric == "conformance.deadline"
+        and "was not scored for deadline" in check.reason
+        for check in for_case
+    )
 
 
 def test_case_absent_from_gold_fails_submitted() -> None:
