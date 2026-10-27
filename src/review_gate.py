@@ -15,6 +15,8 @@ from http.client import HTTPConnection
 from typing import NotRequired, TypedDict
 from urllib.parse import quote, urlparse
 
+from pydantic import ValidationError
+
 from src.api_models import RecordRow, ReviewCreated, ReviewRow
 from src.idempotency import RecordRequest, StoredRecord, create_record
 
@@ -154,7 +156,7 @@ def _store_record(
             return None
         if status != 200:
             raise ReviewRefused(status, "unreadable")
-        return RecordRow.model_validate_json(raw)
+        return _parsed(RecordRow, status, raw)
 
     request: RecordRequest = {
         "case_id": case_id,
@@ -173,16 +175,28 @@ def _submit(base_url: str, case_id: str, draft: dict[str, object]) -> ReviewCrea
     )
     if status != 201:
         raise ReviewRefused(status, "submit_failed")
-    return ReviewCreated.model_validate_json(raw)
+    return _parsed(ReviewCreated, status, raw)
 
 
 def _fetch(base_url: str, review_id: str) -> ReviewRow:
-    status, raw = _exchange(base_url, "GET", f"/v1/reviews/{review_id}", None)
+    status, raw = _exchange(
+        base_url, "GET", f"/v1/reviews/{quote(review_id, safe='')}", None
+    )
     if status == 404:
         raise ReviewRefused(status, "missing")
     if status != 200:
         raise ReviewRefused(status, "unreadable")
-    return ReviewRow.model_validate_json(raw)
+    return _parsed(ReviewRow, status, raw)
+
+
+def _parsed[Row: (ReviewCreated, ReviewRow, RecordRow)](
+    model: type[Row], status: int, raw: bytes
+) -> Row:
+    """Read a 2xx body. A body that is not that row is a refusal."""
+    try:
+        return model.model_validate_json(raw)
+    except ValidationError:
+        raise ReviewRefused(status, "unreadable") from None
 
 
 def _exchange(

@@ -5,9 +5,11 @@ import sqlite3
 import subprocess
 import sys
 import threading
+import time
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 
@@ -348,14 +350,91 @@ def test_a_record_lookup_that_is_not_ok_is_refused():
         assert raised.value.reason == "unreadable"
 
 
+def test_the_review_path_quotes_the_review_id():
+    review_id = "rev/stub?x"
+    paths = []
+    with _stub_bank(
+        review_status=200, paths=paths, review_status_name="pending"
+    ) as base_url:
+        alert = review_alert(
+            base_url,
+            "CARD-D01",
+            dict(_DRAFT),
+            review_id=review_id,
+            draft_hash=_HASH,
+        )
+    assert paths == [f"/v1/reviews/{quote(review_id, safe='')}"]
+    assert alert["alert"] == "pending"
+
+
+def test_a_malformed_review_submission_is_refused():
+    with _stub_bank(review_status=200, submit_body=b'{"status":"pending"}') as base_url:
+        with pytest.raises(ReviewRefused) as raised:
+            submit_review(base_url, "CARD-D01", dict(_DRAFT))
+        assert raised.value.status == 201
+        assert raised.value.reason == "unreadable"
+        assert raised.value.__cause__ is None
+
+
+def test_a_malformed_review_body_is_refused():
+    with _stub_bank(review_status=200, review_body=b'{"id":"rev_stub"}') as base_url:
+        with pytest.raises(ReviewRefused) as raised:
+            review_alert(
+                base_url,
+                "CARD-D01",
+                dict(_DRAFT),
+                review_id="rev_stub",
+                draft_hash=_HASH,
+            )
+        assert raised.value.status == 200
+        assert raised.value.reason == "unreadable"
+        assert raised.value.__cause__ is None
+
+
+def test_a_malformed_record_body_is_refused():
+    with _stub_bank(
+        review_status=200, record_status=200, record_body=b'{"id":"nope"}'
+    ) as base_url:
+        with pytest.raises(ReviewRefused) as raised:
+            review_alert(
+                base_url,
+                "CARD-D01",
+                dict(_DRAFT),
+                review_id="rev_stub",
+                draft_hash=_HASH,
+            )
+        assert raised.value.status == 200
+        assert raised.value.reason == "unreadable"
+        assert raised.value.__cause__ is None
+
+
+def test_a_slow_bank_is_refused_when_the_socket_timeout_elapses(monkeypatch):
+    monkeypatch.setattr("src.review_gate._SOCKET_TIMEOUT_SECONDS", 0.05)
+    with _stub_bank(review_status=201, pause=0.3) as base_url:
+        with pytest.raises(ReviewRefused) as raised:
+            submit_review(base_url, "CARD-D01", dict(_DRAFT))
+        assert raised.value.status is None
+        assert raised.value.reason == "unreachable"
+
+
 @contextmanager
-def _stub_bank(review_status, record_status=200):
+def _stub_bank(
+    review_status,
+    record_status=200,
+    *,
+    paths=None,
+    review_body=None,
+    review_status_name="approved",
+    submit_body=None,
+    record_body=b"",
+    pause=0,
+):
     review = {
         "id": "rev_stub",
         "case_id": "CARD-D01",
         "draft": json.dumps(_DRAFT, sort_keys=True, separators=(",", ":")),
         "hash": _HASH,
-        "status": "approved",
+        "status": review_status_name,
         "reviewer": "reviewer-name",
     }
 
@@ -364,15 +443,28 @@ def _stub_bank(review_status, record_status=200):
             pass
 
         def do_GET(self):
+            if paths is not None:
+                paths.append(self.path)
             if self.path.startswith("/v1/records/"):
-                self._reply(record_status, b"")
+                self._reply(record_status, record_body)
                 return
             if review_status == 200:
-                self._reply(200, json.dumps(review).encode())
+                body = (
+                    review_body
+                    if review_body is not None
+                    else json.dumps(review).encode()
+                )
+                self._reply(200, body)
                 return
             self._reply(review_status, b"")
 
         def do_POST(self):
+            if pause:
+                time.sleep(pause)
+            if self.path == "/v1/reviews":
+                body = submit_body if submit_body is not None else b"{}"
+                self._reply(201, body)
+                return
             body = json.dumps({"error": "idempotency_conflict"}).encode()
             self._reply(409, body)
 

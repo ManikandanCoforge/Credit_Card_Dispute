@@ -1,7 +1,7 @@
-"""One record per complaint, keyed by the submission reference.
+"""One record per idempotency key.
 
-CARD-D02 and CARD-D09 both carry dispute-double-02. That string is the
-Idempotency-Key. A replay and a redelivery return the stored record.
+The caller supplies the key. These tests use dispute-double-02 to show that
+a replay and a shared key return the stored record.
 """
 
 import traceback
@@ -26,7 +26,7 @@ _ORIGINAL = {
 }
 
 
-def test_the_idempotency_key_is_the_submission_reference():
+def test_the_idempotency_key_is_the_supplied_string():
     assert idempotency_key("  dispute-d01\n") == "dispute-d01"
     assert idempotency_key(_KEY) == _KEY
     assert idempotency_key("dispute-d01") != idempotency_key(_KEY)
@@ -47,12 +47,12 @@ def test_the_idempotency_key_is_the_submission_reference():
         "-",
     ],
 )
-def test_a_missing_submission_reference_is_rejected(reference):
-    with pytest.raises(ValueError, match="submission reference is required"):
+def test_a_missing_idempotency_key_is_rejected(reference):
+    with pytest.raises(ValueError, match="idempotency key is required"):
         idempotency_key(reference)
 
 
-def test_a_submission_reference_longer_than_128_characters_is_rejected():
+def test_an_idempotency_key_longer_than_128_characters_is_rejected():
     with pytest.raises(ValueError, match="at most 128"):
         idempotency_key("k" * 129)
 
