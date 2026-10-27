@@ -76,7 +76,7 @@ uv run --locked python tools/scored_run.py
 
 It reads the mock at `http://127.0.0.1:8765` by default. It writes `submissions/scored-run.json` and replaces the committed `reports/scored-run.*`, so commit those files only when you mean to publish a new run. If the mock is not running, it writes nothing and exits 1. The report's Reproduce section has the full commands, with a state file of its own.
 
-Measured on 2026-10-26 across all twelve dev cases from a clean tree at commit `f50c1f4`: 7 of 12 passed with 0 format errors. These numbers move once #52 (escalation and unsupported classification) lands, so regenerate them with the command in the report rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The five failures are proposed exceptions tied to COF-39, COF-40 and COF-43, pending pod agreement.
+Measured on 2026-10-27 across all twelve dev cases from a clean tree at commit `0f18a34`: 9 of 12 passed with 0 format errors. These numbers move as the open PRs land, so regenerate them with the command above rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The three failures are proposed exceptions, pending pod agreement: CARD-D07 and CARD-D10 need the tool-read retry (COF-40), and CARD-D09 is COF-43.
 
 ## Human approval and recovery
 
