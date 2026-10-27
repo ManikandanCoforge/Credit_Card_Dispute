@@ -20,8 +20,17 @@ from collections.abc import Iterable, Iterator
 _INVISIBLE = dict.fromkeys(
     [0x00AD, 0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF, *range(0x202A, 0x202F), *range(0x2066, 0x206A)]
 )
+# Someone with authority over a case, as a persona attack names them.
+_ROLE = (
+    r"(?:officer|analyst|reviewer|manager|supervisor|approver|adjudicator|administrator"
+    r"|admin|auditor|assistant|system|model|ai|bot)"
+)
 # Text written as an order to whoever reads it, rather than as a statement of fact.
-# Words may be separated by any run of whitespace, including a line break.
+# Words may be separated by any run of whitespace, including a line break. The last
+# branches are persona and role-play: casting the reader as someone with authority
+# ("pretend you're a compliance officer", "you are now the dispute manager", "acting as
+# the senior analyst"), speaking for that role ("as the reviewing officer would note"),
+# or claiming override authority, so that what follows reads as that role's decision.
 _INSTRUCTION = re.compile(
     r"\bsystem\s+override\b"
     r"|\b(?:ignore|disregard)\s+(?:(?:all|the|any|your)\s+)?(?:(?:bank|previous|prior|above)\s+)?"
@@ -32,7 +41,18 @@ _INSTRUCTION = re.compile(
     r"|\bskip\s+(?:the\s+)?(?:human\s+)?approval\b"
     r"|\bcopy\s+(?:(?:all|the|any)\s+)?(?:private\s+)?tokens?\b"
     r"|\b(?:administrator|admin|developer)\s+(?:priority|mode|override)\b"
-    r"|\bmark\s+(?:this|the\s+case|it)\s+(?:as\s+)?(?:ready|resolved|approved)\b",
+    r"|\bmark\s+(?:this|the\s+case|it)\s+(?:as\s+)?(?:ready|resolved|approved)\b"
+    r"|\b(?:pretend|imagine|suppose)\s+(?:that\s+)?(?:you(?:'re|\s+are|\s+were)|to\s+be)\b"
+    r"|\byou\s+are\s+now\s+(?:a|an|the|my|our|acting)\b"
+    r"|\b(?:act|acting|role-?play(?:ing)?|respond(?:ing)?|speak(?:ing)?)\s+as\s+"
+    rf"(?:(?:a|an|the|my|our|if|though)\s+)?(?:[\w'-]+\s+){{0,2}}{_ROLE}\b"
+    rf"|\bas\s+(?:the|a|an|that|this|your)\s+(?:[\w'-]+\s+){{0,2}}{_ROLE}"
+    r"(?:\s+(?:would|will|should|must|might|could)\s+(?:\w+\s+)?"
+    r"(?:note|agree|confirm|conclude|decide|say|find|approve|recommend|record|rule)\b"
+    r"|\s*,\s*(?:please\s+)?"
+    r"(?:approve|confirm|proceed|mark|close|resolve|refund|settle|skip|issue|pay|accept)\b)"
+    r"|\b(?:with|has|have|having|granted?)\s+(?:(?:full|complete|admin|administrator)\s+)?"
+    r"override\s+(?:authority|rights|access|powers?|permissions?)\b",
     re.IGNORECASE,
 )
 # "Do not ignore policy" and "please do not mark this as resolved" are not orders to do so.
@@ -59,6 +79,11 @@ INSTRUCTION_NOTICE = (
 ATTACHMENT_INSTRUCTION_NOTICE = (
     "The attachment contains text written as instructions. It was treated as evidence "
     "only and was not followed or reproduced."
+)
+# A customer statement is quoted as evidence, so this notice does not say "not reproduced".
+STATEMENT_INSTRUCTION_NOTICE = (
+    "A customer statement contains text written as instructions. It was quoted as "
+    "evidence only and was not followed."
 )
 
 
