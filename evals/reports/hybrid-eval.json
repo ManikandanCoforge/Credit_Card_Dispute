@@ -71,7 +71,7 @@
     {
       "suite": "synth",
       "rules": {
-        "passed": 15,
+        "passed": 16,
         "total": 31,
         "failed": {
           "SYN-S03": [
@@ -113,9 +113,6 @@
             "required_evidence",
             "routing"
           ],
-          "SYN-S21": [
-            "submitted"
-          ],
           "SYN-S24": [
             "classification",
             "deadline",
@@ -141,7 +138,6 @@
           "SYN-S15": "BankReadError",
           "SYN-S16": "BankReadError",
           "SYN-S18": "BankReadError",
-          "SYN-S21": "expected exactly one 'Amount:' line in the source",
           "SYN-S31": "the intake supports no supported classification"
         },
         "wrong_ready": [
@@ -161,7 +157,6 @@
           "SYN-S15",
           "SYN-S16",
           "SYN-S18",
-          "SYN-S21",
           "SYN-S31"
         ],
         "format_errors": [],
@@ -171,7 +166,7 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 19,
+        "passed": 20,
         "total": 31,
         "failed": {
           "SYN-S03": [
@@ -204,9 +199,6 @@
             "required_evidence",
             "routing"
           ],
-          "SYN-S21": [
-            "submitted"
-          ],
           "SYN-S24": [
             "classification",
             "deadline",
@@ -225,8 +217,7 @@
           "SYN-S14": "BankReadError",
           "SYN-S15": "BankReadError",
           "SYN-S16": "BankReadError",
-          "SYN-S18": "BankReadError",
-          "SYN-S21": "expected exactly one 'Amount:' line in the source"
+          "SYN-S18": "BankReadError"
         },
         "wrong_ready": [
           "SYN-S17",
@@ -241,8 +232,7 @@
           "SYN-S14",
           "SYN-S15",
           "SYN-S16",
-          "SYN-S18",
-          "SYN-S21"
+          "SYN-S18"
         ],
         "format_errors": [],
         "model_calls": 22,

@@ -70,14 +70,14 @@ Reproduce it from the recording, with no network and no credentials:
 PYTHONUTF8=1 MODEL_PROVIDER=replay MODEL_REPLAY=evals/recordings/gpt-6-luna.jsonl uv run --locked python tools/hybrid_eval.py
 ```
 
-Results on 2026-10-26:
+Results on 2026-10-27:
 
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
 | dev (12) | 9 | 9 | 0 → 0 | 5 | 544 / 132 |
-| synth (31) | 15 | 19 | 3 → 3 | 22 | 3,528 / 572 |
+| synth (31) | 16 | 20 | 3 → 3 | 22 | 3,528 / 572 |
 | stress (16) | 5 | 16 | 1 → 0 | 16 | 5,585 / 647 |
 | holdout (8) | 3 | 4 | 0 → 0 | 5 | 747 / 133 |
-| Total (67) | 32 | 48 | 4 → 3 | 48 | 10,404 / 1,484 |
+| Total (67) | 33 | 49 | 4 → 3 | 48 | 10,404 / 1,484 |
 
 ADR-003 explains the cases that still fail. The token counts are Luna's own counts for these exact prompts, recorded on 25 October.
