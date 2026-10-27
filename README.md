@@ -35,6 +35,12 @@ uv run --locked python tools/evaluate.py --data data/dev --gold feedback/dev_gol
 
 Development answers are deliberately supplied for feedback; hardcoding case IDs will fail new cases. `examples/worked-case.json` shows one valid output shape. Automated success is only part of the assessment.
 
+The supplied evaluator is one metric inside the offline suite in [evals/README.md](evals/README.md). The suite adds evidence grounding, tool-call correctness, escalation accuracy and PII leakage, and it runs the same way against an injected hidden set:
+
+```sh
+uv run --locked python -m evals --suite evals/suites/dev.json
+```
+
 ### Scored run
 
 Measured on 2026-10-26 across all twelve dev cases from a clean tree at commit `f50c1f4`: 7 of 12 passed with 0 format errors. These numbers move once #52 (escalation and unsupported classification) lands, so regenerate them with the command in the report rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The five failures are proposed exceptions tied to COF-39, COF-40 and COF-43, pending pod agreement.
