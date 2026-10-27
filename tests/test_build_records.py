@@ -315,6 +315,28 @@ def test_reported_date_after_every_window_leaves_policy_empty(tmp_path):
     assert result == [_unresolved("LATE", "2027-01-01")]
 
 
+def test_a_reported_date_that_is_not_iso_leaves_policy_empty_and_stops_no_other_case(tmp_path):
+    """SYN-S13 writes "October 3, 2026"; it used to raise and stop every case in the list."""
+    cases = _dataset_with_intakes(tmp_path, [("WORDS", "October 3, 2026"), ("ISO", "2026-10-03")])
+
+    result = build_complaint_records(cases, tmp_path)
+
+    assert result == [
+        _unresolved("WORDS", "October 3, 2026"),
+        _matched("ISO", "2026-10-03", "CARD-POLICY-V2"),
+    ]
+
+
+def test_a_policy_with_an_unreadable_window_is_skipped(tmp_path):
+    cases = _dataset_with_intakes(tmp_path, [("LATE", "2026-10-03")])
+    policy = tmp_path / "policies" / "CARD-POLICY-V2.md"
+    policy.write_text(policy.read_text().replace("2026-09-01", "1 September 2026"))
+
+    result = build_complaint_records(cases, tmp_path)
+
+    assert result == [_unresolved("LATE", "2026-10-03")]
+
+
 def test_reported_date_inside_two_windows_leaves_policy_empty(tmp_path):
     cases = _dataset_with_intakes(tmp_path, [("OVERLAP", "2026-10-01")])
     (tmp_path / "policies" / "CARD-POLICY-ALSO.md").write_text(

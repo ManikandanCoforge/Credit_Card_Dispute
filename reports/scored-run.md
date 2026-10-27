@@ -1,13 +1,13 @@
 # Scored run across the twelve dev cases
 
-Generated at 2026-10-27T14:48:48Z from commit `14b15241c35da29152c89c1b76eec7ee22b05280` against `http://127.0.0.1:8899`.
+Generated at 2026-10-27T17:58:57Z from commit `0f18a344f1d684cc5e61bb1eb39d5e5d33b2a94c` against `http://127.0.0.1:8765`.
 Dataset: `card-disputes-dev`.
 
 ## Result
 
-- Pass: 11 / 12
+- Pass: 9 / 12
 - Format errors: 0
-- p95 draft latency: 3446.281 ms (nearest-rank over the measured durations)
+- p95 draft latency: 18.102 ms (nearest-rank over the measured durations)
 - Cost per case: 0.00 USD (0 model calls and 0 tokens in the meter file)
 - Total cost: 0.00 USD
 
@@ -15,24 +15,26 @@ Dataset: `card-disputes-dev`.
 
 | Case | Submitted | Passed | Duration (ms) | Failed checks | Error |
 |---|---|---|---|---|---|
-| CARD-D01 | yes | yes | 21.263 | - | - |
-| CARD-D02 | yes | yes | 19.155 | - | - |
-| CARD-D03 | yes | yes | 19.873 | - | - |
-| CARD-D04 | yes | yes | 19.643 | - | - |
-| CARD-D05 | yes | yes | 20.526 | - | - |
-| CARD-D06 | yes | yes | 19.249 | - | - |
-| CARD-D07 | yes | yes | 3446.281 | - | - |
-| CARD-D08 | yes | yes | 19.050 | - | - |
-| CARD-D09 | no | no | 18.272 | submitted | the intake statement is not an exact excerpt of the intake |
-| CARD-D10 | yes | yes | 1484.545 | - | - |
-| CARD-D11 | yes | yes | 17.893 | - | - |
-| CARD-D12 | yes | yes | 21.753 | - | - |
+| CARD-D01 | yes | yes | 15.932 | - | - |
+| CARD-D02 | yes | yes | 17.734 | - | - |
+| CARD-D03 | yes | yes | 17.250 | - | - |
+| CARD-D04 | yes | yes | 16.844 | - | - |
+| CARD-D05 | yes | yes | 18.102 | - | - |
+| CARD-D06 | yes | yes | 15.700 | - | - |
+| CARD-D07 | no | no | 7.960 | submitted | BankReadError |
+| CARD-D08 | yes | yes | 16.511 | - | - |
+| CARD-D09 | no | no | 17.150 | submitted | the intake statement is not an exact excerpt of the intake |
+| CARD-D10 | no | no | 8.912 | submitted | BankReadError |
+| CARD-D11 | yes | yes | 17.613 | - | - |
+| CARD-D12 | yes | yes | 17.774 | - | - |
 
 ## Failing cases
 
 | Case | Exact failed check(s) | Reason |
 |---|---|---|
+| CARD-D07 | submitted | BankReadError |
 | CARD-D09 | submitted | the intake statement is not an exact excerpt of the intake |
+| CARD-D10 | submitted | BankReadError |
 
 ## Exceptions (proposed, pending pod agreement)
 
@@ -40,7 +42,9 @@ Dataset: `card-disputes-dev`.
 
 | Case | Ticket | Failed checks | Note |
 |---|---|---|---|
+| CARD-D07 | COF-40 | submitted | A persistent transaction failure stops the case instead of routing to manual_review with null facts. Retry and outage handling is COF-40. |
 | CARD-D09 | COF-43 | submitted | The joined statement is not an exact intake excerpt, so the duplicate redelivery is not built. Duplicate intake and narrative work is COF-43. |
+| CARD-D10 | COF-40 | submitted | A transient transaction fault is not retried, so the case is not built. Retry is COF-40. |
 
 ## Metered cost
 
@@ -48,31 +52,34 @@ Latency and cost come from `reports/scored-run-meters.json`, one row per case. T
 
 | Case | Duration (ms) | Calls | Tokens in | Tokens out | Cost (USD) | Path |
 |---|---|---|---|---|---|---|
-| CARD-D01 | 21.263 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D02 | 19.155 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D03 | 19.873 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D04 | 19.643 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D05 | 20.526 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D06 | 19.249 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D07 | 3446.281 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D08 | 19.050 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D09 | 18.272 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D10 | 1484.545 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D11 | 17.893 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D12 | 21.753 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D01 | 15.932 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D02 | 17.734 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D03 | 17.250 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D04 | 16.844 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D05 | 18.102 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D06 | 15.700 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D07 | 7.960 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D08 | 16.511 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D09 | 17.150 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D10 | 8.912 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D11 | 17.613 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D12 | 17.774 | 0 | 0 | 0 | 0.00 | deterministic_template |
 
 ## Reproduce
 
-Run from the worktree root on branch `kenmann01/cof-44-scored-run-across-all-twelve-cases`. `../../.venv` is the shared virtualenv of the enclosing checkout; from the primary checkout use `.venv\Scripts\python.exe`.
+Run from the repository root, after `uv sync --locked`. The commands are the same on macOS, Linux and Windows. Use two terminals, and stop any other mock on port 8765 first.
+
+In the first terminal, start the mock on a fresh state of its own:
 
 ```sh
-rm -f .state/cof44.sqlite3
-../../.venv/Scripts/python.exe -m tools.runtime serve \
-    --data data/dev --port 8899 --state .state/cof44.sqlite3 &
-../../.venv/Scripts/python.exe tools/scored_run.py \
-    --base-url http://127.0.0.1:8899 \
-    --data data/dev \
-    --gold feedback/dev_gold.json
+uv run --locked python tools/runtime.py reset --confirm --state .state/scored-run.sqlite
+uv run --locked python tools/runtime.py serve --data data/dev --port 8765 --state .state/scored-run.sqlite
 ```
 
-The run exits 0 only when all twelve cases pass. A single transient fault fails once on a fresh state, so use a fresh state for each comparison.
+In the second terminal, run every case and score it:
+
+```sh
+uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 --data data/dev --gold feedback/dev_gold.json
+```
+
+The run exits 0 only when all twelve cases pass. A single transient fault fails once on a fresh state, so reset the state before each comparison. If the mock is not running, the run writes nothing and exits 1.

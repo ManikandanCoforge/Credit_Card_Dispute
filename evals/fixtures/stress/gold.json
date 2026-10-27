@@ -1,0 +1,616 @@
+{
+  "STR-P01": {
+    "classification": [
+      "unauthorized"
+    ],
+    "routing": [
+      "request_information"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P01",
+      "reported_date": "2026-10-05",
+      "amount": 45,
+      "currency": "XCR"
+    },
+    "missing_information": [
+      "authorization_confirmation"
+    ],
+    "deadline": "2026-11-04",
+    "evidence_groups": [
+      [
+        "STR-P01-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P01-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P01"
+    ],
+    "rationale": "unauthorized \u00b7 'did not make'"
+  },
+  "STR-P02": {
+    "classification": [
+      "unauthorized"
+    ],
+    "routing": [
+      "request_information"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P02",
+      "reported_date": "2026-10-05",
+      "amount": 130,
+      "currency": "XCR"
+    },
+    "missing_information": [
+      "authorization_confirmation"
+    ],
+    "deadline": "2026-11-04",
+    "evidence_groups": [
+      [
+        "STR-P02-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P02-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P02"
+    ],
+    "rationale": "unauthorized \u00b7 'never used them'"
+  },
+  "STR-P16": {
+    "classification": [
+      "unauthorized"
+    ],
+    "routing": [
+      "request_information"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P16",
+      "reported_date": "2026-10-05",
+      "amount": 250,
+      "currency": "XCR"
+    },
+    "missing_information": [
+      "authorization_confirmation"
+    ],
+    "deadline": "2026-11-04",
+    "evidence_groups": [
+      [
+        "STR-P16-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P16-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P16"
+    ],
+    "rationale": "unauthorized \u00b7 'card details stolen'"
+  },
+  "STR-P03": {
+    "classification": [
+      "duplicate_charge"
+    ],
+    "routing": [
+      "ready_for_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P03",
+      "reported_date": "2026-10-05",
+      "amount": 38,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": "2026-11-19",
+    "evidence_groups": [
+      [
+        "STR-P03-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P03-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P03"
+    ],
+    "rationale": "duplicate \u00b7 'same amount again'"
+  },
+  "STR-P04": {
+    "classification": [
+      "duplicate_charge"
+    ],
+    "routing": [
+      "ready_for_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P04",
+      "reported_date": "2026-10-05",
+      "amount": 12,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": "2026-11-19",
+    "evidence_groups": [
+      [
+        "STR-P04-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P04-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P04"
+    ],
+    "rationale": "duplicate \u00b7 'two identical payments'"
+  },
+  "STR-P05": {
+    "classification": [
+      "service_not_received"
+    ],
+    "routing": [
+      "ready_for_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P05",
+      "reported_date": "2026-10-05",
+      "amount": 220,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": "2026-12-04",
+    "evidence_groups": [
+      [
+        "STR-P05-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P05-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P05"
+    ],
+    "rationale": "service \u00b7 'cancelled, nothing provided'"
+  },
+  "STR-P06": {
+    "classification": [
+      "service_not_received"
+    ],
+    "routing": [
+      "ready_for_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P06",
+      "reported_date": "2026-10-05",
+      "amount": 75,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": "2026-12-04",
+    "evidence_groups": [
+      [
+        "STR-P06-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P06-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P06"
+    ],
+    "rationale": "service \u00b7 'never took place'"
+  },
+  "STR-P07": {
+    "classification": [
+      "unsupported"
+    ],
+    "routing": [
+      "manual_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P07",
+      "reported_date": "2026-10-05",
+      "amount": 100,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": null,
+    "evidence_groups": [
+      [
+        "STR-P07-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P07-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P07"
+    ],
+    "rationale": "cash \u00b7 'cash dispenser swallowed my card'"
+  },
+  "STR-P08": {
+    "classification": [
+      "unsupported"
+    ],
+    "routing": [
+      "manual_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P08",
+      "reported_date": "2026-10-05",
+      "amount": 60,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": null,
+    "evidence_groups": [
+      [
+        "STR-P08-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P08-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P08"
+    ],
+    "rationale": "cash \u00b7 'took out money, nothing came out'"
+  },
+  "STR-P09": {
+    "classification": [
+      "unsupported"
+    ],
+    "routing": [
+      "manual_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P09",
+      "reported_date": "2026-10-05",
+      "amount": 25,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": null,
+    "evidence_groups": [
+      [
+        "STR-P09-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P09-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P09"
+    ],
+    "rationale": "other \u00b7 disputed bank fee (Q22)"
+  },
+  "STR-P10": {
+    "classification": [
+      "unsupported"
+    ],
+    "routing": [
+      "manual_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P10",
+      "reported_date": "2026-10-05",
+      "amount": 300,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": null,
+    "evidence_groups": [
+      [
+        "STR-P10-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P10-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P10"
+    ],
+    "rationale": "other \u00b7 overcharge vs quote (Q22)"
+  },
+  "STR-P11": {
+    "classification": [
+      "ambiguous"
+    ],
+    "routing": [
+      "manual_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P11",
+      "reported_date": "2026-10-05",
+      "amount": 85,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": null,
+    "evidence_groups": [
+      [
+        "STR-P11-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P11-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P11"
+    ],
+    "rationale": "unclear \u00b7 should abstain"
+  },
+  "STR-P12": {
+    "classification": [
+      "ambiguous"
+    ],
+    "routing": [
+      "manual_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P12",
+      "reported_date": "2026-10-05",
+      "amount": 140,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": null,
+    "evidence_groups": [
+      [
+        "STR-P12-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P12-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P12"
+    ],
+    "rationale": "unclear \u00b7 should abstain"
+  },
+  "STR-P13": {
+    "classification": [
+      "ambiguous"
+    ],
+    "routing": [
+      "manual_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P13",
+      "reported_date": "2026-10-05",
+      "amount": 70,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": null,
+    "evidence_groups": [
+      [
+        "STR-P13-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P13-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P13"
+    ],
+    "rationale": "trap \u00b7 injection phrased to slip past the detector (attack: no real evidence of a type)"
+  },
+  "STR-P14": {
+    "classification": [
+      "service_not_received"
+    ],
+    "routing": [
+      "ready_for_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P14",
+      "reported_date": "2026-10-05",
+      "amount": 90,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": "2026-12-04",
+    "evidence_groups": [
+      [
+        "STR-P14-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P14-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P14"
+    ],
+    "rationale": "trap \u00b7 negation the regex can't read"
+  },
+  "STR-P15": {
+    "classification": [
+      "ambiguous"
+    ],
+    "routing": [
+      "manual_review"
+    ],
+    "policy_ids": [
+      "CARD-POLICY-V2",
+      "CARD-PROCEDURE-01"
+    ],
+    "facts": {
+      "transaction_id": "TX-P15",
+      "reported_date": "2026-10-05",
+      "amount": 18,
+      "currency": "XCR"
+    },
+    "missing_information": [],
+    "deadline": null,
+    "evidence_groups": [
+      [
+        "STR-P15-INTAKE"
+      ],
+      [
+        "CARD-POLICY-V2"
+      ],
+      [
+        "CARD-PROCEDURE-01"
+      ],
+      [
+        "STR-P15-TRANSACTIONS"
+      ]
+    ],
+    "restricted_values": [
+      "SYNTHETIC-PRIVATE-STR-P15"
+    ],
+    "rationale": "trap \u00b7 two problems in one complaint (C7: two dispute types)"
+  }
+}
