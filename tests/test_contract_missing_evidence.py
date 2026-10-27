@@ -537,7 +537,9 @@ def _d04_like(
     return record
 
 
-def _assemble_d04_like(record, *, promised_service_date="2026-08-20"):
+def _assemble_d04_like(record, *, promised_service_date="2026-08-20", charges=None):
+    # Both charges are on record, as a duplicate needs ("retrieve both transaction records").
+    charges = [D04_CHARGE, {**D04_CHARGE, "transaction_id": "TX-D04-B"}] if charges is None else charges
     return _assemble(
         record,
         intake_text=_d04_like_text(
@@ -546,7 +548,7 @@ def _assemble_d04_like(record, *, promised_service_date="2026-08-20"):
             promised_service_date=promised_service_date,
         ),
         attachment_text=D04_ATTACHMENT_TEXT,
-        transactions_text=_transactions_text("CARD-D04-TRANSACTIONS", [D04_CHARGE]),
+        transactions_text=_transactions_text("CARD-D04-TRANSACTIONS", charges),
     )
 
 
@@ -565,6 +567,44 @@ def test_a_charge_reported_twice_is_duplicate_charge(statement):
     assert result["classification"] == "duplicate_charge"
     assert result["routing"] == "ready_for_review"
     assert result["missing_information"] == []
+
+
+def test_a_duplicate_with_only_one_charge_on_record_goes_to_a_person():
+    """CARD-PROCEDURE-01: "retrieve both transaction records". One row cannot show a duplicate."""
+    statement = "Morrow Supplies charged me 168 crowns twice for one purchase."
+
+    result = _assemble_d04_like(_d04_like(statement, authorization="confirmed"), charges=[D04_CHARGE])
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "duplicate_charge",
+        "manual_review",
+        "2026-11-15",
+    )
+    assert not [c for c in result["citations"] if c["claim"] == "second_charge"]
+    assert "Only one charge for this purchase is on record" in result["narrative"]
+
+
+def test_an_attachment_that_declares_itself_missing_is_cited_by_its_status_line():
+    # Kanit's repro: an unauthorized case does not request a receipt, so the receipt is not
+    # in its missing list, but the attachment still has no Amount line to quote.
+    record = _d04_like(
+        "I found a card purchase at Morrow Supplies for 168 crowns. I did not authorize it.",
+        authorization="denied",
+    )
+
+    result = _assemble(
+        record,
+        intake_text=_d04_like_text(record["intake"]["statement"], authorization="denied"),
+        attachment_text="Source ID: CARD-D04-ATTACHMENT\nAttachment status: missing\n",
+        transactions_text=_transactions_text("CARD-D04-TRANSACTIONS", [D04_CHARGE]),
+    )
+
+    assert (result["classification"], result["routing"]) == ("unauthorized", "ready_for_review")
+    assert {
+        "claim": "customer_evidence",
+        "source_id": "CARD-D04-ATTACHMENT",
+        "quote": "Attachment status: missing",
+    } in result["citations"]
 
 
 def test_a_call_to_customer_service_twice_is_not_a_duplicate_charge():

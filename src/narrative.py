@@ -64,6 +64,10 @@ _DECISION = re.compile(
     r"|\b(?:the )?outcome is\b",
     re.IGNORECASE,
 )
+# Words that turn a statement around. A reworded sentence keeps exactly as many, so "shows
+# 117 XCR" cannot become "shows no charge of 117 XCR" with every fact token intact.
+_NEGATION = re.compile(r"\b(?:no|not|never|none|nothing|nobody|neither|nor|without|cannot)\b|n't\b",
+                       re.IGNORECASE)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 _ACTIONS = {
     "ready_for_review": "A reviewer can check the cited evidence and decide.",
@@ -185,8 +189,8 @@ def _shape_problems(text: str, template: str) -> list[str]:
     """The writer may reword sentences, never add, drop, merge or reorder them.
 
     Line for line and sentence for sentence, the draft must match the template's shape.
-    A reworded sentence keeps its own dates, numbers, ids and labels, and states no
-    decision or outcome. Containment alone is not enough: the template plus "The
+    A reworded sentence keeps its own dates, numbers, ids, labels and number of negations,
+    and states no decision or outcome. Containment alone is not enough: the template plus "The
     follow-up statement is correct." contains every required sentence.
     """
     drafted, expected = text.split("\n"), template.split("\n")
@@ -205,6 +209,8 @@ def _shape_problems(text: str, template: str) -> list[str]:
         for s, w in pairs
     ):
         problems.append("a reworded sentence moves a date, number, id or label")
+    if any(len(_NEGATION.findall(s)) != len(_NEGATION.findall(w)) for s, w in pairs):
+        problems.append("a reworded sentence adds or drops a negation")
     if any(_DECISION.search(s) for s, _w in pairs):
         problems.append("a reworded sentence states a decision or an outcome")
     return problems

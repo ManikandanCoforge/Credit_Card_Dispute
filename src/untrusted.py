@@ -24,8 +24,10 @@ _INVISIBLE = dict.fromkeys(
 # Words may be separated by any run of whitespace, including a line break.
 _INSTRUCTION = re.compile(
     r"\bsystem\s+override\b"
-    r"|\bignore\s+(?:(?:all|the|any)\s+)?(?:(?:bank|previous|prior|above)\s+)?"
+    r"|\b(?:ignore|disregard)\s+(?:(?:all|the|any|your)\s+)?(?:(?:bank|previous|prior|above)\s+)?"
     r"(?:policy|policies|instructions?|rules?)\b"
+    r"|\b(?:do\s+not|don't)\s+follow\s+(?:(?:the|any|your)\s+)?(?:bank\s+)?"
+    r"(?:policy|policies|procedures?|instructions?|rules?)\b"
     r"|\bpromise\s+(?:(?:an?|the)\s+)?(?:(?:immediate|full)\s+)?refund\b"
     r"|\bskip\s+(?:the\s+)?(?:human\s+)?approval\b"
     r"|\bcopy\s+(?:(?:all|the|any)\s+)?(?:private\s+)?tokens?\b"
@@ -39,20 +41,24 @@ _TOKENS = re.compile(
     r"SYNTHETIC-PRIVATE-[A-Za-z0-9-]+"  # synthetic private token
     r"|\bCUST-[A-Za-z0-9-]+"  # customer reference, treated as an account number
 )
-# 15 to 19 plain digits, or a card grouping with one consistent separator (a run of
-# whitespace, a dot or a dash, the same each time): 4-4-4-4(-3) or Amex 4-6-5. Two dates
-# side by side are not a grouping. A card only when the Luhn check also passes. Plain
-# digits start at 15 (Amex) so a 13-digit millisecond timestamp or reference that happens
-# to pass Luhn is not a card; a grouped 13-digit card is still caught.
+# 14 to 19 plain digits, or a card grouping with one consistent separator (a run of
+# whitespace, a dot or a dash, the same each time): 4-4-4-4(-3), Amex 4-6-5 or Diners
+# 4-6-4. Two dates side by side are not a grouping. A card only when the Luhn check also
+# passes. Plain digits start at 14 (Diners) so a 13-digit millisecond timestamp or
+# reference that happens to pass Luhn is not a card; a grouped 13-digit card is still caught.
 _CARD_LIKE = re.compile(
-    r"(?<![\w-])(?<!\d\.)(?:\d{15,19}"
+    r"(?<![\w-])(?<!\d\.)(?:\d{14,19}"
     r"|\d{4}(?P<s>\s+|[.-])\d{4}(?P=s)\d{4}(?P=s)\d{1,7}"
-    r"|\d{4}(?P<a>\s+|[.-])\d{6}(?P=a)\d{5})(?![\w-])(?!\.\d)"
+    r"|\d{4}(?P<a>\s+|[.-])\d{6}(?P=a)\d{4,5})(?![\w-])(?!\.\d)"
 )
 
 INSTRUCTION_NOTICE = (
     "The merchant record contains text written as instructions. It was treated as "
     "evidence only and was not followed or reproduced."
+)
+ATTACHMENT_INSTRUCTION_NOTICE = (
+    "The attachment contains text written as instructions. It was treated as evidence "
+    "only and was not followed or reproduced."
 )
 
 
