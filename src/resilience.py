@@ -1,8 +1,8 @@
 """Retry a transient tool timeout, then stop calling a dead dependency.
 
 CARD-PROCEDURE-01 allows three total attempts. Between those attempts the
-wait is 2**attempt seconds plus a fraction of a second of jitter. With
-three attempts the waits are about 1s, then about 2s.
+wait is min(0.2 * 2**attempt, 2) seconds plus a fraction of a second of
+jitter. With three attempts the waits are about 0.2s, then about 0.4s.
 
 Not wired into the case runner yet. When it is, keep one breaker per tool for
 the whole run. The breaker counts complaints that used all three attempts. It
@@ -21,6 +21,10 @@ from typing import Literal
 
 # One try and two retries. The procedure's cap, not a tuning guess.
 MAX_ATTEMPTS = 3
+
+# 0.2s, then 0.4s, doubling, and never more than 2s. Jitter is added on top.
+BACKOFF_BASE = 0.2
+BACKOFF_CAP = 2.0
 
 # One probe is allowed after this many seconds, to see if the tool recovered.
 RESET_TIMEOUT = 60
@@ -62,7 +66,8 @@ class CircuitBreaker:
     retry loop owns the three attempts, and the breaker counts how many
     callers used all of them. Open rejects calls until the reset timeout
     passes. Half-open allows one probe. A probe that returns closes the
-    breaker. A probe that raises anything opens it again.
+    breaker. A probe that raises anything opens it again. A call admitted
+    before the breaker opened does not close it or clear that probe.
     """
 
     def __init__(
@@ -82,25 +87,27 @@ class CircuitBreaker:
         self.opened_at = 0.0
         self._clock = clock
         self._probing = False
+        self._generation = 0
         self._lock = Lock()
 
     def call[T](self, func: Callable[[], T]) -> T:
         """Call func once, unless the breaker is open or a probe is in flight.
 
         A TransientFailure is handed back to the retry loop and does not, by
-        itself, open the breaker. Any exception from the single half-open
-        probe opens the breaker and starts the reset timeout over.
+        itself, open the breaker. Anything the probe raises opens the breaker
+        and starts the reset timeout over. A success counts only when the
+        breaker has not opened since this call was admitted.
         """
-        probing = self._admit()
+        probing, generation = self._admit()
         try:
             result = func()
-        except Exception as error:
+        except BaseException as error:
             self._on_error(probing, error)
             raise
-        self._on_success()
+        self._on_success(generation)
         return result
 
-    def _admit(self) -> bool:
+    def _admit(self) -> tuple[bool, int]:
         """Reserve the one half-open probe, or refuse the call."""
         with self._lock:
             if self.state == "open":
@@ -112,16 +119,18 @@ class CircuitBreaker:
                 if self._probing:
                     raise CircuitOpen()
                 self._probing = True
-                return True
-            return False
+                return True, self._generation
+            return False, self._generation
 
-    def _on_success(self) -> None:
+    def _on_success(self, generation: int) -> None:
         with self._lock:
+            if generation != self._generation:
+                return
             self._probing = False
             self.failure_count = 0
             self.state = "closed"
 
-    def _on_error(self, probing: bool, error: Exception) -> None:
+    def _on_error(self, probing: bool, error: BaseException) -> None:
         with self._lock:
             if probing:
                 self._open()
@@ -130,8 +139,10 @@ class CircuitBreaker:
                 return
 
     def _record_exhausted(self) -> None:
-        """Count one caller that used its whole attempt budget."""
+        """Count one caller that used its whole attempt budget while closed."""
         with self._lock:
+            if self.state != "closed":
+                return
             self.failure_count += 1
             if self.failure_count >= self.failure_threshold:
                 self._open()
@@ -140,6 +151,7 @@ class CircuitBreaker:
         self._probing = False
         self.state = "open"
         self.opened_at = self._clock()
+        self._generation += 1
 
 
 def call_with_backoff[T](
@@ -152,11 +164,12 @@ def call_with_backoff[T](
 ) -> T:
     """Call func until it returns or the dependency is unavailable.
 
-    A transient failure waits ``2**attempt`` seconds plus jitter, then tries
-    again. With three attempts the waits are about 1s, then about 2s. The
-    last attempt does not wait. The caller that uses the whole budget counts
-    once toward opening the breaker. Any exception other than
-    TransientFailure propagates on the attempt that raised it.
+    A transient failure waits ``min(0.2 * 2**attempt, 2)`` seconds plus
+    jitter, then tries again. With three attempts the waits are about 0.2s,
+    then about 0.4s. The last attempt does not wait. The caller that uses
+    the whole budget counts once toward opening the breaker, and only while
+    the breaker is closed. Any error other than TransientFailure propagates
+    on the attempt that raised it.
     """
     if max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
@@ -168,12 +181,18 @@ def call_with_backoff[T](
             return breaker.call(func)
         except TransientFailure as caught:
             error = caught
-            if breaker.state == "open" or attempt + 1 == max_attempts:
-                if breaker.state != "open":
-                    breaker._record_exhausted()
+            if attempt + 1 == max_attempts:
+                breaker._record_exhausted()
                 break
-            wait((2**attempt) + pause())
+            if breaker.state == "open":
+                break
+            wait(_backoff_delay(attempt) + pause())
     raise AttemptsExhausted(attempt + 1) from error
+
+
+def _backoff_delay(attempt: int) -> float:
+    """The wait before the next attempt, before jitter."""
+    return min(BACKOFF_BASE * (2**attempt), BACKOFF_CAP)
 
 
 def _default_jitter() -> float:

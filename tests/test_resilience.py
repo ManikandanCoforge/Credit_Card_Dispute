@@ -1,8 +1,9 @@
 """Retry budget and circuit breaker for one tool dependency.
 
-Expected waits for three attempts are about 1 second, then about 2
-seconds, and no wait after the attempt that stops the call. The breaker
-opens after three callers in a row use that whole budget.
+Expected waits for three attempts are about 0.2 seconds, then about 0.4
+seconds, and no wait after the attempt that stops the call. The wait
+doubles and never exceeds 2 seconds. The breaker opens after three
+callers in a row use that whole budget.
 """
 
 import threading
@@ -36,7 +37,7 @@ def test_timeouts_wait_then_stop_at_three_attempts():
 
     assert calls["n"] == 3
     assert raised.value.attempts == 3
-    assert slept == [1.25, 2.25]
+    assert slept == pytest.approx([0.45, 0.65])
     assert raised.value.__cause__ is not None
     assert breaker.state == "closed"
     assert breaker.failure_count == 1
@@ -237,18 +238,18 @@ def test_the_attempt_cap_stops_while_the_breaker_is_still_closed():
 
     assert calls["n"] == 2
     assert raised.value.attempts == 2
-    assert slept == [1.0]
+    assert slept == pytest.approx([0.2])
     assert breaker.state == "closed"
 
 
-def test_the_wait_doubles_by_powers_of_two():
+def test_the_wait_doubles_and_then_stops_at_two_seconds():
     slept = []
     breaker = CircuitBreaker(failure_threshold=9, clock=lambda: 0)
 
     with pytest.raises(AttemptsExhausted):
         call_with_backoff(_timeout, breaker, max_attempts=6, sleep=slept.append, jitter=lambda: 0)
 
-    assert slept == [1, 2, 4, 8, 16]
+    assert slept == pytest.approx([0.2, 0.4, 0.8, 1.6, 2.0])
     assert breaker.state == "closed"
 
 
@@ -268,17 +269,176 @@ def test_a_non_timeout_propagates_on_the_attempt_that_raised_it():
     assert breaker.failure_count == 0
 
 
-def test_the_default_jitter_is_a_fraction_of_a_second():
+def test_the_default_jitter_is_added_to_the_backoff(monkeypatch):
+    draws = iter([0, 250])
+
+    def randbelow(bound: int) -> int:
+        assert bound == 1_000
+        return next(draws)
+
+    monkeypatch.setattr("src.resilience.secrets.randbelow", randbelow)
     slept = []
 
-    def fail_once():
-        if not slept:
+    def fail_twice():
+        if len(slept) < 2:
             raise TransientFailure("upstream timeout")
         return "ready"
 
-    assert call_with_backoff(fail_once, CircuitBreaker(), sleep=slept.append) == "ready"
-    assert len(slept) == 1
-    assert 1 <= slept[0] < 2
+    assert call_with_backoff(fail_twice, CircuitBreaker(), sleep=slept.append) == "ready"
+    assert slept == pytest.approx([0.2, 0.65])
+
+
+def test_a_stale_success_does_not_admit_a_second_caller_during_a_probe():
+    now = {"t": 0.0}
+    breaker = CircuitBreaker(failure_threshold=1, reset_timeout=60, clock=lambda: now["t"])
+    started = threading.Event()
+    release = threading.Event()
+    outcome: dict[str, object] = {}
+
+    def slow_read():
+        started.set()
+        assert release.wait(2)
+        return "stale"
+
+    def run_slow():
+        outcome["result"] = breaker.call(slow_read)
+
+    worker = threading.Thread(target=run_slow)
+    worker.start()
+    assert started.wait(2)
+    with pytest.raises(AttemptsExhausted):
+        call_with_backoff(_timeout, breaker, sleep=lambda _seconds: None, jitter=lambda: 0)
+    assert breaker.state == "open"
+    assert breaker.failure_count == 1
+    now["t"] = 60.1
+    probe_started = threading.Event()
+    probe_release = threading.Event()
+
+    def probe():
+        probe_started.set()
+        assert probe_release.wait(2)
+        return "probe"
+
+    def run_probe():
+        outcome["probe"] = breaker.call(probe)
+
+    probe_thread = threading.Thread(target=run_probe)
+    probe_thread.start()
+    assert probe_started.wait(2)
+    release.set()
+    worker.join(2)
+    assert not worker.is_alive()
+    assert outcome["result"] == "stale"
+    assert breaker.state == "half-open"
+    assert breaker._probing is True
+    with pytest.raises(CircuitOpen):
+        breaker.call(lambda: "other")
+    probe_release.set()
+    probe_thread.join(2)
+    assert not probe_thread.is_alive()
+    assert outcome["probe"] == "probe"
+    assert breaker.state == "closed"
+    assert breaker.failure_count == 0
+
+
+def test_an_exhausted_caller_does_not_clear_a_live_probe():
+    now = {"t": 0.0}
+    breaker = CircuitBreaker(failure_threshold=1, reset_timeout=60, clock=lambda: now["t"])
+    entered = threading.Event()
+    release = threading.Event()
+    outcome: dict[str, object] = {}
+
+    def slow_fail():
+        entered.set()
+        assert release.wait(2)
+        raise TransientFailure("upstream timeout")
+
+    def in_flight():
+        try:
+            call_with_backoff(
+                slow_fail,
+                breaker,
+                max_attempts=1,
+                sleep=lambda _seconds: None,
+                jitter=lambda: 0,
+            )
+        except AttemptsExhausted:
+            outcome["error"] = "exhausted"
+
+    worker = threading.Thread(target=in_flight)
+    worker.start()
+    assert entered.wait(2)
+    with pytest.raises(AttemptsExhausted):
+        call_with_backoff(_timeout, breaker, sleep=lambda _seconds: None, jitter=lambda: 0)
+    assert breaker.state == "open"
+    assert breaker.opened_at == 0.0
+    now["t"] = 60.1
+    probe_entered = threading.Event()
+    probe_release = threading.Event()
+
+    def probe():
+        probe_entered.set()
+        assert probe_release.wait(2)
+        return "ok"
+
+    def run_probe():
+        outcome["probe"] = breaker.call(probe)
+
+    probe_thread = threading.Thread(target=run_probe)
+    probe_thread.start()
+    assert probe_entered.wait(2)
+    release.set()
+    worker.join(2)
+    assert not worker.is_alive()
+    assert outcome["error"] == "exhausted"
+    assert breaker.state == "half-open"
+    assert breaker._probing is True
+    assert breaker.opened_at == 0.0
+    with pytest.raises(CircuitOpen):
+        breaker.call(lambda: "other")
+    probe_release.set()
+    probe_thread.join(2)
+    assert not probe_thread.is_alive()
+    assert outcome["probe"] == "ok"
+    assert breaker.state == "closed"
+
+
+@pytest.mark.parametrize("error", [KeyboardInterrupt, SystemExit])
+def test_a_probe_that_raises_outside_exception_opens_the_breaker_again(error):
+    now = {"t": 0.0}
+    breaker = CircuitBreaker(failure_threshold=1, reset_timeout=60, clock=lambda: now["t"])
+    with pytest.raises(AttemptsExhausted):
+        call_with_backoff(_timeout, breaker, sleep=lambda _seconds: None, jitter=lambda: 0)
+    now["t"] = 60.2
+
+    def boom():
+        raise error()
+
+    with pytest.raises(error):
+        breaker.call(boom)
+
+    assert breaker.state == "open"
+    assert breaker._probing is False
+    assert breaker.opened_at == 60.2
+    now["t"] = 120.1
+    with pytest.raises(CircuitOpen):
+        breaker.call(lambda: "too soon")
+    now["t"] = 120.3
+    assert breaker.call(lambda: "recovered") == "recovered"
+
+
+def test_an_interrupt_on_a_closed_breaker_leaves_it_closed():
+    breaker = CircuitBreaker()
+
+    def interrupt():
+        raise KeyboardInterrupt()
+
+    with pytest.raises(KeyboardInterrupt):
+        breaker.call(interrupt)
+
+    assert breaker.state == "closed"
+    assert breaker.failure_count == 0
+    assert breaker._probing is False
 
 
 def test_budgets_below_one_attempt_are_rejected():
