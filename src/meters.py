@@ -5,10 +5,11 @@ not run a case.
 """
 
 import json
-import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict
+
+from src.untrusted import restricted_values
 
 
 class LatencyPercentiles(TypedDict):
@@ -19,13 +20,7 @@ class LatencyPercentiles(TypedDict):
 
 
 class MeterLeak(Exception):
-    """The meter line would have contained evidence text or a restricted number."""
-
-
-# An account number or a card number is a run of ten or more digits.
-_ACCOUNT_OR_CARD_NUMBER = re.compile(r"\d{10,}")
-# The package's synthetic private token, refused whole rather than copied from gold.
-_RESTRICTED_VALUE = "SYNTHETIC-PRIVATE"
+    """The meter line would have contained evidence text or a restricted value."""
 
 
 def record_case_meter(
@@ -41,9 +36,12 @@ def record_case_meter(
     tool_attempts: int,
     retry_count: int,
 ) -> None:
-    """Append one JSON meter line for a finished case."""
-    _reject_leaks(case_id, route)
-    line = {
+    """Append one JSON meter line for a finished case.
+
+    The line is refused, and the file left unchanged, when any field would carry
+    evidence text or a restricted value.
+    """
+    line: dict[str, object] = {
         "case_id": case_id,
         "route": route,
         "started_at": _started_at(started_at),
@@ -54,6 +52,7 @@ def record_case_meter(
         "tool_attempts": tool_attempts,
         "retry_count": retry_count,
     }
+    _reject_leaks(line)
     with path.open("a", encoding="utf-8") as meter_file:
         meter_file.write(json.dumps(line, ensure_ascii=False) + "\n")
 
@@ -67,13 +66,19 @@ def latency_percentiles(path: Path) -> LatencyPercentiles:
     return {"p50": _nearest_rank(latencies, 50), "p95": _nearest_rank(latencies, 95)}
 
 
-def _reject_leaks(case_id: str, route: str) -> None:
-    text = case_id + route
-    if (
-        any(character.isspace() for character in text)
-        or _ACCOUNT_OR_CARD_NUMBER.search(text)
-        or _RESTRICTED_VALUE in text
+def _reject_leaks(line: dict[str, object]) -> None:
+    """Raise MeterLeak when any field would carry evidence text or a restricted value.
+
+    The restricted-value detector is the one src/untrusted.py already uses for
+    model prompts and log lines, so a grouped, dotted, full-width or zero-width
+    card number is caught in any field, and a card carried as an integer too.
+    """
+    if any(
+        isinstance(value, str) and any(character.isspace() for character in value)
+        for value in line.values()
     ):
+        raise MeterLeak
+    if restricted_values(line):
         raise MeterLeak
 
 

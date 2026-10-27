@@ -164,7 +164,7 @@ def test_a_card_number_is_refused_and_the_file_stays_unchanged(tmp_path: Path) -
     assert path.read_text(encoding="utf-8") == before
 
 
-def test_an_account_number_is_refused_and_the_file_stays_unchanged(tmp_path: Path) -> None:
+def test_a_customer_reference_is_refused_and_the_file_stays_unchanged(tmp_path: Path) -> None:
     path = tmp_path / "meters.jsonl"
     record_case_meter(
         path,
@@ -183,7 +183,7 @@ def test_an_account_number_is_refused_and_the_file_stays_unchanged(tmp_path: Pat
         record_case_meter(
             path,
             case_id="CARD-D01",
-            route="8821947300",
+            route="CUST-8821947300",
             started_at=datetime(2026, 10, 26, 21, 46, 1, tzinfo=UTC),
             latency_ms=41,
             model_calls=0,
@@ -194,6 +194,55 @@ def test_an_account_number_is_refused_and_the_file_stays_unchanged(tmp_path: Pat
         )
     assert path.read_text(encoding="utf-8") == before
 
+
+
+_BASE_METER = {
+    "case_id": "CARD-D01",
+    "route": "ready_for_review",
+    "started_at": datetime(2026, 10, 26, 21, 46, 1, 200000, tzinfo=UTC),
+    "latency_ms": 41,
+    "model_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "tool_attempts": 2,
+    "retry_count": 0,
+}
+
+
+def _record(path: Path, **overrides) -> None:
+    record_case_meter(path, **{**_BASE_METER, **overrides})
+
+
+def _refuses(path: Path, **overrides) -> None:
+    _record(path)
+    before = path.read_text(encoding="utf-8")
+    with pytest.raises(MeterLeak):
+        _record(path, **overrides)
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_a_dashed_card_number_in_the_case_id_is_refused(tmp_path: Path) -> None:
+    _refuses(tmp_path / "meters.jsonl", case_id="4111-1111-1111-1111")
+
+
+def test_a_dotted_card_number_in_the_case_id_is_refused(tmp_path: Path) -> None:
+    _refuses(tmp_path / "meters.jsonl", case_id="4111.1111.1111.1111")
+
+
+def test_a_grouped_amex_card_number_in_the_case_id_is_refused(tmp_path: Path) -> None:
+    _refuses(tmp_path / "meters.jsonl", case_id="3782-822463-10005")
+
+
+def test_a_grouped_diners_card_number_in_the_case_id_is_refused(tmp_path: Path) -> None:
+    _refuses(tmp_path / "meters.jsonl", case_id="3056-930902-5904")
+
+
+def test_a_card_carried_as_an_integer_is_refused(tmp_path: Path) -> None:
+    _refuses(tmp_path / "meters.jsonl", input_tokens=4111111111111111)
+
+
+def test_a_card_broken_by_a_zero_width_space_is_refused(tmp_path: Path) -> None:
+    _refuses(tmp_path / "meters.jsonl", case_id="4111\u200b1111\u200b1111\u200b1111")
 
 def test_a_restricted_value_is_refused_and_the_file_stays_unchanged(tmp_path: Path) -> None:
     path = tmp_path / "meters.jsonl"
