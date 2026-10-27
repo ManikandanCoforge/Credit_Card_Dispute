@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-27T23:14:27Z",
-  "git_commit": "b36054734a76fd470d5cd6bb54bd8309bc7e71c8",
+  "generated_at": "2026-10-27T23:18:22Z",
+  "git_commit": "ac13f991d0c6db2c31def8025bc89e8cdac6ee91",
   "git_dirty": false,
   "git_commit_note": "HEAD at run time. The working tree was clean when the artifacts were generated.",
   "base_url": "http://127.0.0.1:8794",
@@ -8,7 +8,7 @@
   "pass_count": 9,
   "total_cases": 12,
   "format_errors": [],
-  "p50_latency_ms": 7,
+  "p50_latency_ms": 6,
   "p95_latency_ms": 8,
   "cost_per_case_usd": 0.0,
   "total_cost_usd": 0.0,
@@ -18,7 +18,7 @@
       "case_id": "CARD-D01",
       "submitted": true,
       "passed": true,
-      "duration_ms": 6.354,
+      "duration_ms": 7.961,
       "failed_checks": [],
       "error": null,
       "meter_error": null
@@ -27,7 +27,7 @@
       "case_id": "CARD-D02",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.369,
+      "duration_ms": 6.616,
       "failed_checks": [],
       "error": null,
       "meter_error": null
@@ -36,7 +36,7 @@
       "case_id": "CARD-D03",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.106,
+      "duration_ms": 6.122,
       "failed_checks": [],
       "error": null,
       "meter_error": null
@@ -45,7 +45,7 @@
       "case_id": "CARD-D04",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.327,
+      "duration_ms": 6.59,
       "failed_checks": [],
       "error": null,
       "meter_error": null
@@ -54,7 +54,7 @@
       "case_id": "CARD-D05",
       "submitted": true,
       "passed": true,
-      "duration_ms": 6.811,
+      "duration_ms": 6.181,
       "failed_checks": [],
       "error": null,
       "meter_error": null
@@ -63,7 +63,7 @@
       "case_id": "CARD-D06",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.001,
+      "duration_ms": 6.478,
       "failed_checks": [],
       "error": null,
       "meter_error": null
@@ -72,7 +72,7 @@
       "case_id": "CARD-D07",
       "submitted": false,
       "passed": false,
-      "duration_ms": 3.817,
+      "duration_ms": 3.112,
       "failed_checks": [
         "submitted"
       ],
@@ -83,7 +83,7 @@
       "case_id": "CARD-D08",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.052,
+      "duration_ms": 6.532,
       "failed_checks": [],
       "error": null,
       "meter_error": null
@@ -92,7 +92,7 @@
       "case_id": "CARD-D09",
       "submitted": false,
       "passed": false,
-      "duration_ms": 7.289,
+      "duration_ms": 5.925,
       "failed_checks": [
         "submitted"
       ],
@@ -103,7 +103,7 @@
       "case_id": "CARD-D10",
       "submitted": false,
       "passed": false,
-      "duration_ms": 3.456,
+      "duration_ms": 3.279,
       "failed_checks": [
         "submitted"
       ],
@@ -114,7 +114,7 @@
       "case_id": "CARD-D11",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.201,
+      "duration_ms": 6.249,
       "failed_checks": [],
       "error": null,
       "meter_error": null
@@ -123,7 +123,7 @@
       "case_id": "CARD-D12",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.93,
+      "duration_ms": 6.067,
       "failed_checks": [],
       "error": null,
       "meter_error": null

@@ -1,13 +1,13 @@
 # Scored run across the twelve dev cases
 
-Generated at 2026-10-27T23:14:27Z from commit `b36054734a76fd470d5cd6bb54bd8309bc7e71c8` against `http://127.0.0.1:8794`.
+Generated at 2026-10-27T23:18:22Z from commit `ac13f991d0c6db2c31def8025bc89e8cdac6ee91` against `http://127.0.0.1:8794`.
 Dataset: `card-disputes-dev`.
 
 ## Result
 
 - Pass: 9 / 12
 - Format errors: 0
-- p50 draft latency: 7.000 ms (nearest-rank over the latency_ms values in `reports/meters.jsonl`)
+- p50 draft latency: 6.000 ms (nearest-rank over the latency_ms values in `reports/meters.jsonl`)
 - p95 draft latency: 8.000 ms (nearest-rank over the latency_ms values in `reports/meters.jsonl`)
 - Cost per case: 0.00 USD (0 model calls and 0 tokens in the meter file)
 - Total cost: 0.00 USD
@@ -16,18 +16,18 @@ Dataset: `card-disputes-dev`.
 
 | Case | Submitted | Passed | Duration (ms) | Failed checks | Error |
 |---|---|---|---|---|---|
-| CARD-D01 | yes | yes | 6.354 | - | - |
-| CARD-D02 | yes | yes | 7.369 | - | - |
-| CARD-D03 | yes | yes | 7.106 | - | - |
-| CARD-D04 | yes | yes | 7.327 | - | - |
-| CARD-D05 | yes | yes | 6.811 | - | - |
-| CARD-D06 | yes | yes | 7.001 | - | - |
-| CARD-D07 | no | no | 3.817 | submitted | BankReadError |
-| CARD-D08 | yes | yes | 8.052 | - | - |
-| CARD-D09 | no | no | 7.289 | submitted | the intake statement is not an exact excerpt of the intake |
-| CARD-D10 | no | no | 3.456 | submitted | BankReadError |
-| CARD-D11 | yes | yes | 7.201 | - | - |
-| CARD-D12 | yes | yes | 7.930 | - | - |
+| CARD-D01 | yes | yes | 7.961 | - | - |
+| CARD-D02 | yes | yes | 6.616 | - | - |
+| CARD-D03 | yes | yes | 6.122 | - | - |
+| CARD-D04 | yes | yes | 6.590 | - | - |
+| CARD-D05 | yes | yes | 6.181 | - | - |
+| CARD-D06 | yes | yes | 6.478 | - | - |
+| CARD-D07 | no | no | 3.112 | submitted | BankReadError |
+| CARD-D08 | yes | yes | 6.532 | - | - |
+| CARD-D09 | no | no | 5.925 | submitted | the intake statement is not an exact excerpt of the intake |
+| CARD-D10 | no | no | 3.279 | submitted | BankReadError |
+| CARD-D11 | yes | yes | 6.249 | - | - |
+| CARD-D12 | yes | yes | 6.067 | - | - |
 
 ## Failing cases
 
@@ -53,18 +53,18 @@ Cost comes from `reports/scored-run-meters.json`, one row per case. The p50 and 
 
 | Case | Duration (ms) | Calls | Tokens in | Tokens out | Cost (USD) | Path |
 |---|---|---|---|---|---|---|
-| CARD-D01 | 6.354 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D02 | 7.369 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D03 | 7.106 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D04 | 7.327 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D05 | 6.811 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D06 | 7.001 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D07 | 3.817 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D08 | 8.052 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D09 | 7.289 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D10 | 3.456 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D11 | 7.201 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D12 | 7.930 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D01 | 7.961 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D02 | 6.616 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D03 | 6.122 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D04 | 6.590 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D05 | 6.181 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D06 | 6.478 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D07 | 3.112 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D08 | 6.532 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D09 | 5.925 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D10 | 3.279 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D11 | 6.249 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D12 | 6.067 | 0 | 0 | 0 | 0.00 | deterministic_template |
 
 ## Reproduce
 
