@@ -377,8 +377,23 @@ def _md_cell(value: Any) -> str:
     return str(value).replace("|", "\\|").replace("\n", " ")
 
 
-def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> str:
-    """Render the human-readable scored-run report."""
+def render_markdown(
+    report: Mapping[str, Any],
+    meters: Sequence[MeterRow],
+    *,
+    meter_path: str = "reports/meters.jsonl",
+) -> str:
+    """Render the human-readable scored-run report.
+
+    Args:
+        report: The assembled report to render.
+        meters: The per-case meter rows, one for each case whose line was written.
+        meter_path: The meter file the run wrote, named as the report should show
+            it. Defaults to the repository's reports/meters.jsonl.
+
+    Returns:
+        The markdown document, ending with a newline.
+    """
     total = report["total_cases"]
     lines = [
         "# Scored run across the twelve dev cases",
@@ -401,11 +416,11 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         f"- Format errors: {len(report['format_errors'])}",
         (
             f"- p50 draft latency: {_fmt_ms(report['p50_latency_ms'])} "
-            "(nearest-rank over the latency_ms values in reports/meters.jsonl)"
+            f"(nearest-rank over the latency_ms values in `{meter_path}`)"
         ),
         (
             f"- p95 draft latency: {_fmt_ms(report['p95_latency_ms'])} "
-            "(nearest-rank over the latency_ms values in reports/meters.jsonl)"
+            f"(nearest-rank over the latency_ms values in `{meter_path}`)"
         ),
         (
             f"- Cost per case: {report['cost_per_case_usd']:.2f} USD "
@@ -492,7 +507,7 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         (
             "Cost comes from `reports/scored-run-meters.json`, one row per case. "
             "The p50 and p95 in the result section are read from "
-            "`reports/meters.jsonl`, the redacted per-case meter file. The path "
+            f"`{meter_path}`, the redacted per-case meter file. The path "
             "is `deterministic_template`, so `model_calls`, `model_tokens_in` "
             "and `model_tokens_out` are 0 and the cost is 0.00 USD by "
             "construction: this run wires no model call, so the meter shows what "
@@ -541,7 +556,7 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         "```sh",
         (
             "uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 "
-            "--data data/dev --gold feedback/dev_gold.json"
+            f"--data data/dev --gold feedback/dev_gold.json --case-meters {meter_path}"
         ),
         "```",
         "",
@@ -692,7 +707,13 @@ def run_scored(
     _write_json(report_path, report)
     _write_json(meters_path, meters)
     markdown_path.parent.mkdir(parents=True, exist_ok=True)
-    markdown_path.write_text(render_markdown(report, meters), encoding="utf-8")
+    meter_display = (
+        "reports/meters.jsonl" if case_meter_path is None else str(case_meter_path)
+    )
+    markdown_path.write_text(
+        render_markdown(report, meters, meter_path=meter_display),
+        encoding="utf-8",
+    )
 
     print(
         f"{report['pass_count']} / {report['total_cases']} cases passed; "

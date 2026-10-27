@@ -319,7 +319,8 @@ def test_markdown_contains_the_exact_reproduction_commands():
     ) in markdown
     assert (
         "uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 "
-        "--data data/dev --gold feedback/dev_gold.json\n"
+        "--data data/dev --gold feedback/dev_gold.json "
+        "--case-meters reports/meters.jsonl\n"
     ) in markdown
 
 
@@ -328,6 +329,23 @@ def test_the_reproduction_commands_run_the_same_on_any_operating_system():
     commands = markdown.split("## Reproduce", 1)[1]
     for unportable in ("Scripts", ".exe", "../", "rm -f", " &\n", "\\\n"):
         assert unportable not in commands
+
+
+def test_the_markdown_names_the_meter_file_the_run_actually_wrote(tmp_path, monkeypatch):
+    paths = _outputs(tmp_path)
+    elsewhere = tmp_path / "case-meters" / "elsewhere.jsonl"
+    paths["case_meter_path"] = elsewhere
+    monkeypatch.setattr("tools.scored_run.contract_case_plans", lambda base, data: [])
+
+    status = run_scored(
+        base_url="http://127.0.0.1:8765", data_dir=DEV, gold_path=GOLD, **_run(paths)
+    )
+
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert status == 1
+    assert f"--case-meters {elsewhere}" in markdown
+    assert str(elsewhere) in markdown
+    assert "reports/meters.jsonl" not in markdown
 
 
 def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
@@ -420,7 +438,7 @@ def test_a_full_dev_run_against_the_mock_writes_four_artifacts_that_agree(
         case["case_id"] for case in report["cases"] if case["submitted"]
     ]
     assert paths["markdown_path"].read_text(encoding="utf-8") == render_markdown(
-        report, meters
+        report, meters, meter_path=str(paths["case_meter_path"])
     )
     printed = capsys.readouterr().out.splitlines()
     assert printed[0].startswith(
