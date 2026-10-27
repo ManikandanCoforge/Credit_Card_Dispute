@@ -438,6 +438,59 @@ def test_empty_or_omitted_intake_strings_read_as_not_supplied(tmp_path):
     ]
 
 
+def test_card_d09_statement_is_its_complaint_quoted_exactly():
+    # D09 is a redelivery of D02. Its delivery note after the form fields was joined onto
+    # the statement, which made a statement the intake never says, so D09 was not built.
+    intake = (DEV / "documents" / "CARD-D09-INTAKE.md").read_text()
+
+    [record] = build_complaint_records(
+        [{"case_id": "CARD-D09", "intake_source": "CARD-D09-INTAKE"}], DEV
+    )
+
+    statement = record["intake"]["statement"]
+    assert statement == (
+        "Morrow Supplies charged me 134 crowns twice for one purchase. My statement shows "
+        "TX-D02 and TX-D02-B. Please investigate the extra charge."
+    )
+    assert statement in intake
+    assert "Delivery note" not in statement
+
+
+def test_text_after_the_form_fields_is_not_part_of_the_statement(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "LATE-INTAKE.md").write_text(
+        "# Customer complaint and intake form\n\n"
+        "Source ID: LATE-INTAKE\n\n"
+        "I was charged twice for one order.\n\n"
+        "Reported date: 2026-10-02\n"
+        "Transaction ID: TX-1\n\n"
+        "Delivery note: this is a redelivery of the earlier complaint.\n"
+        "A line of prose after the form.\n"
+    )
+
+    [record] = build_complaint_records(
+        [{"case_id": "LATE", "intake_source": "LATE-INTAKE"}], tmp_path
+    )
+
+    assert record["intake"]["statement"] == "I was charged twice for one order."
+
+
+def test_text_after_the_form_is_the_statement_when_nothing_precedes_it(tmp_path):
+    _dataset_with_intakes(tmp_path, [])
+    (tmp_path / "documents" / "AFTER-INTAKE.md").write_text(
+        "Source ID: AFTER-INTAKE\n"
+        "Reported date: 2026-10-02\n"
+        "Transaction ID: TX-1\n"
+        "I do not recognize this charge.\n"
+    )
+
+    [record] = build_complaint_records(
+        [{"case_id": "AFTER", "intake_source": "AFTER-INTAKE"}], tmp_path
+    )
+
+    assert record["intake"]["statement"] == "I do not recognize this charge."
+
+
 def test_a_document_that_is_not_the_intake_does_not_supply_fields(tmp_path):
     cases = _dataset_with_intakes(tmp_path, [("CARD-D01", "2026-10-01")])
     (tmp_path / "documents" / "CARD-D01-ATTACHMENT.md").write_text(

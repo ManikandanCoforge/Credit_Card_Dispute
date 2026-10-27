@@ -929,7 +929,7 @@ def test_a_command_split_across_two_lines_of_the_intake_is_never_drafted_under_i
     # A known limit (docs/RED_TEAM.md): the intake's lines are joined into one statement, so
     # the command is not read as the account, but the line-by-line command check does not see
     # it either. The case is not built at all today, rather than going to a person, because a
-    # statement spanning lines is not one exact excerpt (the COF-43 gap D09 also hits).
+    # statement spanning lines is not one exact excerpt.
     data = tmp_path / "data"
     shutil.copytree(DEV, data)
     intake = (
