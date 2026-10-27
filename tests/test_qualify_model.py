@@ -6,7 +6,12 @@ outcomes come from ADR-003's scoring rule.
 """
 
 import json
+import runpy
+import sys
 import tomllib
+from pathlib import Path
+
+import pytest
 
 from src.model_clients import request_key
 from src.model_cue import CUE_SCHEMA, CUE_SYSTEM, SCHEMA_HASH, evidence
@@ -14,6 +19,7 @@ from src.model_registry import find_qualified, load_registry
 from tools import qualify_model
 from tools.qualify_model import main, qualify, suite_lines, toml_entry
 
+ROOT = Path(__file__).resolve().parents[1]
 TWO_TIMES = "The shop took my money two times for one order."
 QUOTED_LESS = "I was quoted 60 crowns but the shop took 90 crowns."
 SUITE = [
@@ -149,6 +155,24 @@ def test_main_refuses_a_model_that_cannot_be_used(tmp_path, capsys, monkeypatch)
 
     assert main([str(_suite_file(tmp_path)), "--report", str(tmp_path / "report.json")]) == 1
     assert capsys.readouterr().err == "the model cannot be used: MODEL_REPLAY is not set\n"
+
+
+def test_the_script_runs_without_the_repository_on_sys_path(tmp_path, capsys, monkeypatch):
+    monkeypatch.delenv("MODEL_PROVIDER", raising=False)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "path", [entry for entry in sys.path if entry != str(ROOT)])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["qualify_model.py", str(_suite_file(tmp_path)), "--report", str(tmp_path / "r.json")],
+    )
+
+    with pytest.raises(SystemExit) as exited:
+        runpy.run_path(str(ROOT / "tools" / "qualify_model.py"), run_name="__main__")
+
+    assert exited.value.code == 1
+    assert sys.path[0] == str(ROOT)
+    assert capsys.readouterr().err == "set MODEL_PROVIDER and the model's settings first\n"
 
 
 def test_a_passed_live_run_is_reported_and_registered(tmp_path, capsys, monkeypatch):
