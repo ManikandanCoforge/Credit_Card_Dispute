@@ -641,6 +641,23 @@ def _write_json(path: Path, value: Any) -> None:
     )
 
 
+def _meter_path_display(path: Path | None) -> str:
+    """Name the meter file in the report.
+
+    Args:
+        path: The meter file this run was told to write, or None for the default.
+
+    Returns:
+        The default file as reports/meters.jsonl so the committed report stays
+        portable, and any other path exactly as the caller gave it so a custom
+        run names its own file.
+    """
+    default = ROOT / "reports" / "meters.jsonl"
+    if path is None or path.resolve() == default.resolve():
+        return "reports/meters.jsonl"
+    return str(path)
+
+
 def run_scored(
     *,
     base_url: str,
@@ -662,7 +679,9 @@ def run_scored(
     numbers. When the case list cannot be read there are no numbers to publish:
     nothing is written, the reason goes to stderr, and the status is 1. When
     the meter file the run wrote holds a restricted value, the run is refused
-    the same way: the reason names the file and the case.
+    the same way: the reason names the file and the case. The markdown names the
+    meter file the run wrote, and names the default file relative to the
+    repository so the committed report stays portable.
     """
     dataset = json.loads((data_dir / "dataset.json").read_text(encoding="utf-8"))
     gold = json.loads(gold_path.read_text(encoding="utf-8"))
@@ -729,9 +748,7 @@ def run_scored(
     _write_json(report_path, report)
     _write_json(meters_path, meters)
     markdown_path.parent.mkdir(parents=True, exist_ok=True)
-    meter_display = (
-        "reports/meters.jsonl" if case_meter_path is None else str(case_meter_path)
-    )
+    meter_display = _meter_path_display(case_meter_path)
     markdown_path.write_text(
         render_markdown(report, meters, meter_path=meter_display),
         encoding="utf-8",

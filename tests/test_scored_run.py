@@ -349,6 +349,28 @@ def test_the_markdown_names_the_meter_file_the_run_actually_wrote(tmp_path, monk
     assert "reports/meters.jsonl" not in markdown
 
 
+@pytest.mark.parametrize("pass_meter_path", [True, False])
+def test_the_default_meter_file_is_named_relative_to_the_repository(
+    tmp_path, monkeypatch, pass_meter_path
+):
+    paths = _outputs(tmp_path)
+    out = tmp_path / "out"
+    monkeypatch.setattr("tools.scored_run.ROOT", out)
+    monkeypatch.setattr("tools.scored_run.contract_case_plans", lambda base, data: [])
+    kwargs = _run(paths)
+    if not pass_meter_path:
+        del kwargs["case_meter_path"]
+
+    status = run_scored(
+        base_url="http://127.0.0.1:8765", data_dir=DEV, gold_path=GOLD, **kwargs
+    )
+
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert status == 1
+    assert "--case-meters reports/meters.jsonl" in markdown
+    assert str(out / "reports" / "meters.jsonl") not in markdown
+
+
 def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
     tmp_path, monkeypatch, capsys
 ):
