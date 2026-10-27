@@ -99,10 +99,12 @@ These are the sets a model must pass before `models.toml` may list it. The READM
 
 They come from the copilot's registered Week 10 runs of 25 October, one trace per suite. Each answer was replayed through this repository's pipeline against the unmodified mock. It was kept only when the prompt this code sends is byte-for-byte the prompt Luna was sent, matched by prompt hash.
 
-In the current evaluation this code asks 48 questions. Eight of them were not asked in that run, so they have no recording and replay as no answer:
+In the current evaluation this code asks 50 questions. Ten of them were not asked in that run, so they have no recording and replay as no answer:
 
 - 3 dispute-type questions: SYN-S03, HLD-H07 and HLD-H08
-- 5 two-problem questions: CARD-D08, SYN-S17, SYN-S20, SYN-S24 and SYN-S25
+- 7 two-problem questions: CARD-D08, CARD-D10, SYN-S14, SYN-S17, SYN-S20, SYN-S24 and SYN-S25
+
+CARD-D10 and SYN-S14 are asked now because the tool reads retry (#68): in the recorded runs a tool fault stopped both cases before any question.
 
 Each line holds three things:
 
@@ -140,10 +142,10 @@ Results on 2026-10-27:
 
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
-| dev (12) | 9 | 9 | 0 → 0 | 5 | 544 / 132 |
-| synth (31) | 16 | 20 | 3 → 3 | 22 | 3,528 / 572 |
+| dev (12) | 11 | 11 | 0 → 0 | 6 | 544 / 132 |
+| synth (31) | 19 | 23 | 3 → 3 | 23 | 3,528 / 572 |
 | stress (16) | 5 | 16 | 1 → 0 | 16 | 5,585 / 647 |
 | holdout (8) | 3 | 4 | 0 → 0 | 5 | 747 / 133 |
-| Total (67) | 33 | 49 | 4 → 3 | 48 | 10,404 / 1,484 |
+| Total (67) | 38 | 54 | 4 → 3 | 50 | 10,404 / 1,484 |
 
 ADR-003 explains the cases that still fail. The token counts are Luna's own counts for these exact prompts, recorded on 25 October.
