@@ -74,8 +74,7 @@ def _print_summary(summary: dict[str, Any], base: Path) -> None:
     for row in summary["metrics"]:
         print(
             f"  {row['metric']:<28} {row['passed']}/{row['n']}  "
-            f"{row['rate'] * 100:.1f}%  "
-            f"[{row['ci_low'] * 100:.1f}%, {row['ci_high'] * 100:.1f}%]"
+            f"{row['rate'] * 100:.1f}%"
         )
     for line in failing_lines(summary):
         print(f"  FAIL {line}")

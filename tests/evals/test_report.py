@@ -10,7 +10,6 @@ from evals.report import (
     render_markdown,
     summarize,
 )
-from evals.stats import wilson_interval
 from tests.evals.support import GOLD, make_case, make_run
 
 
@@ -26,7 +25,7 @@ def _route(case_id: str, actual: str, expected: str) -> tuple:
     return make_case(case_id, gold=gold, contract=contract)
 
 
-def test_metric_rows_carry_sample_size_and_interval():
+def test_metric_rows_carry_sample_size_and_rate():
     checks = [
         Check("escalation.route_correct", "CASE-1", True, "ok"),
         Check("escalation.route_correct", "CASE-2", False, "wrong"),
@@ -36,7 +35,8 @@ def test_metric_rows_carry_sample_size_and_interval():
     assert rows[0]["n"] == 3
     assert rows[0]["passed"] == 2
     assert rows[0]["rate"] == 2 / 3
-    assert rows[0]["ci_low"] == wilson_interval(2, 3)[0]
+    assert "ci_low" not in rows[0]
+    assert "ci_high" not in rows[0]
 
 
 def test_case_rows_name_every_failing_check():
@@ -73,6 +73,24 @@ def test_escalation_summary_splits_normal_escalation_and_information():
     assert summary["escalations"]["missed"] == ["CASE-C"]
     assert summary["escalations"]["false"] == ["CASE-B"]
     assert summary["request_information"] == {"total": 1, "passed": 1}
+
+
+def test_escalation_summary_excludes_unbuilt_cases_from_every_denominator():
+    """A case that produced no draft was never routed, so it is not a miss."""
+    built = _route("CASE-A", "ready_for_review", "ready_for_review")
+    missing = make_case(
+        "CASE-B",
+        gold=dict(GOLD, routing=["manual_review"]),
+        build_error="transactions never answered",
+    )
+    summary = escalation_summary(make_run([built, missing]))
+    assert summary["normal"] == {"total": 1, "passed": 1}
+    assert summary["escalations"]["total"] == 0
+    assert summary["escalations"]["missed"] == []
+    assert summary["not_built"] == ["CASE-B"]
+    assert "Not built: CASE-B" in render_markdown(
+        summarize(make_run([built, missing]), [], {})
+    )
 
 
 def test_markdown_lists_the_failing_case_and_metric():

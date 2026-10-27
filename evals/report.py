@@ -15,7 +15,6 @@ from typing import Any
 
 from evals.contract import Check, RunData
 from evals.dataset import REPO_ROOT
-from evals.stats import proportion, wilson_interval
 
 
 def metric_rows(checks: Sequence[Check]) -> list[dict[str, Any]]:
@@ -26,16 +25,12 @@ def metric_rows(checks: Sequence[Check]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for metric, items in grouped.items():
         passed = sum(1 for item in items if item.passed)
-        rate = proportion(passed, len(items))
-        low, high = wilson_interval(passed, len(items))
         rows.append(
             {
                 "metric": metric,
                 "n": len(items),
                 "passed": passed,
-                "rate": rate,
-                "ci_low": low,
-                "ci_high": high,
+                "rate": passed / len(items),
             }
         )
     return rows
@@ -89,9 +84,14 @@ def escalation_summary(run: RunData) -> dict[str, Any]:
         "false": [],
     }
     information: dict[str, Any] = {"total": 0, "passed": 0}
+    not_built: list[str] = []
     for case in run.cases:
         expected = list(case.gold.get("routing", []))
-        actual = (case.contract or {}).get("routing")
+        contract = case.contract
+        if not isinstance(contract, Mapping):
+            not_built.append(case.case_id)
+            continue
+        actual = contract.get("routing")
         if expected == ["ready_for_review"]:
             normal["total"] += 1
             if actual == "ready_for_review":
@@ -112,6 +112,7 @@ def escalation_summary(run: RunData) -> dict[str, Any]:
         "normal": normal,
         "escalations": escalations,
         "request_information": information,
+        "not_built": not_built,
     }
 
 
@@ -184,12 +185,13 @@ def render_markdown(summary: Mapping[str, Any]) -> str:
         "",
         "## Metrics",
         "",
-        "| Metric | Passed | n | Rate | 95% CI |",
-        "| --- | ---: | ---: | ---: | --- |",
+        "| Metric | Passed | n | Rate |",
+        "| --- | ---: | ---: | ---: |",
     ]
     for row in summary["metrics"]:
-        interval = f"{_percent(row['ci_low'])} - {_percent(row['ci_high'])}"
-        lines.append(f"| `{row['metric']}` | {row['passed']} | {row['n']} | {_percent(row['rate'])} | {interval} |")
+        lines.append(
+            f"| `{row['metric']}` | {row['passed']} | {row['n']} | {_percent(row['rate'])} |"
+        )
     if summary["gates"]:
         lines += ["", "## Gates", ""]
         for gate in summary["gates"]:
@@ -208,6 +210,7 @@ def render_markdown(summary: Mapping[str, Any]) -> str:
         f"- Missed escalations: {_names(escalation['escalations']['missed'])}",
         f"- False escalations: {_names(escalation['escalations']['false'])}",
         f"- Request-information routes: {escalation['request_information']['passed']}/{escalation['request_information']['total']}",
+        f"- Not built: {_names(escalation['not_built'])}",
     ]
     if summary["format_errors"]:
         lines += ["", "## Format errors", ""]

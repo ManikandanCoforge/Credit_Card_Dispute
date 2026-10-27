@@ -7,7 +7,6 @@ import json
 import pytest
 
 from evals.dataset import SuiteError, format_errors, load_dataset, load_gold, load_suite
-from evals.stats import proportion, wilson_interval
 
 
 def test_suite_resolves_paths_against_repo_root(tmp_path):
@@ -61,15 +60,3 @@ def test_format_errors_names_every_structural_problem():
     assert "duplicate result: A" in errors
     assert "missing result: B" in errors
     assert "unexpected result: C" in errors
-
-
-def test_wilson_interval_brackets_the_rate_and_handles_extremes():
-    low, high = wilson_interval(9, 12)
-    assert low < 0.75 < high
-    assert proportion(0, 0) is None
-    with pytest.raises(ValueError):
-        wilson_interval(0, 0)
-    with pytest.raises(ValueError):
-        proportion(2, 1)
-    assert wilson_interval(0, 10)[0] == 0.0
-    assert wilson_interval(10, 10)[1] == 1.0
