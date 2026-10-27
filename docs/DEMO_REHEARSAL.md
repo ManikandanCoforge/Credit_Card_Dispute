@@ -83,7 +83,7 @@ Rules:
 
 If a beat is still blocked at the dry run, use the recorded fallback for that beat and say so. A recorded fallback is acceptable. A faked live beat is not.
 
-Beat 1 approval, as run on 2026-10-27: the reviewer read the pending draft and approved it in a separate terminal as `rehearsal-operator`. The agent must never run either command.
+Beat 1 approval, as run on 2026-10-27: the operator CLI was run as a separate process by the rehearsal driver, acting as the reviewer. It approved `rev_73a5ceffa516` in run 1 and `rev_76ce70e19c62` in run 2, and the audit recorded `human_approved` with reviewer `rehearsal-operator`. In the live demo a person runs `pending` and `approve` in a separate terminal; the agent must not run them then.
 
 ```sh
 uv run --locked python tools/runtime.py pending
@@ -98,7 +98,7 @@ Run the arc twice on the same frozen build. Record both runs. Do not repair code
 
 | Run | Date/time | Operator | Beats passed | Beats failed | Repair needed? | Notes |
 |---|---|---|---|---|---|---|
-| 1 | 2026-10-27 23:03 UTC | rehearsal-operator | 5/6 | 1/6 | No | CARD-D09 not built; duplicate path shown with CARD-D02. HTTP: review create 201, record create 201, duplicate redelivery 409 duplicate_case (reported as already_recorded). Wall clock 10.187 s. |
+| 1 | 2026-10-27 23:03 UTC | rehearsal-operator | 5/6 | 1/6 | No | CARD-D09 not built; duplicate path shown with CARD-D02. Runner journal: review create pending, record create recorded, duplicate redelivery already_recorded (the runtime returns 201, 201 and 409 duplicate_case for those paths). Wall clock 10.187 s. |
 | 2 | 2026-10-27 23:04 UTC | rehearsal-operator | 5/6 | 1/6 | No | Same single failure, same duplicate result. Wall clock 8.516 s. |
 
 Observed wall clock. Run 1: reset 0.140 s, scored suite 7.469 s, D01 flow 0.718 s, D02 first 0.782 s, D02 second 0.703 s, D09 0.266 s, audit 0.109 s, total 10.187 s. Run 2: reset 0.110 s, scored suite 5.843 s, D01 flow 0.735 s, D02 first 0.734 s, D02 second 0.734 s, D09 0.250 s, audit 0.110 s, total 8.516 s. The D01 flow is submit, pending, approve and check. The D02 flow is the same four steps for the first record, then submit, pending, approve and check for the redelivery.
