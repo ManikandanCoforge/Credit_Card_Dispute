@@ -71,16 +71,19 @@ Latency and cost come from `reports/scored-run-meters.json`, one row per case. T
 
 ## Reproduce
 
-Run from the worktree root on branch `kenmann01/cof-44-scored-run-across-all-twelve-cases`. `../../.venv` is the shared virtualenv of the enclosing checkout; from the primary checkout use `.venv\Scripts\python.exe`.
+Run from the repository root, after `uv sync --locked`. The commands are the same on macOS, Linux and Windows. Use two terminals, and stop any other mock on port 8765 first.
+
+In the first terminal, start the mock on a fresh state of its own:
 
 ```sh
-rm -f .state/cof44.sqlite3
-../../.venv/Scripts/python.exe -m tools.runtime serve \
-    --data data/dev --port 8899 --state .state/cof44.sqlite3 &
-../../.venv/Scripts/python.exe tools/scored_run.py \
-    --base-url http://127.0.0.1:8899 \
-    --data data/dev \
-    --gold feedback/dev_gold.json
+uv run --locked python tools/runtime.py reset --confirm --state .state/scored-run.sqlite
+uv run --locked python tools/runtime.py serve --data data/dev --port 8765 --state .state/scored-run.sqlite
 ```
 
-The run exits 0 only when all twelve cases pass. A single transient fault fails once on a fresh state, so use a fresh state for each comparison.
+In the second terminal, run every case and score it:
+
+```sh
+uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 --data data/dev --gold feedback/dev_gold.json
+```
+
+The run exits 0 only when all twelve cases pass. A single transient fault fails once on a fresh state, so reset the state before each comparison. If the mock is not running, the run writes nothing and exits 1.

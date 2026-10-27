@@ -2,7 +2,8 @@
 
 The tests cover the nearest-rank p95, failed-check extraction, exception
 mapping, meter row shape and report assembly, including a not-built case that
-must be reported with its reason and submitted=false.
+must be reported with its reason and submitted=false. They also cover the run
+itself when the case list cannot be read, and the command-line defaults.
 """
 
 import json
@@ -10,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from src.load_records import CaseListError
 from tools.scored_run import (
     DETERMINISTIC_PATH,
     EXCEPTION_STATUS,
@@ -17,11 +19,13 @@ from tools.scored_run import (
     build_case_reports,
     exception_list,
     failed_checks,
+    main,
     measure_cases,
     meter_rows,
     p95_nearest_rank,
     proposed_exception,
     render_markdown,
+    run_scored,
     run_succeeded,
     unplanned_failures,
 )
@@ -310,11 +314,77 @@ def test_markdown_reports_p95_and_cost_from_the_meter_file():
 
 def test_markdown_contains_the_exact_reproduction_commands():
     markdown = render_markdown(_twelve_case_report(), meter_rows(_twelve_cases()))
-    assert "rm -f .state/cof44.sqlite3" in markdown
-    assert "tools.runtime serve" in markdown
-    assert "--port 8899" in markdown
-    assert "tools/scored_run.py" in markdown
-    assert "--gold feedback/dev_gold.json" in markdown
+    assert (
+        "uv run --locked python tools/runtime.py reset --confirm "
+        "--state .state/scored-run.sqlite\n"
+    ) in markdown
+    assert (
+        "uv run --locked python tools/runtime.py serve --data data/dev --port 8765 "
+        "--state .state/scored-run.sqlite\n"
+    ) in markdown
+    assert (
+        "uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 "
+        "--data data/dev --gold feedback/dev_gold.json\n"
+    ) in markdown
+
+
+def test_the_reproduction_commands_run_the_same_on_any_operating_system():
+    markdown = render_markdown(_twelve_case_report(), meter_rows(_twelve_cases()))
+    commands = markdown.split("## Reproduce", 1)[1]
+    for unportable in ("Scripts", ".exe", "../", "rm -f", " &\n", "\\\n"):
+        assert unportable not in commands
+
+
+def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
+    tmp_path, monkeypatch, capsys
+):
+    def unreachable(base_url, data_dir):
+        raise CaseListError
+
+    monkeypatch.setattr("tools.scored_run.contract_case_plans", unreachable)
+    paths = {
+        "submission_path": tmp_path / "submissions" / "scored-run.json",
+        "report_path": tmp_path / "reports" / "scored-run.json",
+        "meters_path": tmp_path / "reports" / "scored-run-meters.json",
+        "markdown_path": tmp_path / "reports" / "scored-run.md",
+    }
+    paths["report_path"].parent.mkdir()
+    for name in ("report_path", "meters_path", "markdown_path"):
+        paths[name].write_text("the last published run\n", encoding="utf-8")
+
+    status = run_scored(
+        base_url="http://127.0.0.1:8765",
+        data_dir=ROOT / "data" / "dev",
+        gold_path=ROOT / "feedback" / "dev_gold.json",
+        generated_at="2026-10-27T00:00:00Z",
+        git_commit="abc123",
+        git_dirty=False,
+        **paths,
+    )
+
+    assert status == 1
+    assert not paths["submission_path"].exists()
+    for name in ("report_path", "meters_path", "markdown_path"):
+        assert paths[name].read_text(encoding="utf-8") == "the last published run\n"
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "could not be read from http://127.0.0.1:8765" in captured.err
+    assert "Nothing was written" in captured.err
+
+
+def test_the_run_reads_the_mock_on_the_readme_port_by_default(monkeypatch):
+    seen = {}
+
+    def record(**arguments):
+        seen.update(arguments)
+        return 0
+
+    monkeypatch.setattr("tools.scored_run.run_scored", record)
+
+    assert main([]) == 0
+    assert seen["base_url"] == "http://127.0.0.1:8765"
+    assert seen["data_dir"] == ROOT / "data" / "dev"
+    assert seen["gold_path"] == ROOT / "feedback" / "dev_gold.json"
 
 
 def _case(
