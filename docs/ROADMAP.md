@@ -2,7 +2,7 @@
 
 - Last updated: 2026-10-25
 - Current state: 2026-10-25, branch `kenmann01/cof-47-decision-record-limitations-and-roadmap`, with COF-38 missing-evidence routing and the COF-44 scored run included
-- Related: `docs/LIMITATIONS.md`, `docs/decisions/ADR-001-model-narrative-boundary.md`, `docs/decisions/ADR-002-policy-version-selection.md`
+- Related: `docs/LIMITATIONS.md`, `docs/decisions/ADR-001-model-narrative-boundary.md`, `docs/decisions/ADR-002-policy-version-selection.md`, `docs/decisions/ADR-003-hybrid-model-questions.md`
 
 This roadmap starts from what the software does now. It does not describe work that is already complete as future work, and it does not promise a date that has not been agreed.
 
@@ -26,7 +26,7 @@ It does not yet:
 - submit a draft for review or create a record from the runner
 - retry a transient tool failure
 - authenticate a reviewer or run batch intake
-- call a model
+- call a model unless one is configured: `ADR-003` lets a qualified model answer two closed questions on the classification gap, and it is off by default
 - provide a UI or a production deployment
 
 ## Sequencing gate: update and close
@@ -69,7 +69,7 @@ Entry condition: the near-term core is green and the create path is demonstrated
 |---|---|---|---|
 | M1 | Authentication and reviewer identity | The mock has no login, session, role, or verified reviewer. The operator CLI accepts a free-text name. | A reviewer signs in through an approved identity provider. Roles separate the requester from the approver. The server checks authorization, and the audit binds the decision to a verified identity, not a typed name. |
 | M2 | Batch intake | One case is processed at a time. There is no queue, rate limit, or backpressure. | A bounded batch can be submitted. Each case is isolated, partial failures are reported per case, retries do not duplicate a record, and the audit keeps the batch and case relationship. |
-| M3 | Model narrative route, after client approval | No model is configured. The shipped narrative is the deterministic template. | The client has approved the provider, data boundary, and spend. The route follows `ADR-001`: deterministic fields are frozen first, the model writes prose only, citations are unchanged, output is validated, and the template remains the fallback. Latency and cost are measured, not estimated. |
+| M3 | Model narrative route, after client approval | No narrative model is configured. The shipped narrative is the deterministic template. The hybrid's model questions (`ADR-003`) do not write prose. | The client has approved the provider, data boundary, and spend. The route follows `ADR-001`: deterministic fields are frozen first, the model writes prose only, citations are unchanged, output is validated, and the template remains the fallback. Latency and cost are measured, not estimated. |
 | M4 | Richer evaluation | The evaluator checks exact substrings. It does not establish semantic support, and it has no held-out set. | A held-out set covers normal, ambiguous, unsupported, outage, duplicate, stale-policy, and prompt-injection cases. Citation support is reviewed against a written rubric. Redaction, approval binding, and duplicate prevention are regression-tested. The scoreboard is repeatable. |
 
 ## Later

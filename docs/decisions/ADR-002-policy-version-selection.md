@@ -43,7 +43,7 @@ The selected version's id appears in `policy_ids` and in the deadline citation. 
 | Require both ids before assembly | `src/contract.py` `assemble_contract` |
 | Calculate the deadline | `src/contract.py` `_deadline` |
 
-`_policy_versions` reads every `*.md` policy file and parses `Effective from` and `Effective through`. It rejects a file whose declared source id does not equal the file stem, or whose end is before its start; a date that does not parse raises instead of being skipped. It does not use file order or modification time.
+`_policy_versions` reads every `*.md` policy file and parses `Effective from` and `Effective through`. It rejects a file whose declared source id does not equal the file stem, whose end is before its start, or whose window date is not an ISO date. It does not use file order or modification time. An intake whose Reported date is not an ISO date, such as "October 3, 2026", selects no version, so only that case stops. Raising on the date would stop every case in the case list.
 
 `_policy` keeps a version only when `start <= reported <= end`. It returns both ids as null when the match count is not exactly one. That covers a missing reported date, a date before every window, a date after every window, and overlapping windows. The selection code makes no call to the system clock.
 
@@ -105,8 +105,8 @@ Positive:
 Negative:
 
 - Every new policy version must declare a non-overlapping effective window, or the selector returns no version for the overlap.
-- A report date that is missing or malformed stops contract assembly. That is deliberate, but it means intake completeness matters.
-- The policy directory is the source of truth, so a broken or misnamed policy file can remove a valid window. A misnamed or reversed file is skipped rather than reported: if no other file matches the reported date, assembly fails closed, but if another file matches, the bad file is silently absent.
+- A report date that is missing or malformed stops contract assembly for that case. That is deliberate, but it means intake completeness matters.
+- The policy directory is the source of truth, so a broken or misnamed policy file can remove a valid window. A misnamed, reversed or unparseable file is skipped rather than reported: if no other file matches the reported date, assembly fails closed, but if another file matches, the bad file is silently absent.
 
 ## Review triggers
 

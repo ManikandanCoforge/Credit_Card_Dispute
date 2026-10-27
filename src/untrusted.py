@@ -57,6 +57,17 @@ _INSTRUCTION = re.compile(
 )
 # "Do not ignore policy" and "please do not mark this as resolved" are not orders to do so.
 _NEGATED = re.compile(r"\b(?:do\s+not|don't|dont|never|not)\s+$", re.IGNORECASE)
+# Text that speaks to a model reading the evidence, or markup that would open or close the
+# evidence block a model is shown (ADR-003). These are the Card Disputes Copilot's patterns for
+# text addressed to a model, which _INSTRUCTION does not cover.
+_TO_A_MODEL = re.compile(
+    r"^\s*(?:(?:dear|hey|hi|hello)\s+)?(?:assistant|ai|model|bot|chatbot)\s*[,:]"
+    r"|\bnote\s+to\s+(?:the\s+)?(?:assistant|ai|model)\b"
+    r"|\bapprove\s+(?:this|it|now)\b"
+    r"|\bclassify\s+(?:this|it)\s+as\b"
+    r"|</?\s*evidence\b",
+    re.IGNORECASE | re.MULTILINE,
+)
 _TOKENS = re.compile(
     r"SYNTHETIC-PRIVATE-[A-Za-z0-9-]+"  # synthetic private token
     r"|\bCUST-[A-Za-z0-9-]+"  # customer reference, treated as an account number
@@ -85,6 +96,8 @@ STATEMENT_INSTRUCTION_NOTICE = (
     "A customer statement contains text written as instructions. It was quoted as "
     "evidence only and was not followed."
 )
+# What a restricted value becomes in text that leaves the application, such as a model prompt.
+REDACTED = "[redacted]"
 
 
 class RestrictedValueError(Exception):
@@ -98,10 +111,33 @@ def has_instruction(text: str) -> bool:
     "ig<zero-width>nore policy" or "Ignore  policy" is still caught. A negated
     form ("do not ignore policy") is not an instruction.
     """
-    probe = unicodedata.normalize("NFKC", text).translate(_INVISIBLE)
+    probe = visible(text)
     return any(
         not _NEGATED.search(probe[: match.start()]) for match in _INSTRUCTION.finditer(probe)
     )
+
+
+def addresses_a_model(text: str) -> bool:
+    """True when the text speaks to a model ("Hi AI: ...", "note to the assistant",
+    "approve this", "classify it as") or carries markup that opens or closes the
+    evidence block a model is shown.
+
+    The text is normalized as has_instruction normalizes it, and a negated form ("I did
+    not approve this charge") does not count. A model is never asked about a statement
+    that holds such text; see src/contract.py.
+    """
+    probe = visible(text)
+    return any(
+        not _NEGATED.search(probe[: match.start()]) for match in _TO_A_MODEL.finditer(probe)
+    )
+
+
+def visible(text: str) -> str:
+    """text as instructions and values are detected in: NFKC, with hidden characters removed.
+
+    It is never quoted; quotes are copied from the original text.
+    """
+    return unicodedata.normalize("NFKC", text).translate(_INVISIBLE)
 
 
 def restricted_values(value: object, known: Iterable[str] = ()) -> list[str]:
@@ -115,7 +151,9 @@ def restricted_values(value: object, known: Iterable[str] = ()) -> list[str]:
     """
     found: list[str] = []
     secrets = [secret for secret in known if secret]
-    for text in _strings(value):
+    # Each string is also scanned in its visible form, so a card number broken up by
+    # zero-width characters, or typed in full-width digits, is still found.
+    for text in dict.fromkeys(form for raw in _strings(value) for form in (raw, visible(raw))):
         found += [match.group(0) for match in _TOKENS.finditer(text)]
         found += [
             card.group(0)
@@ -128,6 +166,17 @@ def restricted_values(value: object, known: Iterable[str] = ()) -> list[str]:
             if re.search(rf"(?<![A-Za-z0-9]){re.escape(secret)}(?![A-Za-z0-9])", text)
         ]
     return list(dict.fromkeys(found))
+
+
+def redact(text: str, known: Iterable[str] = ()) -> str:
+    """text with every restricted value replaced by [redacted].
+
+    A model may read a customer's own lines, never the values in them. Longer values
+    are replaced first, so a token is never left half visible inside a longer one.
+    """
+    for value in sorted(restricted_values(text, known), key=len, reverse=True):
+        text = text.replace(value, REDACTED)
+    return text
 
 
 def guard(value: object, known: Iterable[str] = ()) -> None:

@@ -23,6 +23,15 @@ from src.escalation import (
     find_escalation,
     instruction_holds_cue,
 )
+from src.model_cue import (
+    DisputeType,
+    ModelCall,
+    ModelClient,
+    StatementLine,
+    ask_dispute_type,
+    ask_multiple_problems,
+    statement_lines,
+)
 from src.models import (
     Citation,
     Contract,
@@ -37,8 +46,10 @@ from src.untrusted import (
     ATTACHMENT_INSTRUCTION_NOTICE,
     INSTRUCTION_NOTICE,
     STATEMENT_INSTRUCTION_NOTICE,
+    addresses_a_model,
     has_instruction,
     restricted_values,
+    visible,
 )
 
 # Contract and FollowUpQuestion now live in src.models; they stay importable from here.
@@ -109,6 +120,24 @@ _ONE_CHARGE_NOTE = (
     "Only one charge for this purchase is on record, and the procedure asks for both "
     "transaction records, so a person must find the second charge before this draft is used."
 )
+# The hybrid's escalations (ADR-003). A model answer can send a case to a person; it never
+# makes a case ready by itself.
+_MULTIPLE_PROBLEMS_ESCALATION: Escalation = {
+    "classification": "ambiguous",
+    "reason": (
+        "A model check suggests the complaint describes more than one problem, so no single "
+        "type is set and a person decides."
+    ),
+    "citations": [],
+}
+_NO_TYPE_REASON = (
+    "Neither the rules nor the model could name a dispute type, so a person must classify "
+    "the case."
+)
+_AUTHORIZATION_LABEL = "Authorization:"
+_AMBIGUOUS_RULE_ANCHOR = "If customer accounts conflict about authorization"
+_UNSUPPORTED_RULE_ANCHOR = "Cash withdrawal disputes are unsupported"
+_SUPPORTED_RULE_ANCHOR = "Supported classifications:"
 
 # The procedure sentence that supports each classification this step can choose.
 _CLASSIFICATION_ANCHOR = {
@@ -138,16 +167,20 @@ _SERVICE_NOT_DELIVERED = (
 _SERVICE = re.compile("|".join(re.escape(p) for p in _SERVICE_NOT_DELIVERED), re.IGNORECASE)
 # A filing command is not the customer's account of the facts. src.untrusted catches text
 # addressed to the system; these are the commands that try to choose the case's class.
-# A command has the shape "file this as …": a bare "I want to record this complaint" is the
-# customer's account, and a negated command ("do not mark this as resolved") orders nothing.
+# A command has the shape "file this as …" or "mark this complaint as …": a bare "I want to
+# record this complaint" is the customer's account. A negated command ("do not mark this as
+# resolved") orders nothing, unless its own clause names a class ("do not mark this as a
+# duplicate charge"): then there is no account to read, only the sender naming the class.
 _INSTRUCTION_SENTENCE = re.compile(
     r"\b(?:system override"
-    r"|(?:file|classify|mark|treat|record)\s+(?:this|it)\s+(?:as|under)"
+    r"|(?:file|classify|mark|treat|record)\s+(?:this|it)"
+    r"(?:\s+(?:complaint|case|dispute|charge|transaction|report))?\s+(?:as|under)"
     r"|ignore (?:all |the )?(?:above|previous|earlier)"
     r"|disregard (?:all |the )?(?:above|previous|earlier))\b",
     re.IGNORECASE,
 )
 _NEGATED_BEFORE = re.compile(r"\b(?:do\s+not|don't|dont|never|not)\s+$", re.IGNORECASE)
+_CLAUSE_END = re.compile(r"[,;:.!?]")
 # The fields each classification requires: "Required fields absent for the chosen type
 # must all be requested." Every intake form carries every field, so a blank field that
 # another type would need stays out. ambiguous is the procedure's conflict about
@@ -220,6 +253,8 @@ def assemble_draft(
     transactions_text: str,
     customer_texts: Sequence[str] = (),
     writer: ProseWriter | None = None,
+    model: ModelClient | None = None,
+    model_calls: list[ModelCall] | None = None,
     known_values: Sequence[str] = (),
 ) -> tuple[Contract, NarrativeMeter]:
     """Return the contract object for one working record, and how its narrative was made.
@@ -227,10 +262,18 @@ def assemble_draft(
     Every field except narrative comes from the rules below and never from the
     writer. A writer may only reword the template narrative; see src/narrative.py.
 
+    model, when given, may answer the two closed questions in src/model_cue.py
+    (ADR-003): the dispute type, only when the rules find none, and whether the
+    customer describes more than one problem, only once a complete draft would be marked
+    ready. Its answer can fill the rules' gap or send the case to a person; every other
+    field is still computed here. See _model_lines for when it is never asked. Each call
+    is appended to model_calls when a list is given.
+
     known_values are restricted values known for this case, such as the merchant's
     private token and the customer reference. A customer sentence holding one is cited
     by its Source ID line, as one holding a card number is, so the output guard in
-    src/contract_records.py never has to refuse the draft.
+    src/contract_records.py never has to refuse the draft, and what a model is shown
+    never holds one.
 
     customer_texts are further customer statements about the complaint, such as
     a follow-up email. A cash withdrawal, or customer statements that conflict
@@ -268,6 +311,8 @@ def assemble_draft(
         policy_text=policy_text,
         transactions_text=transactions_text,
         customer_texts=customer_texts,
+        model=model,
+        calls=[] if model_calls is None else model_calls,
         known=known_values,
     )
     narrative, meter = draft_narrative(contract, notes, writer)
@@ -283,6 +328,8 @@ def _rules_contract(
     policy_text: str,
     transactions_text: str,
     customer_texts: Sequence[str],
+    model: ModelClient | None,
+    calls: list[ModelCall],
     known: Sequence[str],
 ) -> tuple[Contract, list[str]]:
     """The contract with an empty narrative, and the notes its narrative must carry."""
@@ -311,7 +358,49 @@ def _rules_contract(
             transactions_text=transactions_text,
             known=known,
         )
+    escalated = {
+        "intake_text": intake_text,
+        "attachment_text": attachment_text,
+        "procedure_text": procedure_text,
+        "policy_text": policy_text,
+        "transactions_text": transactions_text,
+    }
+    notes: list[str] = []
+    model_citations: list[Citation] = []
+    provisional = False
     classification = _classification(intake)
+    if classification is None:
+        # The rules found no type. A configured model may name one (ADR-003); without a
+        # usable answer the case stays unbuilt, as it is when no model is configured.
+        lines = None if model is None else _model_lines(statements, known)
+        if model is None or lines is None:
+            raise ContractError("the intake supports no supported classification")
+        answer, call, why = ask_dispute_type(model, lines)
+        if call is not None:
+            calls.append(call)
+        if answer is None:
+            raise ContractError(
+                "the intake supports no supported classification, and the model gave no "
+                f"usable answer: {why}"
+            )
+        if answer["type"] != "none":
+            notes.append(
+                f"Classification is model-assisted: {model.provider}/{model.model} read line "
+                f"{answer['label']} as {answer['type']}. Verify that line before approving."
+            )
+        model_escalation = _model_escalation(answer, intake, statements, procedure_text, known)
+        if model_escalation is not None:
+            return _escalated_contract(
+                record, intake, model_escalation, **escalated, known=known, notes=notes
+            )
+        classification = answer["type"]
+        model_citations.append(
+            _line_quote("model_assisted_classification", answer["line"], statements, known)
+        )
+        # A line the model reads as a denial, on a form that neither denies nor confirms
+        # authorization, is the procedure's provisional unauthorized: confirmation is
+        # requested, so the model's reading alone never makes a draft ready.
+        provisional = classification == "unauthorized" and _form_authorization(intake) != _DENIED
     version_id = record["policy"]["version_id"]
     procedure_id = record["policy"]["procedure_id"]
     if version_id is None or procedure_id is None:
@@ -322,6 +411,14 @@ def _rules_contract(
     missing_information, follow_up_questions = _missing_information(
         record, intake, classification, attachment_text
     )
+    if provisional and "authorization_confirmation" not in missing_information:
+        missing_information.append("authorization_confirmation")
+        follow_up_questions.append(
+            {
+                "field": "authorization_confirmation",
+                "question": _QUESTION_BY_MISSING_FIELD["authorization_confirmation"],
+            }
+        )
     routing = "request_information" if missing_information else "ready_for_review"
     deadline, deadline_quote = _deadline(reported, policy_text, classification)
     procedure_source = _source_id(procedure_text)
@@ -332,7 +429,6 @@ def _rules_contract(
         if classification == "duplicate_charge"
         else []
     )
-    notes: list[str] = []
     if classification == "duplicate_charge" and not second_charges:
         routing = _MANUAL_REVIEW
         notes.append(_ONE_CHARGE_NOTE)
@@ -341,6 +437,7 @@ def _rules_contract(
         _attachment_citation(attachment_text, missing_information),
         _transaction_citation(intake["transaction_id"], transactions_text),
         *second_charges,
+        *model_citations,
         {
             "claim": "classification",
             "source_id": procedure_source,
@@ -373,6 +470,20 @@ def _rules_contract(
     # reviewer is told it was there, as for the merchant record and the attachment.
     if any(has_instruction(text) or _is_command(text) for text in statements):
         notes.append(STATEMENT_INSTRUCTION_NOTICE)
+    if routing == "ready_for_review" and model is not None:
+        # Once a complete draft would be marked ready, a configured model is asked whether
+        # the customer describes more than one problem. A yes can only send the case to a
+        # person; the model's own line, when it chose the type, stays cited.
+        lines = _model_lines(statements, known)
+        if lines is not None:
+            multiple, call = ask_multiple_problems(model, lines)
+            if call is not None:
+                calls.append(call)
+            if multiple:
+                escalation = {**_MULTIPLE_PROBLEMS_ESCALATION, "citations": [*model_citations]}
+                return _escalated_contract(
+                    record, intake, escalation, **escalated, known=known, notes=notes
+                )
     return contract, [*notes, *_untrusted_notes(record, attachment_text)]
 
 
@@ -414,6 +525,7 @@ def _escalated_contract(
     policy_text: str,
     transactions_text: str,
     known: Sequence[str],
+    notes: Sequence[str] = (),
 ) -> tuple[Contract, list[str]]:
     """A complaint the procedure sends to a human.
 
@@ -477,7 +589,7 @@ def _escalated_contract(
         "follow_up_questions": questions,
         "narrative": "",
     }
-    return contract, [escalation["reason"], *_untrusted_notes(record, attachment_text)]
+    return contract, [escalation["reason"], *notes, *_untrusted_notes(record, attachment_text)]
 
 
 def _attachment_citation(
@@ -492,7 +604,7 @@ def _attachment_citation(
     that line even for a type that does not request a receipt. An escalated case does
     not rest on the amount, so there, and for a missing receipt without a single status
     line, the Source ID line is cited. Any other attachment without a single Amount
-    line is refused.
+    line is refused, including a supplied one whose status line says "attached".
     """
     receipt_missing = "purchase_receipt" in missing_information
     amounts = _lines_starting(attachment_text, _AMOUNT_LABEL)
@@ -501,7 +613,7 @@ def _attachment_citation(
         quote = statuses[0]
     elif not receipt_missing and len(amounts) == 1:
         quote = amounts[0]
-    elif len(statuses) == 1:
+    elif _declares_missing(statuses):
         quote = statuses[0]
     elif receipt_missing or escalated:
         quote = _unique_line(attachment_text, _SOURCE_ID_LABEL)
@@ -535,22 +647,25 @@ def _missing_information(
     ]
 
 
-def _receipt_as_declared(intake: Intake, attachment_text: str) -> Intake:
-    """The intake, with the receipt absent when the attachment says "Attachment status: missing"."""
-    statuses = _lines_starting(attachment_text, _ATTACHMENT_STATUS_LABEL)
-    declared_missing = (
+def _declares_missing(statuses: list[str]) -> bool:
+    """Whether the attachment's one status line is "Attachment status: missing"."""
+    return (
         len(statuses) == 1
         and statuses[0][len(_ATTACHMENT_STATUS_LABEL) :].strip().lower() == "missing"
     )
-    if not declared_missing:
+
+
+def _receipt_as_declared(intake: Intake, attachment_text: str) -> Intake:
+    """The intake, with the receipt absent when the attachment says "Attachment status: missing"."""
+    if not _declares_missing(_lines_starting(attachment_text, _ATTACHMENT_STATUS_LABEL)):
         return intake
     declared = intake.copy()
     declared["purchase_receipt"] = _ABSENT
     return declared
 
 
-def _classification(intake: Intake) -> str:
-    """Return the supported classification that the intake and statement establish.
+def _classification(intake: Intake) -> str | None:
+    """Return the supported classification that the intake and statement establish, or None.
 
     A denied authorization is unauthorized. An absent authorization is the provisional
     unauthorized that asks for confirmation, as the procedure requires; the statement
@@ -559,8 +674,8 @@ def _classification(intake: Intake) -> str:
 
     A sentence written as an instruction or a filing command is not read, so "classify
     this as a double charge" in the customer's text cannot choose the class. Ambiguous
-    and unsupported complaints are escalated before this point, so anything else
-    raises ContractError.
+    and unsupported complaints are escalated before this point, so anything else is
+    None: the rules found no type.
     """
     if intake["authorization"] in (_DENIED, _ABSENT):
         return "unauthorized"
@@ -572,7 +687,133 @@ def _classification(intake: Intake) -> str:
         for sentence in sentences
     ):
         return "duplicate_charge"
-    raise ContractError("the intake supports no supported classification")
+    return None
+
+
+def _model_lines(statements: Sequence[str], known: Sequence[str]) -> list[StatementLine] | None:
+    """The customer lines a model may read, or None when one may not be asked.
+
+    No model is asked about a case whose customer statements hold text the detectors
+    recognise as an instruction, a filing command, text addressed to a model or
+    evidence-tag markup, so recognised text cannot reach one. Nor is one asked when a
+    restricted value would survive redaction (a card number split across two lines, or
+    hidden characters between its digits), or when a statement declares no source id to
+    cite its lines by. The rules then decide alone, as they do with no model.
+    """
+    if any(
+        has_instruction(text)
+        or _is_command(visible(text))
+        or addresses_a_model(text)
+        for text in statements
+    ):
+        return None
+    try:
+        sources = [(_source_id(text), text) for text in statements]
+    except ContractError:
+        return None
+    lines = statement_lines(sources, known)
+    # The lines are scanned joined by a space and joined with nothing, so a card number
+    # split at any point across a line break is found ("378282" then "246310005").
+    shown = [line["shown"] for line in lines]
+    if any(restricted_values(visible(joiner.join(shown)), known) for joiner in (" ", "")):
+        return None
+    return lines
+
+
+def _model_escalation(
+    answer: DisputeType,
+    intake: Intake,
+    statements: Sequence[str],
+    procedure_text: str,
+    known: Sequence[str],
+) -> Escalation | None:
+    """Where a model's answer sends the case, or None when the rules can use its type.
+
+    A cash withdrawal or another kind of dispute is unsupported. "none" leaves the type
+    to a person. A denial against a form that confirms authorization, in any letter case,
+    is the procedure's conflict about authorization. Each escalation cites the model's
+    line exactly, with the procedure sentence it rests on; the model's words are never
+    quoted as a rule.
+    """
+    kind, line = answer["type"], answer["line"]
+    procedure_source = _source_id(procedure_text)
+    if kind == "none":
+        return {"classification": "ambiguous", "reason": _NO_TYPE_REASON, "citations": []}
+    if kind == "cash_withdrawal":
+        return {
+            "classification": "unsupported",
+            "reason": (
+                "A customer line describes a cash withdrawal, which the procedure does not "
+                "support, so no other classification is assigned."
+            ),
+            "citations": [
+                _line_quote("cash_withdrawal", line, statements, known),
+                {
+                    "claim": "unsupported_rule",
+                    "source_id": procedure_source,
+                    "quote": _sentence(procedure_text, _UNSUPPORTED_RULE_ANCHOR),
+                },
+            ],
+        }
+    if kind == "other_dispute":
+        return {
+            "classification": "unsupported",
+            "reason": (
+                "A customer line describes a dispute outside the procedure's supported "
+                "classifications, so a person must decide the case."
+            ),
+            "citations": [
+                _line_quote("other_dispute", line, statements, known),
+                {
+                    "claim": "supported_classifications",
+                    "source_id": procedure_source,
+                    "quote": _sentence(procedure_text, _SUPPORTED_RULE_ANCHOR),
+                },
+            ],
+        }
+    if kind == "unauthorized" and _form_authorization(intake) == _CONFIRMED:
+        return {
+            "classification": "ambiguous",
+            "reason": (
+                "The intake form confirms authorization, but a customer line denies it. Both "
+                "are cited, and this draft does not decide which statement is correct."
+            ),
+            "citations": [
+                _line_quote("authorization_denied", line, statements, known),
+                {
+                    "claim": "authorization_confirmed",
+                    "source_id": _source_id(statements[0]),
+                    "quote": _unique_line(statements[0], _AUTHORIZATION_LABEL),
+                },
+                {
+                    "claim": "ambiguous_rule",
+                    "source_id": procedure_source,
+                    "quote": _sentence(procedure_text, _AMBIGUOUS_RULE_ANCHOR),
+                },
+            ],
+        }
+    return None
+
+
+def _form_authorization(intake: Intake) -> str:
+    """The intake form's authorization answer, compared without letter case or spaces."""
+    return intake["authorization"].strip().lower()
+
+
+def _line_quote(
+    claim: str, line: StatementLine, statements: Sequence[str], known: Sequence[str]
+) -> Citation:
+    """A customer line a model read, quoted exactly from its statement.
+
+    A line that holds a restricted value, a known one included, is cited by its
+    statement's Source ID line instead, so the case is drafted and the value is never
+    reproduced.
+    """
+    quote = line["text"]
+    if restricted_values(quote, known):
+        source = next(text for text in statements if _source_id(text) == line["source_id"])
+        quote = _unique_line(source, _SOURCE_ID_LABEL)
+    return {"claim": claim, "source_id": line["source_id"], "quote": quote}
 
 
 def _account_sentences(statement: str) -> list[str]:
@@ -586,11 +827,22 @@ def _account_sentences(statement: str) -> list[str]:
 
 
 def _is_command(text: str) -> bool:
-    """True when text holds a filing command that is not negated."""
+    """True when text holds a filing command that is not negated, or a negated one whose
+    own clause names a class.
+
+    "Do not mark this as a duplicate charge" is a command: the cue is inside it. "Please do
+    not mark this as resolved, they charged me twice" is not: the cue is a later clause, the
+    customer's own account.
+    """
     return any(
         not _NEGATED_BEFORE.search(text[: match.start()])
+        or _names_a_class(_CLAUSE_END.split(text[match.end() :], maxsplit=1)[0])
         for match in _INSTRUCTION_SENTENCE.finditer(text)
     )
+
+
+def _names_a_class(text: str) -> bool:
+    return bool(_DUPLICATE.search(text) or _SERVICE.search(text))
 
 
 def _command_holds_cue(texts: Sequence[str]) -> bool:
@@ -600,8 +852,7 @@ def _command_holds_cue(texts: Sequence[str]) -> bool:
     caller sends the case to a person, as it does for text addressed to the system.
     """
     return any(
-        _is_command(sentence)
-        and (_DUPLICATE.search(sentence) or _SERVICE.search(sentence))
+        _is_command(sentence) and _names_a_class(sentence)
         for text in texts
         for line in text.splitlines()
         for sentence in _SENTENCE_END.split(line)
