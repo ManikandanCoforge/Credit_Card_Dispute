@@ -18,6 +18,8 @@ reports the reason for each case it could not build.
 
 import json
 import sys
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict, cast
 from urllib.parse import quote
@@ -34,6 +36,7 @@ from src.load_records import (
     read_body,
     records_from_case_list,
 )
+from src.meters import record_case_meter
 from src.models import (
     Intake,
     MerchantTool,
@@ -81,37 +84,70 @@ def contract_case_plans(base_url: str, data_dir: str | Path) -> list[CasePlan]:
 
 
 def build_contract_result(
-    plan: CasePlan, base_url: str, data_dir: str | Path
+    plan: CasePlan,
+    base_url: str,
+    data_dir: str | Path,
+    *,
+    meter_path: Path | None = None,
 ) -> ContractResult:
     """Build one case's contract from the bank and the dataset, or report the reason.
 
     The reason is one of this application's own messages or an exception class
-    name, never text from a payload or document.
+    name, never text from a payload or document. When meter_path is set, one
+    meter line is appended for this case after it finishes.
     """
+    started_at = datetime.now(UTC)
+    started = time.perf_counter()
+    tally = {"tool_attempts": 0, "retry_count": 0}
     try:
         contract = _contract_record(
-            plan["record"], base_url, Path(data_dir), plan["documents"]
+            plan["record"], base_url, Path(data_dir), plan["documents"], tally
         )
     except ContractRecordError as error:
-        return {
+        result: ContractResult = {
             "case_id": plan["record"]["case_id"],
             "contract": None,
             "error": _reason(error),
         }
-    return {"case_id": plan["record"]["case_id"], "contract": contract, "error": None}
+    else:
+        result = {
+            "case_id": plan["record"]["case_id"],
+            "contract": contract,
+            "error": None,
+        }
+    if meter_path is not None:
+        finished = result["contract"]
+        record_case_meter(
+            meter_path,
+            case_id=result["case_id"],
+            route=finished["routing"] if finished is not None else "not_built",
+            started_at=started_at,
+            latency_ms=round((time.perf_counter() - started) * 1000),
+            model_calls=0,
+            input_tokens=0,
+            output_tokens=0,
+            tool_attempts=tally["tool_attempts"],
+            retry_count=tally["retry_count"],
+        )
+    return result
 
 
-def load_contract_results(base_url: str, data_dir: str | Path) -> list[ContractResult]:
+def load_contract_results(
+    base_url: str, data_dir: str | Path, *, meter_path: Path | None = None
+) -> list[ContractResult]:
     """Return one result per case in the bank case list, in bank order.
 
     A case that cannot be built has a null contract and the reason, and the
     remaining cases still run. The reason is one of this application's own
     messages or an exception class name, never text from a payload or document.
+    When meter_path is set, the file is replaced and each case appends one line.
     """
     data_dir = Path(data_dir)
+    plans = contract_case_plans(base_url, data_dir)
+    _prepare_meter_file(meter_path)
     return [
-        build_contract_result(plan, base_url, data_dir)
-        for plan in contract_case_plans(base_url, data_dir)
+        build_contract_result(plan, base_url, data_dir, meter_path=meter_path)
+        for plan in plans
     ]
 
 
@@ -133,12 +169,14 @@ def main() -> None:
 
     Each case that was not built is named on stderr with its reason, and the exit
     status is 1 when any case was not built, so a partial array is never mistaken
-    for a complete one.
+    for a complete one. One meter line per case is written to reports/meters.jsonl.
     """
     base_url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8765"
     data_dir = sys.argv[2] if len(sys.argv) > 2 else "data/dev"
     try:
-        results = load_contract_results(base_url, data_dir)
+        results = load_contract_results(
+            base_url, data_dir, meter_path=Path("reports") / "meters.jsonl"
+        )
     except CaseListError:
         sys.stderr.write("the bank case list could not be read\n")
         raise SystemExit(1) from None
@@ -169,8 +207,20 @@ def _reason(error: BaseException) -> str:
     return type(deepest).__name__
 
 
+def _prepare_meter_file(meter_path: Path | None) -> None:
+    """Replace any previous run so this run owns every line in the file."""
+    if meter_path is None:
+        return
+    meter_path.parent.mkdir(parents=True, exist_ok=True)
+    meter_path.write_text("", encoding="utf-8")
+
+
 def _contract_record(
-    record: WorkingRecord, base_url: str, data_dir: Path, documents: list[str]
+    record: WorkingRecord,
+    base_url: str,
+    data_dir: Path,
+    documents: list[str],
+    tally: dict[str, int],
 ) -> Contract:
     """Read the evidence and the tools for one case, then assemble its contract.
 
@@ -196,9 +246,9 @@ def _contract_record(
     attachment_text = _document(data_dir, "documents", attachment_source)
     procedure_text = _document(data_dir, "policies", procedure_id)
     policy_text = _document(data_dir, "policies", version_id)
-    transactions, transactions_text = _transactions(base_url, record["case_id"])
+    transactions, transactions_text = _transactions(base_url, record["case_id"], tally)
     enriched = build_transaction(record, transactions)
-    enriched = build_merchant(enriched, _merchant(base_url, record["case_id"]))
+    enriched = build_merchant(enriched, _merchant(base_url, record["case_id"], tally))
     try:
         return assemble_contract(
             enriched,
@@ -212,12 +262,14 @@ def _contract_record(
         raise ContractRecordError from error
 
 
-def _transactions(base_url: str, case_id: str) -> tuple[TransactionTool, str]:
+def _transactions(
+    base_url: str, case_id: str, tally: dict[str, int]
+) -> tuple[TransactionTool, str]:
     """The transactions tool body, validated, and its text with sorted keys.
 
     The sorted text is the form the evaluator quotes tool bodies from.
     """
-    raw = _read_tool(base_url, case_id, "transactions")
+    raw = _read_tool(base_url, case_id, "transactions", tally)
     try:
         payload = TransactionToolPayload.model_validate_json(raw)
     except ValidationError as error:
@@ -236,11 +288,11 @@ def _transactions(base_url: str, case_id: str) -> tuple[TransactionTool, str]:
     return tool, json.dumps(json.loads(raw), sort_keys=True)
 
 
-def _merchant(base_url: str, case_id: str) -> MerchantTool:
+def _merchant(base_url: str, case_id: str, tally: dict[str, int]) -> MerchantTool:
     """The merchant tool body. The private token is not copied out of it."""
     try:
         payload = MerchantToolPayload.model_validate_json(
-            _read_tool(base_url, case_id, "merchant")
+            _read_tool(base_url, case_id, "merchant", tally)
         )
     except ValidationError as error:
         raise ContractRecordError from error
@@ -252,8 +304,9 @@ def _merchant(base_url: str, case_id: str) -> MerchantTool:
     }
 
 
-def _read_tool(base_url: str, case_id: str, tool: str) -> bytes:
+def _read_tool(base_url: str, case_id: str, tool: str, tally: dict[str, int]) -> bytes:
     """One observed tool read. Any failure is an error, never an empty result."""
+    tally["tool_attempts"] += 1
     try:
         return read_body(base_url, f"/v1/cases/{quote(case_id, safe='')}/{tool}")
     except BankReadError as error:

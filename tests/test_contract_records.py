@@ -6,6 +6,7 @@ supplied gold answer, not from the runner's own arithmetic.
 """
 
 import json
+import re
 import runpy
 import shutil
 import sys
@@ -142,6 +143,67 @@ CARD_D01_CONTRACT = {
         "ready_for_review, with a policy deadline of 2026-10-31; no case has been created."
     ),
 }
+
+
+def test_a_built_case_writes_one_meter_line_with_every_field(tmp_path):
+    path = tmp_path / "reports" / "meters.jsonl"
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        load_contract_results(base_url, DEV, meter_path=path)
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    meter = json.loads(lines[0])
+    assert meter == {
+        "case_id": "CARD-D01",
+        "route": "ready_for_review",
+        "started_at": meter["started_at"],
+        "latency_ms": meter["latency_ms"],
+        "model_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "tool_attempts": 2,
+        "retry_count": 0,
+    }
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z", meter["started_at"])
+    assert isinstance(meter["latency_ms"], int) and meter["latency_ms"] >= 0
+    written = path.read_text(encoding="utf-8")
+    assert "SYNTHETIC-PRIVATE-CARD-D01" not in written
+    assert "I found a card purchase" not in written
+
+
+def test_a_stopped_case_still_writes_one_meter_line(tmp_path):
+    path = tmp_path / "meters.jsonl"
+    case_list = {"cases": [CARD_D01, CARD_D11]}
+
+    with _bank(case_list, _d01_and_d11_bodies(), statuses={TRANSACTIONS: 503}) as (
+        base_url,
+        _seen,
+    ):
+        load_contract_results(base_url, DEV, meter_path=path)
+
+    lines = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    assert [(line["case_id"], line["route"], line["tool_attempts"]) for line in lines] == [
+        ("CARD-D01", "not_built", 1),
+        ("CARD-D11", "ready_for_review", 2),
+    ]
+    assert all(
+        line["model_calls"] == line["input_tokens"] == line["output_tokens"] == line["retry_count"] == 0
+        for line in lines
+    )
+    assert "SYNTHETIC-PRIVATE" not in path.read_text(encoding="utf-8")
+
+
+def test_a_second_run_replaces_the_meter_file(tmp_path):
+    path = tmp_path / "meters.jsonl"
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        load_contract_results(base_url, DEV, meter_path=path)
+        load_contract_results(base_url, DEV, meter_path=path)
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0])["case_id"] == "CARD-D01"
 
 
 def test_card_d01_contract_is_emitted_from_the_bank_and_the_dataset():
@@ -401,7 +463,22 @@ def test_load_contract_records_names_the_case_that_could_not_be_built():
             load_contract_records(base_url, DEV)
 
 
-def test_main_prints_every_built_contract_and_names_the_rest(capsys, monkeypatch):
+def test_main_writes_one_meter_line_per_case(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
+        main()
+
+    lines = (tmp_path / "reports" / "meters.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0])["case_id"] == "CARD-D01"
+    assert json.loads(lines[0])["route"] == "ready_for_review"
+    assert capsys.readouterr().err == ""
+
+
+def test_main_prints_every_built_contract_and_names_the_rest(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     case_list = {"cases": [CARD_D01, CARD_D11]}
 
     with _bank(case_list, _d01_and_d11_bodies(), statuses={TRANSACTIONS: 503}) as (
@@ -418,7 +495,8 @@ def test_main_prints_every_built_contract_and_names_the_rest(capsys, monkeypatch
     assert printed.err == "CARD-D01: not built: BankReadError\n"
 
 
-def test_main_exits_normally_when_every_case_is_built(capsys, monkeypatch):
+def test_main_exits_normally_when_every_case_is_built(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
         monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
         main()
