@@ -1153,6 +1153,7 @@ def test_a_merchant_service_that_never_answers_stops_only_that_case():
             "contract": None,
             "error": "the merchant service was unavailable",
             "narrative_meter": None,
+            "model_calls": [],
         }
     ]
     assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT, MERCHANT, MERCHANT]
