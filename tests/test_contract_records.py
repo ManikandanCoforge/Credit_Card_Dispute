@@ -612,6 +612,7 @@ def test_main_stops_before_any_bank_read_when_the_named_model_cannot_be_used(
 def test_main_uses_the_model_the_environment_names(tmp_path, capsys, monkeypatch):
     # A recorded "two problems" answer for CARD-D01 changes the printed draft, so the
     # draft shows that main() asked the model the environment names.
+    monkeypatch.chdir(tmp_path)
     intake = (DEV / "documents" / "CARD-D01-INTAKE.md").read_text(encoding="utf-8")
     lines = statement_lines([("CARD-D01-INTAKE", intake)])
     recording = tmp_path / "gpt-6-luna.jsonl"
@@ -859,7 +860,12 @@ def test_a_listed_document_id_that_is_not_a_plain_id_is_never_opened():
     assert seen == ["/v1/cases"]
 
 
-def test_card_d08_injected_merchant_note_is_not_obeyed_and_nothing_is_written(capsys, monkeypatch):
+def test_card_d08_injected_merchant_note_is_not_obeyed_and_nothing_is_written(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    repo_meters = ROOT / "reports" / "meters.jsonl"
+    before = repo_meters.read_bytes() if repo_meters.exists() else None
     case_list = {
         "cases": [
             {
@@ -902,6 +908,10 @@ def test_card_d08_injected_merchant_note_is_not_obeyed_and_nothing_is_written(ca
         monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
         main()
 
+    after = repo_meters.read_bytes() if repo_meters.exists() else None
+    assert after == before
+    written = (tmp_path / "reports" / "meters.jsonl").read_text(encoding="utf-8")
+    assert [json.loads(line)["case_id"] for line in written.splitlines()] == ["CARD-D08"]
     printed = capsys.readouterr()
     [contract] = json.loads(printed.out)
     assert contract["classification"] == "duplicate_charge"

@@ -1,0 +1,12 @@
+{"case_id": "CARD-D01", "route": "ready_for_review", "started_at": "2026-10-27T23:26:45.016Z", "latency_ms": 8, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D02", "route": "ready_for_review", "started_at": "2026-10-27T23:26:45.025Z", "latency_ms": 40, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D03", "route": "ready_for_review", "started_at": "2026-10-27T23:26:45.066Z", "latency_ms": 29, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D04", "route": "request_information", "started_at": "2026-10-27T23:26:45.095Z", "latency_ms": 6, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D05", "route": "manual_review", "started_at": "2026-10-27T23:26:45.102Z", "latency_ms": 41, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D06", "route": "manual_review", "started_at": "2026-10-27T23:26:45.143Z", "latency_ms": 31, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D07", "route": "manual_review", "started_at": "2026-10-27T23:26:45.174Z", "latency_ms": 4846, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 4, "retry_count": 2}
+{"case_id": "CARD-D08", "route": "ready_for_review", "started_at": "2026-10-27T23:26:50.021Z", "latency_ms": 29, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D09", "route": "not_built", "started_at": "2026-10-27T23:26:50.049Z", "latency_ms": 28, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D10", "route": "ready_for_review", "started_at": "2026-10-27T23:26:50.077Z", "latency_ms": 1422, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 3, "retry_count": 1}
+{"case_id": "CARD-D11", "route": "ready_for_review", "started_at": "2026-10-27T23:26:51.500Z", "latency_ms": 30, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}
+{"case_id": "CARD-D12", "route": "request_information", "started_at": "2026-10-27T23:26:51.530Z", "latency_ms": 32, "model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tool_attempts": 2, "retry_count": 0}

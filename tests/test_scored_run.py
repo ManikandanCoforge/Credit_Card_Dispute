@@ -168,6 +168,7 @@ def test_a_not_built_case_is_reported_with_its_reason_and_submitted_false():
             "error": (
                 "the case names evidence this step cannot read: CARD-D05-FOLLOWUP"
             ),
+            "meter_error": None,
         }
     ]
 
@@ -318,7 +319,8 @@ def test_markdown_contains_the_exact_reproduction_commands():
     ) in markdown
     assert (
         "uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 "
-        "--data data/dev --gold feedback/dev_gold.json\n"
+        "--data data/dev --gold feedback/dev_gold.json "
+        "--case-meters reports/meters.jsonl\n"
     ) in markdown
 
 
@@ -327,6 +329,45 @@ def test_the_reproduction_commands_run_the_same_on_any_operating_system():
     commands = markdown.split("## Reproduce", 1)[1]
     for unportable in ("Scripts", ".exe", "../", "rm -f", " &\n", "\\\n"):
         assert unportable not in commands
+
+
+def test_the_markdown_names_the_meter_file_the_run_actually_wrote(tmp_path, monkeypatch):
+    paths = _outputs(tmp_path)
+    elsewhere = tmp_path / "case-meters" / "elsewhere.jsonl"
+    paths["case_meter_path"] = elsewhere
+    monkeypatch.setattr("tools.scored_run.contract_case_plans", lambda base, data: [])
+
+    status = run_scored(
+        base_url="http://127.0.0.1:8765", data_dir=DEV, gold_path=GOLD, **_run(paths)
+    )
+
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert status == 1
+    assert f"--case-meters {elsewhere}" in markdown
+    assert str(elsewhere) in markdown
+    assert "reports/meters.jsonl" not in markdown
+
+
+@pytest.mark.parametrize("pass_meter_path", [True, False])
+def test_the_default_meter_file_is_named_relative_to_the_repository(
+    tmp_path, monkeypatch, pass_meter_path
+):
+    paths = _outputs(tmp_path)
+    out = tmp_path / "out"
+    monkeypatch.setattr("tools.scored_run.ROOT", out)
+    monkeypatch.setattr("tools.scored_run.contract_case_plans", lambda base, data: [])
+    kwargs = _run(paths)
+    if not pass_meter_path:
+        del kwargs["case_meter_path"]
+
+    status = run_scored(
+        base_url="http://127.0.0.1:8765", data_dir=DEV, gold_path=GOLD, **kwargs
+    )
+
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert status == 1
+    assert "--case-meters reports/meters.jsonl" in markdown
+    assert str(out / "reports" / "meters.jsonl") not in markdown
 
 
 def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
@@ -341,6 +382,7 @@ def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
         "report_path": tmp_path / "reports" / "scored-run.json",
         "meters_path": tmp_path / "reports" / "scored-run-meters.json",
         "markdown_path": tmp_path / "reports" / "scored-run.md",
+        "case_meter_path": tmp_path / "reports" / "meters.jsonl",
     }
     paths["report_path"].parent.mkdir()
     for name in ("report_path", "meters_path", "markdown_path"):
@@ -418,7 +460,7 @@ def test_a_full_dev_run_against_the_mock_writes_four_artifacts_that_agree(
         case["case_id"] for case in report["cases"] if case["submitted"]
     ]
     assert paths["markdown_path"].read_text(encoding="utf-8") == render_markdown(
-        report, meters
+        report, meters, meter_path=str(paths["case_meter_path"])
     )
     printed = capsys.readouterr().out.splitlines()
     assert printed[0].startswith(
@@ -744,9 +786,46 @@ def test_measure_cases_times_the_injected_builder(tmp_path):
             "duration_ms": measured[0]["duration_ms"],
             "contract": None,
             "error": "stop",
+            "meter_error": None,
         }
     ]
     assert measured[0]["duration_ms"] >= 0.0
+
+
+def test_a_refused_meter_line_is_named_in_the_report(tmp_path):
+    plans = [{"record": {"case_id": "CARD-D01"}, "documents": []}]
+
+    def build(plan):
+        return {
+            "case_id": "CARD-D01",
+            "contract": None,
+            "error": None,
+            "meter_error": "MeterLeak",
+        }
+
+    measured = measure_cases(plans, "http://127.0.0.1:8899", tmp_path, build=build)
+    reports = build_case_reports(
+        measured,
+        _evaluation(
+            [{"case_id": "CARD-D01", "passed": False, "checks": {"submitted": False}}]
+        ),
+    )
+    report = assemble_report(
+        reports,
+        _evaluation([]),
+        generated_at="2026-10-27T00:00:00Z",
+        git_commit="abc123",
+        git_dirty=False,
+        base_url="http://127.0.0.1:8899",
+        dataset_name="card-disputes-dev",
+        latencies={"p50": None, "p95": None},
+        meters=meter_rows(reports),
+    )
+
+    assert report["cases"][0]["meter_error"] == "MeterLeak"
+    markdown = render_markdown(report, meter_rows(reports))
+    assert "CARD-D01" in markdown
+    assert "MeterLeak" in markdown
 
 
 def test_the_committed_report_matches_its_meters_and_markdown():
@@ -756,8 +835,12 @@ def test_the_committed_report_matches_its_meters_and_markdown():
 
     assert report["total_cases"] == len(meters) == 12
     assert report["pass_count"] == sum(1 for case in report["cases"] if case["passed"])
-    assert isinstance(report["p50_latency_ms"], int)
-    assert isinstance(report["p95_latency_ms"], int)
+    committed_meters = ROOT / "reports" / "meters.jsonl"
+    latencies = latency_percentiles(committed_meters)
+    assert isinstance(latencies["p50"], int)
+    assert isinstance(latencies["p95"], int)
+    assert report["p50_latency_ms"] == latencies["p50"]
+    assert report["p95_latency_ms"] == latencies["p95"]
     assert report["p50_latency_ms"] <= report["p95_latency_ms"]
     assert report["total_cost_usd"] == round(
         sum(row["cost_usd"] for row in meters), 6

@@ -6,6 +6,7 @@ reports/*
 !reports/scored-run.md
 !reports/scored-run.json
 !reports/scored-run-meters.json
+!reports/meters.jsonl
 *.sqlite
 
 # local agent-skills config

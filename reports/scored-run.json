@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-27T22:48:11Z",
-  "git_commit": "f37cc78f5f344a12e5c00c51e6093c573bc8043e",
+  "generated_at": "2026-10-27T23:26:44Z",
+  "git_commit": "dfd90c11312ed0331bfe7b0c72cce6ec857906bd",
   "git_dirty": false,
   "git_commit_note": "HEAD at run time. The working tree was clean when the artifacts were generated.",
   "base_url": "http://127.0.0.1:8792",
@@ -8,8 +8,8 @@
   "pass_count": 11,
   "total_cases": 12,
   "format_errors": [],
-  "p50_latency_ms": 31,
-  "p95_latency_ms": 3390,
+  "p50_latency_ms": 30,
+  "p95_latency_ms": 4846,
   "cost_per_case_usd": 0.0,
   "total_cost_usd": 0.0,
   "cost_note": "Read from reports/scored-run-meters.json. The deterministic template path makes no model call, so every row records 0 model calls and 0 tokens and the cost is 0.00 USD by construction, not by measurement. No model price is assumed or estimated.",
@@ -18,99 +18,111 @@
       "case_id": "CARD-D01",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.891,
+      "duration_ms": 8.64,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D02",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.297,
+      "duration_ms": 40.576,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D03",
       "submitted": true,
       "passed": true,
-      "duration_ms": 30.506,
+      "duration_ms": 29.573,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D04",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.323,
+      "duration_ms": 6.272,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D05",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.741,
+      "duration_ms": 41.424,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D06",
       "submitted": true,
       "passed": true,
-      "duration_ms": 30.588,
+      "duration_ms": 31.366,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D07",
       "submitted": true,
       "passed": true,
-      "duration_ms": 3390.669,
+      "duration_ms": 4846.263,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D08",
       "submitted": true,
       "passed": true,
-      "duration_ms": 30.233,
+      "duration_ms": 28.844,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D09",
       "submitted": false,
       "passed": false,
-      "duration_ms": 31.189,
+      "duration_ms": 27.936,
       "failed_checks": [
         "submitted"
       ],
-      "error": "the intake statement is not an exact excerpt of the intake"
+      "error": "the intake statement is not an exact excerpt of the intake",
+      "meter_error": null
     },
     {
       "case_id": "CARD-D10",
       "submitted": true,
       "passed": true,
-      "duration_ms": 1136.649,
+      "duration_ms": 1422.547,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D11",
       "submitted": true,
       "passed": true,
-      "duration_ms": 29.873,
+      "duration_ms": 29.829,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D12",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.726,
+      "duration_ms": 32.536,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     }
   ],
   "exceptions": [
