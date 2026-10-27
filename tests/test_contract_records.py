@@ -24,6 +24,8 @@ from src.contract_records import (
     load_contract_results,
     main,
 )
+from src.model_clients import request_key
+from src.model_cue import MULTI_SCHEMA, MULTI_SYSTEM, evidence, statement_lines
 from tools.runtime import create_server
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -384,6 +386,7 @@ def test_the_reason_is_the_applications_own_message_when_there_is_one(tmp_path):
             "contract": None,
             "error": "expected exactly one 'Amount:' line in the source",
             "narrative_meter": None,
+            "model_calls": [],
         }
     ]
 
@@ -454,6 +457,132 @@ def test_main_reports_an_unreadable_case_list(capsys, monkeypatch):
     assert stopped.value.code == 1
     assert printed.out == ""
     assert printed.err == "the bank case list could not be read\n"
+
+
+def test_main_stops_before_any_bank_read_when_the_named_model_cannot_be_used(
+    capsys, monkeypatch
+):
+    monkeypatch.setenv("MODEL_PROVIDER", "openai")
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, seen):
+        monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
+        with pytest.raises(SystemExit) as stopped:
+            main()
+
+    printed = capsys.readouterr()
+    assert stopped.value.code == 1
+    assert printed.out == ""
+    assert printed.err == (
+        "the model cannot be used: MODEL_PROVIDER must be off, azure_openai, "
+        "anthropic_foundry or replay\n"
+    )
+    assert seen == []
+
+
+def test_main_uses_the_model_the_environment_names(tmp_path, capsys, monkeypatch):
+    # A recorded "two problems" answer for CARD-D01 changes the printed draft, so the
+    # draft shows that main() asked the model the environment names.
+    intake = (DEV / "documents" / "CARD-D01-INTAKE.md").read_text(encoding="utf-8")
+    lines = statement_lines([("CARD-D01-INTAKE", intake)])
+    recording = tmp_path / "gpt-6-luna.jsonl"
+    row = {
+        "key": request_key(MULTI_SYSTEM, evidence(lines), MULTI_SCHEMA),
+        "answer": {"multiple_problems": True},
+        "call": {
+            "purpose": "multiple_problems",
+            "provider": "azure_openai",
+            "model": "gpt-6-luna",
+            "answered": True,
+            "error": None,
+            "latency_ms": 800.0,
+            "input_tokens": 134,
+            "output_tokens": 30,
+        },
+    }
+    recording.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    monkeypatch.setenv("MODEL_PROVIDER", "replay")
+    monkeypatch.setenv("MODEL_REPLAY", str(recording))
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
+        main()
+
+    printed = capsys.readouterr()
+    [contract] = json.loads(printed.out)
+    assert (contract["classification"], contract["routing"]) == ("ambiguous", "manual_review")
+    assert "describes more than one problem" in contract["narrative"]
+    assert printed.err == ""
+
+
+def test_the_runner_keeps_the_cases_known_restricted_values_from_the_model(tmp_path):
+    # REF-77-ALPHA matches no restricted-value pattern; only the intake form says it is the
+    # customer reference, which the output guard also refuses.
+    dataset = tmp_path / "data"
+    shutil.copytree(DEV, dataset)
+    intake = dataset / "documents" / "CARD-D01-INTAKE.md"
+    intake.write_text(intake.read_text().replace("CUST-D01", "REF-77-ALPHA"))
+    (dataset / "documents" / "CARD-D01-FOLLOWUP.md").write_text(
+        "# Customer follow-up email\n\nSource ID: CARD-D01-FOLLOWUP\n\n"
+        "My reference is REF-77-ALPHA.\n"
+    )
+    case = {**CARD_D01, "documents": [*CARD_D01["documents"], "CARD-D01-FOLLOWUP"]}
+    model = _Model({"multiple_problems": False})
+
+    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, _seen):
+        [result] = load_contract_results(base_url, dataset, model=model)
+
+    assert result["contract"] is not None
+    assert result["contract"]["routing"] == "ready_for_review"
+    assert "L2: My reference is [redacted]." in model.asked[0]
+    assert "REF-77-ALPHA" not in model.asked[0]
+
+
+def test_each_result_lists_the_model_calls_made_for_its_case():
+    model = _Model({"multiple_problems": False})
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        [result] = load_contract_results(base_url, DEV, model=model)
+
+    assert result["contract"] == CARD_D01_CONTRACT
+    assert result["model_calls"] == [
+        {
+            "purpose": "multiple_problems",
+            "provider": "scripted",
+            "model": "test-model",
+            "answered": True,
+            "error": None,
+            "latency_ms": 12.5,
+            "input_tokens": 230,
+            "output_tokens": 9,
+        }
+    ]
+
+
+def test_model_calls_are_kept_for_a_case_that_is_not_built(tmp_path):
+    dataset = tmp_path / "data"
+    shutil.copytree(DEV, dataset)
+    intake = dataset / "documents" / "CARD-D01-INTAKE.md"
+    intake.write_text(
+        intake.read_text()
+        .replace(
+            "I found a card purchase at Morrow Supplies for 117 crowns. "
+            "I do not recognize it and need help checking it.",
+            "The shop took my money two times for one order.",
+        )
+        .replace("Authorization: denied", "Authorization: confirmed")
+    )
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        [result] = load_contract_results(base_url, dataset, model=_Model(None))
+
+    assert result["contract"] is None
+    assert result["error"] == (
+        "the intake supports no supported classification, and the model gave no usable "
+        "answer: timeout"
+    )
+    assert [(call["purpose"], call["error"]) for call in result["model_calls"]] == [
+        ("dispute_type", "timeout")
+    ]
 
 
 def test_running_the_module_uses_the_local_mock_and_data_dev_by_default(capsys, monkeypatch):
@@ -574,6 +703,7 @@ def test_a_listed_document_that_is_not_customer_correspondence_cannot_escalate(t
             "contract": None,
             "error": "the case names evidence this step cannot read: CARD-D01-NOTE",
             "narrative_meter": None,
+            "model_calls": [],
         }
     ]
     assert seen == ["/v1/cases"]
@@ -591,6 +721,7 @@ def test_a_listed_document_id_that_is_not_a_plain_id_is_never_opened():
             "contract": None,
             "error": "a source id is not a plain document id",
             "narrative_meter": None,
+            "model_calls": [],
         }
     ]
     assert seen == ["/v1/cases"]
@@ -667,6 +798,7 @@ def test_a_contract_that_would_carry_a_restricted_value_is_not_emitted():
             "contract": None,
             "error": "a restricted value was about to be emitted",
             "narrative_meter": None,
+            "model_calls": [],
         }
     ]
 
@@ -831,6 +963,31 @@ def _dataset(tmp_path):
     return tmp_path
 
 
+class _Model:
+    """A scripted model for the hybrid's questions (ADR-003): each gets the next answer."""
+
+    provider = "scripted"
+    model = "test-model"
+
+    def __init__(self, *answers):
+        self._answers = list(answers)
+        self.asked = []
+
+    def ask(self, system, user, schema):
+        self.asked.append(user)
+        answer = self._answers.pop(0)
+        return answer, {
+            "purpose": "",
+            "provider": self.provider,
+            "model": self.model,
+            "answered": answer is not None,
+            "error": None if answer is not None else "timeout",
+            "latency_ms": 12.5,
+            "input_tokens": 230,
+            "output_tokens": 9,
+        }
+
+
 @contextmanager
 def _bank(case_list, tool_bodies, statuses=None, timeouts=None):
     """A fake bank. timeouts maps a path to how many reads fail as the mock's upstream
@@ -905,6 +1062,7 @@ def test_a_case_that_names_evidence_this_step_cannot_read_is_not_built():
             "contract": None,
             "error": "the case names evidence this step cannot read: CARD-D01-FOLLOWUP",
             "narrative_meter": None,
+            "model_calls": [],
         }
     ]
     assert seen == ["/v1/cases"]
@@ -995,6 +1153,7 @@ def test_a_merchant_service_that_never_answers_stops_only_that_case():
             "contract": None,
             "error": "the merchant service was unavailable",
             "narrative_meter": None,
+            "model_calls": [],
         }
     ]
     assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT, MERCHANT, MERCHANT]
