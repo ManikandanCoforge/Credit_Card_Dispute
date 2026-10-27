@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-10-26T01:44:33Z",
-  "git_commit": "f50c1f48e0a3384bd04771c8a550c269fce9f2a7",
+  "generated_at": "2026-10-27T17:58:57Z",
+  "git_commit": "0f18a344f1d684cc5e61bb1eb39d5e5d33b2a94c",
   "git_dirty": false,
   "git_commit_note": "HEAD at run time. The working tree was clean when the artifacts were generated.",
-  "base_url": "http://127.0.0.1:8899",
+  "base_url": "http://127.0.0.1:8765",
   "dataset": "card-disputes-dev",
-  "pass_count": 7,
+  "pass_count": 9,
   "total_cases": 12,
   "format_errors": [],
-  "p95_latency_ms": 9.559,
+  "p95_latency_ms": 18.102,
   "cost_per_case_usd": 0.0,
   "total_cost_usd": 0.0,
   "cost_note": "Read from reports/scored-run-meters.json. The deterministic template path makes no model call, so every row records 0 model calls and 0 tokens and the cost is 0.00 USD by construction, not by measurement. No model price is assumed or estimated.",
@@ -17,7 +17,7 @@
       "case_id": "CARD-D01",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.528,
+      "duration_ms": 15.932,
       "failed_checks": [],
       "error": null
     },
@@ -25,7 +25,7 @@
       "case_id": "CARD-D02",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.873,
+      "duration_ms": 17.734,
       "failed_checks": [],
       "error": null
     },
@@ -33,7 +33,7 @@
       "case_id": "CARD-D03",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.855,
+      "duration_ms": 17.25,
       "failed_checks": [],
       "error": null
     },
@@ -41,35 +41,31 @@
       "case_id": "CARD-D04",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.899,
+      "duration_ms": 16.844,
       "failed_checks": [],
       "error": null
     },
     {
       "case_id": "CARD-D05",
-      "submitted": false,
-      "passed": false,
-      "duration_ms": 0.017,
-      "failed_checks": [
-        "submitted"
-      ],
-      "error": "the case names evidence this step cannot read: CARD-D05-FOLLOWUP"
+      "submitted": true,
+      "passed": true,
+      "duration_ms": 18.102,
+      "failed_checks": [],
+      "error": null
     },
     {
       "case_id": "CARD-D06",
-      "submitted": false,
-      "passed": false,
-      "duration_ms": 9.228,
-      "failed_checks": [
-        "submitted"
-      ],
-      "error": "the intake supports no supported classification"
+      "submitted": true,
+      "passed": true,
+      "duration_ms": 15.7,
+      "failed_checks": [],
+      "error": null
     },
     {
       "case_id": "CARD-D07",
       "submitted": false,
       "passed": false,
-      "duration_ms": 4.832,
+      "duration_ms": 7.96,
       "failed_checks": [
         "submitted"
       ],
@@ -79,7 +75,7 @@
       "case_id": "CARD-D08",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.289,
+      "duration_ms": 16.511,
       "failed_checks": [],
       "error": null
     },
@@ -87,7 +83,7 @@
       "case_id": "CARD-D09",
       "submitted": false,
       "passed": false,
-      "duration_ms": 9.559,
+      "duration_ms": 17.15,
       "failed_checks": [
         "submitted"
       ],
@@ -97,7 +93,7 @@
       "case_id": "CARD-D10",
       "submitted": false,
       "passed": false,
-      "duration_ms": 5.148,
+      "duration_ms": 8.912,
       "failed_checks": [
         "submitted"
       ],
@@ -107,7 +103,7 @@
       "case_id": "CARD-D11",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.813,
+      "duration_ms": 17.613,
       "failed_checks": [],
       "error": null
     },
@@ -115,32 +111,12 @@
       "case_id": "CARD-D12",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.842,
+      "duration_ms": 17.774,
       "failed_checks": [],
       "error": null
     }
   ],
   "exceptions": [
-    {
-      "case_id": "CARD-D05",
-      "ticket": "COF-39",
-      "status": "proposed_pending_pod_agreement",
-      "failed_checks": [
-        "submitted"
-      ],
-      "error": "the case names evidence this step cannot read: CARD-D05-FOLLOWUP",
-      "note": "A conflicting follow-up is not read, so the ambiguous conflict is not classified. Conflict and unsupported handling is COF-39."
-    },
-    {
-      "case_id": "CARD-D06",
-      "ticket": "COF-39",
-      "status": "proposed_pending_pod_agreement",
-      "failed_checks": [
-        "submitted"
-      ],
-      "error": "the intake supports no supported classification",
-      "note": "An unsupported cash-withdrawal classification is not emitted. Conflict and unsupported handling is COF-39."
-    },
     {
       "case_id": "CARD-D07",
       "ticket": "COF-40",

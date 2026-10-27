@@ -631,6 +631,26 @@ def test_an_attachment_that_declares_itself_missing_outranks_an_intake_that_says
     } in result["citations"]
 
 
+def test_a_supplied_attachment_with_two_amount_lines_is_refused_not_cited_by_its_status():
+    # Kanit's #65 re-review: only an attachment that declares itself missing is cited by its
+    # status line. A supplied one still needs exactly one Amount line.
+    record = _d04_like(
+        "I found a card purchase at Morrow Supplies for 168 crowns. I did not authorize it.",
+        authorization="denied",
+    )
+
+    with pytest.raises(ContractError, match="exactly one 'Amount:' line"):
+        _assemble(
+            record,
+            intake_text=_d04_like_text(record["intake"]["statement"], authorization="denied"),
+            attachment_text=(
+                "Source ID: CARD-D04-ATTACHMENT\nAttachment status: attached\n"
+                "Amount: 90 XCR\nAmount: 91 XCR\n"
+            ),
+            transactions_text=_transactions_text("CARD-D04-TRANSACTIONS", [D04_CHARGE]),
+        )
+
+
 def test_a_call_to_customer_service_twice_is_not_a_duplicate_charge():
     statement = (
         "I called customer service twice about this charge and it is still on my "

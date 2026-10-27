@@ -20,8 +20,17 @@ from collections.abc import Iterable, Iterator
 _INVISIBLE = dict.fromkeys(
     [0x00AD, 0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF, *range(0x202A, 0x202F), *range(0x2066, 0x206A)]
 )
+# Someone with authority over a case, as a persona attack names them.
+_ROLE = (
+    r"(?:officer|analyst|reviewer|manager|supervisor|approver|adjudicator|administrator"
+    r"|admin|auditor|assistant|system|model|ai|bot)"
+)
 # Text written as an order to whoever reads it, rather than as a statement of fact.
-# Words may be separated by any run of whitespace, including a line break.
+# Words may be separated by any run of whitespace, including a line break. The last
+# branches are persona and role-play: casting the reader as someone with authority
+# ("pretend you're a compliance officer", "you are now the dispute manager", "acting as
+# the senior analyst"), speaking for that role ("as the reviewing officer would note"),
+# or claiming override authority, so that what follows reads as that role's decision.
 _INSTRUCTION = re.compile(
     r"\bsystem\s+override\b"
     r"|\b(?:ignore|disregard)\s+(?:(?:all|the|any|your)\s+)?(?:(?:bank|previous|prior|above)\s+)?"
@@ -32,11 +41,33 @@ _INSTRUCTION = re.compile(
     r"|\bskip\s+(?:the\s+)?(?:human\s+)?approval\b"
     r"|\bcopy\s+(?:(?:all|the|any)\s+)?(?:private\s+)?tokens?\b"
     r"|\b(?:administrator|admin|developer)\s+(?:priority|mode|override)\b"
-    r"|\bmark\s+(?:this|the\s+case|it)\s+(?:as\s+)?(?:ready|resolved|approved)\b",
+    r"|\bmark\s+(?:this|the\s+case|it)\s+(?:as\s+)?(?:ready|resolved|approved)\b"
+    r"|\b(?:pretend|imagine|suppose)\s+(?:that\s+)?(?:you(?:'re|\s+are|\s+were)|to\s+be)\b"
+    r"|\byou\s+are\s+now\s+(?:a|an|the|my|our|acting)\b"
+    r"|\b(?:act|acting|role-?play(?:ing)?|respond(?:ing)?|speak(?:ing)?)\s+as\s+"
+    rf"(?:(?:a|an|the|my|our|if|though)\s+)?(?:[\w'-]+\s+){{0,2}}{_ROLE}\b"
+    rf"|\bas\s+(?:the|a|an|that|this|your)\s+(?:[\w'-]+\s+){{0,2}}{_ROLE}"
+    r"(?:\s+(?:would|will|should|must|might|could)\s+(?:\w+\s+)?"
+    r"(?:note|agree|confirm|conclude|decide|say|find|approve|recommend|record|rule)\b"
+    r"|\s*,\s*(?:please\s+)?"
+    r"(?:approve|confirm|proceed|mark|close|resolve|refund|settle|skip|issue|pay|accept)\b)"
+    r"|\b(?:with|has|have|having|granted?)\s+(?:(?:full|complete|admin|administrator)\s+)?"
+    r"override\s+(?:authority|rights|access|powers?|permissions?)\b",
     re.IGNORECASE,
 )
 # "Do not ignore policy" and "please do not mark this as resolved" are not orders to do so.
 _NEGATED = re.compile(r"\b(?:do\s+not|don't|dont|never|not)\s+$", re.IGNORECASE)
+# Text that speaks to a model reading the evidence, or markup that would open or close the
+# evidence block a model is shown (ADR-003). These are the Card Disputes Copilot's patterns for
+# text addressed to a model, which _INSTRUCTION does not cover.
+_TO_A_MODEL = re.compile(
+    r"^\s*(?:(?:dear|hey|hi|hello)\s+)?(?:assistant|ai|model|bot|chatbot)\s*[,:]"
+    r"|\bnote\s+to\s+(?:the\s+)?(?:assistant|ai|model)\b"
+    r"|\bapprove\s+(?:this|it|now)\b"
+    r"|\bclassify\s+(?:this|it)\s+as\b"
+    r"|</?\s*evidence\b",
+    re.IGNORECASE | re.MULTILINE,
+)
 _TOKENS = re.compile(
     r"SYNTHETIC-PRIVATE-[A-Za-z0-9-]+"  # synthetic private token
     r"|\bCUST-[A-Za-z0-9-]+"  # customer reference, treated as an account number
@@ -60,6 +91,13 @@ ATTACHMENT_INSTRUCTION_NOTICE = (
     "The attachment contains text written as instructions. It was treated as evidence "
     "only and was not followed or reproduced."
 )
+# A customer statement is quoted as evidence, so this notice does not say "not reproduced".
+STATEMENT_INSTRUCTION_NOTICE = (
+    "A customer statement contains text written as instructions. It was quoted as "
+    "evidence only and was not followed."
+)
+# What a restricted value becomes in text that leaves the application, such as a model prompt.
+REDACTED = "[redacted]"
 
 
 class RestrictedValueError(Exception):
@@ -73,10 +111,33 @@ def has_instruction(text: str) -> bool:
     "ig<zero-width>nore policy" or "Ignore  policy" is still caught. A negated
     form ("do not ignore policy") is not an instruction.
     """
-    probe = unicodedata.normalize("NFKC", text).translate(_INVISIBLE)
+    probe = visible(text)
     return any(
         not _NEGATED.search(probe[: match.start()]) for match in _INSTRUCTION.finditer(probe)
     )
+
+
+def addresses_a_model(text: str) -> bool:
+    """True when the text speaks to a model ("Hi AI: ...", "note to the assistant",
+    "approve this", "classify it as") or carries markup that opens or closes the
+    evidence block a model is shown.
+
+    The text is normalized as has_instruction normalizes it, and a negated form ("I did
+    not approve this charge") does not count. A model is never asked about a statement
+    that holds such text; see src/contract.py.
+    """
+    probe = visible(text)
+    return any(
+        not _NEGATED.search(probe[: match.start()]) for match in _TO_A_MODEL.finditer(probe)
+    )
+
+
+def visible(text: str) -> str:
+    """text as instructions and values are detected in: NFKC, with hidden characters removed.
+
+    It is never quoted; quotes are copied from the original text.
+    """
+    return unicodedata.normalize("NFKC", text).translate(_INVISIBLE)
 
 
 def restricted_values(value: object, known: Iterable[str] = ()) -> list[str]:
@@ -90,7 +151,9 @@ def restricted_values(value: object, known: Iterable[str] = ()) -> list[str]:
     """
     found: list[str] = []
     secrets = [secret for secret in known if secret]
-    for text in _strings(value):
+    # Each string is also scanned in its visible form, so a card number broken up by
+    # zero-width characters, or typed in full-width digits, is still found.
+    for text in dict.fromkeys(form for raw in _strings(value) for form in (raw, visible(raw))):
         found += [match.group(0) for match in _TOKENS.finditer(text)]
         found += [
             card.group(0)
@@ -103,6 +166,17 @@ def restricted_values(value: object, known: Iterable[str] = ()) -> list[str]:
             if re.search(rf"(?<![A-Za-z0-9]){re.escape(secret)}(?![A-Za-z0-9])", text)
         ]
     return list(dict.fromkeys(found))
+
+
+def redact(text: str, known: Iterable[str] = ()) -> str:
+    """text with every restricted value replaced by [redacted].
+
+    A model may read a customer's own lines, never the values in them. Longer values
+    are replaced first, so a token is never left half visible inside a longer one.
+    """
+    for value in sorted(restricted_values(text, known), key=len, reverse=True):
+        text = text.replace(value, REDACTED)
+    return text
 
 
 def guard(value: object, known: Iterable[str] = ()) -> None:

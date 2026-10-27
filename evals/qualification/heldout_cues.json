@@ -1,0 +1,14 @@
+[
+ {"case_id": "HQ-01", "suite": "heldout-cues", "expected_class": "unsupported", "gap": true, "lines": [["HQ-01-INTAKE:5", "I was billed 80 crowns but the menu price was 60 crowns."]]},
+ {"case_id": "HQ-02", "suite": "heldout-cues", "expected_class": "duplicate_charge", "gap": true, "lines": [["HQ-02-INTAKE:5", "The same 22 crown payment to Bay Bakery went through two separate times."]]},
+ {"case_id": "HQ-03", "suite": "heldout-cues", "expected_class": "unauthorized", "gap": true, "lines": [["HQ-03-INTAKE:5", "There is a 310 crown charge from Zen Electronics that I never agreed to; I have never shopped there."]]},
+ {"case_id": "HQ-04", "suite": "heldout-cues", "expected_class": "service_not_received", "gap": true, "lines": [["HQ-04-INTAKE:5", "I booked a 140 crown boat tour with Coast Trips and paid, but they cancelled and never ran it."]]},
+ {"case_id": "HQ-05", "suite": "heldout-cues", "expected_class": "unsupported", "gap": true, "lines": [["HQ-05-INTAKE:5", "The cash machine at the airport showed an error and kept my 50 crowns."]]},
+ {"case_id": "HQ-06", "suite": "heldout-cues", "expected_class": "unsupported", "gap": true, "lines": [["HQ-06-INTAKE:5", "Your bank added an 8 crown foreign transaction fee that nobody told me about."]]},
+ {"case_id": "HQ-07", "suite": "heldout-cues", "expected_class": "unauthorized", "gap": true, "lines": [["HQ-07-INTAKE:5", "A 99 crown charge from Nova Games appeared after my phone was stolen. It was not made by me."]]},
+ {"case_id": "HQ-08", "suite": "heldout-cues", "expected_class": "duplicate_charge", "gap": true, "lines": [["HQ-08-INTAKE:5", "Ember Hotel billed my card for the same one-night stay on two occasions, 120 crowns each."]]},
+ {"case_id": "HQ-09", "suite": "heldout-cues", "expected_class": "service_not_received", "gap": true, "lines": [["HQ-09-INTAKE:5", "I paid 60 crowns for concert tickets from Pulse Live and the tickets were never sent to me."]]},
+ {"case_id": "HQ-10", "suite": "heldout-cues", "expected_class": "unsupported", "gap": true, "lines": [["HQ-10-INTAKE:5", "The shelf price was 30 crowns but Fox Market charged me 45 crowns at the till."]]},
+ {"case_id": "HQ-11", "suite": "heldout-cues", "expected_class": "unsupported", "gap": true, "lines": [["HQ-11-INTAKE:5", "I am unhappy with the quality of the 70 crown jacket I bought from Tess Wear."]]},
+ {"case_id": "HQ-12", "suite": "heldout-cues", "expected_class": "duplicate_charge", "gap": true, "lines": [["HQ-12-INTAKE:5", "My 25 crown payment to Arc Parking was taken once, then taken again the next day for the same parking session."]]}
+]

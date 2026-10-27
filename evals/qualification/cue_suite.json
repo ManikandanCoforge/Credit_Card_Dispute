@@ -1,0 +1,802 @@
+[
+ {
+  "case_id": "SYN-S01",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S01-INTAKE:5",
+    "There is a 95 crown charge from Hartley Books on my card that I never made."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S02",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S02-INTAKE:5",
+    "Someone used my card at Pine Electronics for 410 crowns. It wasn't me."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S03",
+  "suite": "synth",
+  "expected_class": "duplicate_charge",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S03-INTAKE:5",
+    "Lumen Cafe billed me two times for the same order, 22 crowns each."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S04",
+  "suite": "synth",
+  "expected_class": "duplicate_charge",
+  "gap": true,
+  "lines": [
+   [
+    "SYN-S04-INTAKE:5",
+    "The same purchase from Bright Gym shows up on my statement more than once, 60 crowns."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S05",
+  "suite": "synth",
+  "expected_class": "service_not_received",
+  "gap": true,
+  "lines": [
+   [
+    "SYN-S05-INTAKE:5",
+    "I paid Sunny Cleaners 140 crowns for a cleaning that never happened."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S06",
+  "suite": "synth",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S06-INTAKE:5",
+    "The repair visit I paid 300 crowns for was never delivered."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S07",
+  "suite": "synth",
+  "expected_class": "unsupported",
+  "gap": true,
+  "lines": [
+   [
+    "SYN-S07-INTAKE:5",
+    "The machine kept my money and no notes came out. It was 200 crowns."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S08",
+  "suite": "synth",
+  "expected_class": "unsupported",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S08-INTAKE:5",
+    "I tried to withdraw 200 crowns at the cash point but got nothing."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S09",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S09-INTAKE:5",
+    "I do not recognize this 50 crown charge from Oak Market."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S10",
+  "suite": "synth",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S10-INTAKE:5",
+    "I paid Delta Movers 500 crowns but the move was not delivered."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S11",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S11-INTAKE:5",
+    "I do not recognize a 70 crown charge from River Pharmacy."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S12",
+  "suite": "synth",
+  "expected_class": "duplicate_charge",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S12-INTAKE:5",
+    "Atlas Fuel charged me twice for one fill-up of 45 crowns."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S13",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S13-INTAKE:5",
+    "I do not recognize a 33 crown charge from Kite Toys."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S14",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S14-INTAKE:5",
+    "I do not recognize this 88 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S15",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S15-INTAKE:5",
+    "I do not recognize this 91 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S16",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S16-INTAKE:5",
+    "I do not recognize this 64 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S17",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S17-INTAKE:5",
+    "I do not recognize this 72 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S18",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S18-INTAKE:5",
+    "I do not recognize this 81 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S21",
+  "suite": "synth",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S21-INTAKE:5",
+    "I paid Glow Studio 180 crowns for a session that was not delivered."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S22",
+  "suite": "synth",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S22-INTAKE:5",
+    "I paid Quick Fix 260 crowns for a repair that was not delivered."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S23",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S23-INTAKE:5",
+    "I do not recognize this 115 crown charge from Bay Tickets."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S25",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S25-INTAKE:5",
+    "I do not recognize this 99 crown charge from Echo Games."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S26",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S26-INTAKE:5",
+    "I do not recognize this 77 crown charge from Lark Audio."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S27",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S27-INTAKE:5",
+    "I do not recognize this 54 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S28",
+  "suite": "synth",
+  "expected_class": "duplicate_charge",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S28-INTAKE:5",
+    "Mint Books charged me twice for one order of 40 crowns."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S29",
+  "suite": "synth",
+  "expected_class": "duplicate_charge",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S29-INTAKE:5",
+    "Mint Books charged me twice for one order of 40 crowns."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S30",
+  "suite": "synth",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "SYN-S30-INTAKE:5",
+    "I do not recognize a 58 crown charge from Caf\u00e9 \u00d1and\u00fa."
+   ]
+  ]
+ },
+ {
+  "case_id": "SYN-S31",
+  "suite": "synth",
+  "expected_class": "unsupported",
+  "gap": true,
+  "lines": [
+   [
+    "SYN-S31-INTAKE:5",
+    "My Stream+ subscription price went up without any notice. I want to dispute the 15 crown increase."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P01",
+  "suite": "stress",
+  "expected_class": "unauthorized",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P01-INTAKE:5",
+    "There is a 45 crown payment to Garden Hub on my statement that I did not make."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P02",
+  "suite": "stress",
+  "expected_class": "unauthorized",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P02-INTAKE:5",
+    "My card was charged 130 crowns by Swift Rides, but I was at home all day and never used them."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P16",
+  "suite": "stress",
+  "expected_class": "unauthorized",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P16-INTAKE:5",
+    "I believe my card details were stolen. A 250 crown purchase at Nova Tech is not mine."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P03",
+  "suite": "stress",
+  "expected_class": "duplicate_charge",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P03-INTAKE:5",
+    "Fern Florist took 38 crowns from my card, and then took the exact same 38 crowns again a minute later."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P04",
+  "suite": "stress",
+  "expected_class": "duplicate_charge",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P04-INTAKE:5",
+    "I see two identical payments of 12 crowns to City Taxi for a single ride."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P05",
+  "suite": "stress",
+  "expected_class": "service_not_received",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P05-INTAKE:5",
+    "I paid 220 crowns to Bloom Events for a concert that was cancelled, and nothing was ever provided."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P06",
+  "suite": "stress",
+  "expected_class": "service_not_received",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P06-INTAKE:5",
+    "Swift Courier took my 75 crowns, but the parcel delivery never took place."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P07",
+  "suite": "stress",
+  "expected_class": "unsupported",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P07-INTAKE:5",
+    "The cash dispenser swallowed my card and gave me no money, but 100 crowns left my account."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P08",
+  "suite": "stress",
+  "expected_class": "unsupported",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P08-INTAKE:5",
+    "I took out 60 crowns from a machine at the station, but nothing came out."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P09",
+  "suite": "stress",
+  "expected_class": "unsupported",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P09-INTAKE:5",
+    "Your bank charged me a 25 crown fee that I don't agree with."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P10",
+  "suite": "stress",
+  "expected_class": "unsupported",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P10-INTAKE:5",
+    "The hotel charged 300 crowns, which is more than the price I was quoted."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P11",
+  "suite": "stress",
+  "expected_class": "ambiguous",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P11-INTAKE:5",
+    "Please look into this 85 crown charge from Morrow Supplies."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P12",
+  "suite": "stress",
+  "expected_class": "ambiguous",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P12-INTAKE:5",
+    "I'm not happy about the 140 crown transaction from last month."
+   ]
+  ]
+ },
+ {
+  "case_id": "STR-P14",
+  "suite": "stress",
+  "expected_class": "service_not_received",
+  "gap": true,
+  "lines": [
+   [
+    "STR-P14-INTAKE:5",
+    "This is not a duplicate charge. I know the shop, but the 90 crown repair they promised was never done."
+   ]
+  ]
+ },
+ {
+  "case_id": "HLD-H01",
+  "suite": "holdout",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "HLD-H01-INTAKE:5",
+    "I didn't recognize the store at first, but I now remember buying from Tide Shop. The problem is the 52 crown order never arrived."
+   ]
+  ]
+ },
+ {
+  "case_id": "HLD-H02",
+  "suite": "holdout",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "HLD-H02-INTAKE:5",
+    "It isn't a double charge. I was charged once, but the yoga classes I paid 80 crowns for were never delivered."
+   ]
+  ]
+ },
+ {
+  "case_id": "HLD-H03",
+  "suite": "holdout",
+  "expected_class": "duplicate_charge",
+  "gap": false,
+  "lines": [
+   [
+    "HLD-H03-INTAKE:5",
+    "I'm not saying someone used my card. The 66 crown charge is mine, but it appears twice."
+   ]
+  ]
+ },
+ {
+  "case_id": "HLD-H04",
+  "suite": "holdout",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "HLD-H04-INTAKE:5",
+    "Separately, I do not recognize a 41 crown charge from Peak Books."
+   ]
+  ]
+ },
+ {
+  "case_id": "HLD-H05",
+  "suite": "holdout",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "HLD-H05-INTAKE:5",
+    "I do not recognize this 33 crown charge from Owl Prints."
+   ]
+  ]
+ },
+ {
+  "case_id": "HLD-H06",
+  "suite": "holdout",
+  "expected_class": "unsupported",
+  "gap": true,
+  "lines": [
+   [
+    "HLD-H06-INTAKE:5",
+    "The kiosk at the mall debited 120 crowns from my account without giving me any banknotes."
+   ]
+  ]
+ },
+ {
+  "case_id": "HLD-H08",
+  "suite": "holdout",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "HLD-H08-INTAKE:5",
+    "The 95 crown photo shoot with Lens Co was paid for, but the photographer never showed up."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E01",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E01-INTAKE:5",
+    "I do not recognize this 30 crown charge from Kite Toys."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E02",
+  "suite": "edge",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E02-INTAKE:5",
+    "I paid Lumen Repairs 75 crowns for a repair that was not delivered."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E04",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E04-INTAKE:5",
+    "I do not recognize this 52 crown charge from Ivy Books."
+   ],
+   [
+    "EDG-E04-FOLLOWUP:5",
+    "Following up on my complaint about the Ivy Books charge."
+   ],
+   [
+    "EDG-E04-FOLLOWUP-2:5",
+    "Adding a detail: the charge appeared on my statement on a Tuesday."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E05",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E05-INTAKE:5",
+    "I do not recognize this 99 crown charge from Oak Market."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E06",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E06-INTAKE:5",
+    "I do not recognize this 63 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E07",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E07-INTAKE:5",
+    "I do not recognize this 47 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E08",
+  "suite": "edge",
+  "expected_class": "duplicate_charge",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E08-INTAKE:5",
+    "Pine Cafe charged me twice for one lunch of 18 crowns."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E09",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E09-INTAKE:5",
+    "I do not recognize this 70 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E10",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E10-INTAKE:5",
+    "I do not re\u200bcognize this 61 crown charge from Bell Audio."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E11",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E11-INTAKE:5",
+    "I do not recognize this 39 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E12",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E12-INTAKE:5",
+    "I do not recognize this 58 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E13",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E13-INTAKE:5",
+    "I do not recognize this 44 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E14",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E14-INTAKE:5",
+    "I do not recognize this 36 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E15",
+  "suite": "edge",
+  "expected_class": "service_not_received",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E15-INTAKE:5",
+    "I paid Wave Spa 90 crowns for a session that was not delivered."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E16",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E16-INTAKE:5",
+    "Someone used my card at Glen Shoes for 140 crowns."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E19",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E19-INTAKE:5",
+    "I do not recognize this 48 crown charge."
+   ]
+  ]
+ },
+ {
+  "case_id": "EDG-E20",
+  "suite": "edge",
+  "expected_class": "unauthorized",
+  "gap": false,
+  "lines": [
+   [
+    "EDG-E20-INTAKE:5",
+    "I do not recognize this 57 crown charge."
+   ]
+  ]
+ }
+]

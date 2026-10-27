@@ -10,7 +10,8 @@ load_contract_results
     read every other listed document: a customer statement is kept, anything else refuses the case
     read the intake, attachment, procedure and policy documents
     GET /v1/cases/{case_id}/transactions and /v1/cases/{case_id}/merchant
-    assemble_draft: the rules, then the narrative (template, or a configured writer)
+    assemble_draft: the rules, with a configured model's two closed questions
+      (ADR-003), then the narrative (template, or a configured writer)
 
 Both tool reads go through the mock service, which audits each one. A failed
 read stops the case: an outage is never treated as an empty transaction history.
@@ -19,6 +20,7 @@ reports the reason for each case it could not build.
 """
 
 import json
+import os
 import re
 import sys
 import time
@@ -40,6 +42,8 @@ from src.load_records import (
     records_from_case_list,
 )
 from src.meters import record_case_meter
+from src.model_clients import ModelSetupError, model_from_env
+from src.model_cue import ModelCall, ModelClient
 from src.models import (
     Intake,
     MerchantTool,
@@ -70,6 +74,7 @@ class ContractResult(TypedDict):
     contract: Contract | None
     error: str | None
     narrative_meter: NarrativeMeter | None
+    model_calls: list[ModelCall]
 
 
 class CasePlan(TypedDict):
@@ -100,6 +105,7 @@ def build_contract_result(
     base_url: str,
     data_dir: str | Path,
     writer: ProseWriter | None = None,
+    model: ModelClient | None = None,
     *,
     meter_path: Path | None = None,
 ) -> ContractResult:
@@ -107,13 +113,18 @@ def build_contract_result(
 
     The reason is one of this application's own messages or an exception class
     name, never text from a payload or document. writer, when given, may reword the
-    narrative; see src/narrative.py. When meter_path is set, one meter line is
-    appended for this case after it finishes, including a case that stops.
+    narrative; see src/narrative.py. model, when given, may answer the hybrid's two
+    closed questions (ADR-003); its calls are kept even when the case is not built,
+    because they were still made.
+
+    When meter_path is set, one meter line is appended for this case after it
+    finishes, including a case that stops.
     """
     started_at = datetime.now(UTC)
     started = time.perf_counter()
     tally = {"tool_attempts": 0, "retry_count": 0}
     case_id = plan["record"]["case_id"]
+    calls: list[ModelCall] = []
     try:
         contract, meter = _contract_record(
             plan["record"],
@@ -121,6 +132,8 @@ def build_contract_result(
             Path(data_dir),
             plan["documents"],
             writer,
+            model,
+            calls,
             tally,
         )
     except ContractRecordError as error:
@@ -129,6 +142,7 @@ def build_contract_result(
             "contract": None,
             "error": _reason(error),
             "narrative_meter": None,
+            "model_calls": calls,
         }
     else:
         result = {
@@ -136,6 +150,7 @@ def build_contract_result(
             "contract": contract,
             "error": None,
             "narrative_meter": meter,
+            "model_calls": calls,
         }
     if meter_path is not None:
         finished = result["contract"]
@@ -146,9 +161,10 @@ def build_contract_result(
             route=finished["routing"] if finished is not None else "not_built",
             started_at=started_at,
             latency_ms=round((time.perf_counter() - started) * 1000),
-            model_calls=0 if narrative is None else narrative["model_calls"],
-            input_tokens=0,
-            output_tokens=0,
+            model_calls=len(calls)
+            + (0 if narrative is None else narrative["model_calls"]),
+            input_tokens=sum(call["input_tokens"] or 0 for call in calls),
+            output_tokens=sum(call["output_tokens"] or 0 for call in calls),
             tool_attempts=tally["tool_attempts"],
             retry_count=tally["retry_count"],
         )
@@ -159,6 +175,7 @@ def load_contract_results(
     base_url: str,
     data_dir: str | Path,
     writer: ProseWriter | None = None,
+    model: ModelClient | None = None,
     *,
     meter_path: Path | None = None,
 ) -> list[ContractResult]:
@@ -171,14 +188,19 @@ def load_contract_results(
     A case list that cannot be read leaves the previous meter file alone.
 
     writer, when given, may reword each narrative; see src/narrative.py. Each
-    built case carries its narrative meter, and the meter line records that
-    meter's model-call count. Token counts stay 0: this meter does not count tokens.
+    built case carries its narrative meter (path, latency, model calls). model,
+    when given, may answer the hybrid's questions, and each result lists the calls
+    made for its case. The meter line records every model call made for the case
+    (the hybrid's and the narrative writer's); token counts stay 0 because this
+    meter does not count tokens.
     """
     data_dir = Path(data_dir)
     plans = contract_case_plans(base_url, data_dir)
     _prepare_meter_file(meter_path)
     return [
-        build_contract_result(plan, base_url, data_dir, writer, meter_path=meter_path)
+        build_contract_result(
+            plan, base_url, data_dir, writer, model, meter_path=meter_path
+        )
         for plan in plans
     ]
 
@@ -202,12 +224,24 @@ def main() -> None:
     Each case that was not built is named on stderr with its reason, and the exit
     status is 1 when any case was not built, so a partial array is never mistaken
     for a complete one. One meter line per case is written to reports/meters.jsonl.
+
+    MODEL_PROVIDER and its settings, when set, add a qualified model's answers
+    (ADR-003; see src/model_clients.py). A model that cannot be used stops the run
+    before any case is read, rather than running without it.
     """
     base_url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8765"
     data_dir = sys.argv[2] if len(sys.argv) > 2 else "data/dev"
     try:
+        model = model_from_env(os.environ)
+    except ModelSetupError as error:
+        sys.stderr.write(f"the model cannot be used: {error}\n")
+        raise SystemExit(1) from None
+    try:
         results = load_contract_results(
-            base_url, data_dir, meter_path=Path("reports") / "meters.jsonl"
+            base_url,
+            data_dir,
+            model=model,
+            meter_path=Path("reports") / "meters.jsonl",
         )
     except CaseListError:
         sys.stderr.write("the bank case list could not be read\n")
@@ -253,6 +287,8 @@ def _contract_record(
     data_dir: Path,
     documents: list[str],
     writer: ProseWriter | None,
+    model: ModelClient | None,
+    calls: list[ModelCall],
     tally: dict[str, int],
 ) -> tuple[Contract, NarrativeMeter]:
     """Read the evidence and the tools for one case, then assemble its contract.
@@ -295,6 +331,8 @@ def _contract_record(
             transactions_text=transactions_text,
             customer_texts=customer_texts,
             writer=writer,
+            model=model,
+            model_calls=calls,
             known_values=known,
         )
     except ContractError as error:

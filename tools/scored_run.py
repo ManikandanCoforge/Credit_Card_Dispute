@@ -13,12 +13,16 @@ Artifacts:
   submissions/scored-run.json     the evaluator submission array
 
 Exit status is 0 only when every case in the case list passes. Every artifact
-is still written when they do not.
+is still written when they do not. When the case list cannot be read, nothing
+is written and the exit status is 1, so an unreachable bank never replaces the
+committed report with an empty one.
 """
 
 import argparse
 import json
-import subprocess
+
+# Runs git to record the commit the report was produced from.
+import subprocess  # nosec B404
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -321,7 +325,6 @@ def assemble_report(
     base_url: str,
     dataset_name: str,
     meters: Sequence[MeterRow] | None = None,
-    run_error: str | None = None,
 ) -> dict[str, Any]:
     """Assemble the scored-run report from measured cases and evaluator output.
 
@@ -333,7 +336,7 @@ def assemble_report(
     total_cases = len(case_reports)
     meter_rows_used = list(meters) if meters is not None else meter_rows(case_reports)
     total_cost = round(sum(row["cost_usd"] for row in meter_rows_used), 6)
-    report: dict[str, Any] = {
+    return {
         "generated_at": generated_at,
         "git_commit": git_commit,
         "git_dirty": git_dirty,
@@ -371,9 +374,6 @@ def assemble_report(
         ),
         "unplanned_failures": unplanned_failures(case_reports),
     }
-    if run_error is not None:
-        report["run_error"] = run_error
-    return report
 
 
 def _md_cell(value: Any) -> str:
@@ -403,11 +403,6 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         "",
         f"- Pass: {report['pass_count']} / {total}",
         f"- Format errors: {len(report['format_errors'])}",
-        *(
-            [f"- Run error: {report['run_error']}"]
-            if report.get("run_error")
-            else []
-        ),
         (
             f"- p95 draft latency: {_fmt_ms(report['p95_latency_ms'])} "
             "(nearest-rank over the measured durations)"
@@ -521,26 +516,38 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         "## Reproduce",
         "",
         (
-            "Run from the worktree root on branch "
-            "`kenmann01/cof-44-scored-run-across-all-twelve-cases`. "
-            "`../../.venv` is the shared virtualenv of the enclosing checkout; "
-            "from the primary checkout use `.venv\\Scripts\\python.exe`."
+            "Run from the repository root, after `uv sync --locked`. The commands "
+            "are the same on macOS, Linux and Windows. Use two terminals, and stop "
+            "any other mock on port 8765 first."
         ),
         "",
+        "In the first terminal, start the mock on a fresh state of its own:",
+        "",
         "```sh",
-        "rm -f .state/cof44.sqlite3",
-        "../../.venv/Scripts/python.exe -m tools.runtime serve \\",
-        "    --data data/dev --port 8899 --state .state/cof44.sqlite3 &",
-        "../../.venv/Scripts/python.exe tools/scored_run.py \\",
-        "    --base-url http://127.0.0.1:8899 \\",
-        "    --data data/dev \\",
-        "    --gold feedback/dev_gold.json",
+        (
+            "uv run --locked python tools/runtime.py reset --confirm "
+            "--state .state/scored-run.sqlite"
+        ),
+        (
+            "uv run --locked python tools/runtime.py serve --data data/dev --port 8765 "
+            "--state .state/scored-run.sqlite"
+        ),
+        "```",
+        "",
+        "In the second terminal, run every case and score it:",
+        "",
+        "```sh",
+        (
+            "uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 "
+            "--data data/dev --gold feedback/dev_gold.json"
+        ),
         "```",
         "",
         (
             "The run exits 0 only when all twelve cases pass. A single transient "
-            "fault fails once on a fresh state, so use a fresh state for each "
-            "comparison."
+            "fault fails once on a fresh state, so reset the state before each "
+            "comparison. If the mock is not running, the run writes nothing and "
+            "exits 1."
         ),
         "",
     ]
@@ -568,14 +575,15 @@ def utc_now() -> str:
 
 def git_state(root: Path) -> tuple[str, bool]:
     """Return the HEAD commit and whether the working tree has changes."""
-    commit = subprocess.run(
+    # Fixed argv, never a shell, git from PATH.
+    commit = subprocess.run(  # nosec B603 B607
         ["git", "rev-parse", "HEAD"],
         cwd=root,
         capture_output=True,
         text=True,
         check=False,
     )
-    status = subprocess.run(
+    status = subprocess.run(  # nosec B603 B607
         ["git", "status", "--porcelain"],
         cwd=root,
         capture_output=True,
@@ -612,17 +620,21 @@ def run_scored(
 
     Returns 0 only when every case in the case list passes. The artifacts are
     written before the status is returned, so a failing run still publishes its
-    numbers.
+    numbers. When the case list cannot be read there are no numbers to publish:
+    nothing is written, the reason goes to stderr, and the status is 1.
     """
     dataset = json.loads((data_dir / "dataset.json").read_text(encoding="utf-8"))
     gold = json.loads(gold_path.read_text(encoding="utf-8"))
 
-    run_error: str | None = None
     try:
         plans = contract_case_plans(base_url, data_dir)
     except (BankReadError, OSError) as error:
-        plans = []
-        run_error = f"{type(error).__name__}: the bank case list could not be read"
+        print(
+            f"{type(error).__name__}: the bank case list could not be read from "
+            f"{base_url}. Nothing was written; start the mock and run again.",
+            file=sys.stderr,
+        )
+        return 1
 
     destination = (
         case_meter_path
@@ -633,7 +645,7 @@ def run_scored(
         plans,
         base_url,
         data_dir,
-        meter_path=None if run_error else destination,
+        meter_path=destination,
     )
 
     submissions: list[Contract] = [
@@ -652,7 +664,6 @@ def run_scored(
         base_url=base_url,
         dataset_name=dataset["name"],
         meters=meters,
-        run_error=run_error,
     )
     _write_json(report_path, report)
     _write_json(meters_path, meters)
@@ -679,8 +690,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--base-url",
-        default="http://127.0.0.1:8899",
-        help="Base URL of the running mock (default: http://127.0.0.1:8899).",
+        default="http://127.0.0.1:8765",
+        help="Base URL of the running mock (default: http://127.0.0.1:8765).",
     )
     parser.add_argument(
         "--data", type=Path, default=ROOT / "data" / "dev", help="Dataset directory."
@@ -715,6 +726,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=ROOT / "reports" / "scored-run.md",
         help="Where to write the human-readable report.",
     )
+    parser.add_argument(
+        "--case-meters",
+        type=Path,
+        default=ROOT / "reports" / "meters.jsonl",
+        help="Where the run writes its one redacted meter line per case.",
+    )
     args = parser.parse_args(argv)
     commit, dirty = git_state(ROOT)
     return run_scored(
@@ -725,6 +742,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         report_path=args.report,
         meters_path=args.meters,
         markdown_path=args.markdown,
+        case_meter_path=args.case_meters,
         generated_at=utc_now(),
         git_commit=commit,
         git_dirty=dirty,
