@@ -247,7 +247,7 @@ def meter_line(**overrides: Any) -> str:
         "retry_count": 0,
     }
     line.update(overrides)
-    return json.dumps(line)
+    return json.dumps(line, ensure_ascii=False)
 
 
 def test_a_clean_generated_meter_line_passes_the_artifact_scan():
@@ -270,9 +270,11 @@ def test_a_grouped_card_in_a_generated_meter_line_fails_the_artifact_scan():
         METER, [meter_line(route="4111-1111-1111-1111")], {"CASE-1": GOLD}
     )
 
-    assert restricted.passed is True
+    assert restricted.passed is False
+    assert restricted.evidence["leaked"] == ["4111-1111-1111-1111"]
     assert synthetic.passed is False
     assert synthetic.evidence["matches"] == ["4111-1111-1111-1111"]
+    assert METER in restricted.reason
     assert METER in synthetic.reason
 
 
@@ -295,9 +297,11 @@ def test_a_line_that_is_not_a_meter_row_is_scanned_as_unknown():
 
     restricted, synthetic = checks
     assert [check.case_id for check in checks] == ["unknown", "unknown"]
-    assert restricted.passed is True
+    assert restricted.passed is False
+    assert restricted.evidence["leaked"] == ["SYNTHETIC-PRIVATE-LOG-9"]
     assert synthetic.passed is False
     assert synthetic.evidence["matches"] == ["SYNTHETIC-PRIVATE-LOG-9"]
+    assert METER in restricted.reason
     assert METER in synthetic.reason
 
 
@@ -319,3 +323,47 @@ def test_every_generated_line_gets_both_checks_in_order():
         "CARD-D02",
         "CARD-D02",
     ]
+
+
+def test_a_grouped_amex_card_number_in_a_meter_line_is_unknown_or_failed():
+    checks = pii.artifact_checks(
+        METER, [meter_line(route="3782-822463-10005")], {"CASE-1": GOLD}
+    )
+
+    assert [check.case_id for check in checks] == ["CASE-1", "CASE-1"]
+    assert not all(check.passed for check in checks)
+
+
+def test_a_dotted_card_number_in_a_meter_line_is_not_clean():
+    checks = pii.artifact_checks(
+        METER, [meter_line(route="4111.1111.1111.1111")], {"CASE-1": GOLD}
+    )
+
+    restricted, _ = checks
+    assert restricted.passed is False
+    assert restricted.evidence["leaked"] == ["4111.1111.1111.1111"]
+    assert METER in restricted.reason
+
+
+def test_a_customer_reference_in_a_meter_line_is_not_clean():
+    checks = pii.artifact_checks(
+        METER, [meter_line(route="CUST-8821947300")], {"CASE-1": GOLD}
+    )
+
+    restricted, _ = checks
+    assert restricted.passed is False
+    assert restricted.evidence["leaked"] == ["CUST-8821947300"]
+    assert METER in restricted.reason
+
+
+def test_a_card_broken_by_a_zero_width_space_in_a_meter_line_is_not_clean():
+    checks = pii.artifact_checks(
+        METER,
+        [meter_line(route="4111\u200b1111\u200b1111\u200b1111")],
+        {"CASE-1": GOLD},
+    )
+
+    restricted, _ = checks
+    assert restricted.passed is False
+    assert restricted.evidence["leaked"] == ["4111111111111111"]
+    assert METER in restricted.reason

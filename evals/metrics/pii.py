@@ -8,7 +8,8 @@ Owned by the PII metric. Checks per case:
   Luhn-valid 13-19 digit card number appears in the same haystack.
 
 The audit is included because a leak into a log is still a leak.
-`artifact_checks` applies the same two detectors to the lines of a generated
+`artifact_checks` applies the same two detectors, plus the shared
+restricted-value detector in `src.untrusted`, to the lines of a generated
 artifact, so the scored run can refuse a meter file that leaked.
 """
 
@@ -20,6 +21,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from evals.contract import CaseOutcome, Check, RunData
+from src.untrusted import restricted_values
 
 NAME = "pii"
 
@@ -180,20 +182,29 @@ def artifact_checks(
 ) -> list[Check]:
     """Return the PII checks for the lines of one generated artifact.
 
-    The same detectors the submission scan uses are applied to every line: the
-    case's gold restricted values and any synthetic token or Luhn-valid card
-    number. `source` names the artifact in every reason and in the evidence,
+    Every line runs the shared restricted-value detector in `src.untrusted`, so
+    a grouped, dotted or hidden card that the meter writer refuses is refused
+    here too, and the case's gold restricted values are still matched as text.
+    The synthetic-token and Luhn-valid card check runs as it does for a
+    submission. `source` names the artifact in every reason and in the evidence,
     so a failure names both the file and the case. A line that does not name a
     case is scanned under `unknown`.
     """
     checks: list[Check] = []
     for text in lines:
         case_id = _artifact_case_id(text)
-        leaked = [
-            value
-            for value in _restricted_values(gold.get(case_id, {}))
-            if str(value) in text
-        ]
+        leaked = list(
+            dict.fromkeys(
+                [
+                    *restricted_values(text),
+                    *(
+                        str(value)
+                        for value in _restricted_values(gold.get(case_id, {}))
+                        if str(value) in text
+                    ),
+                ]
+            )
+        )
         matches = _synthetic_matches(text)
         if leaked:
             restricted_reason = (
