@@ -463,6 +463,31 @@ def test_load_contract_records_names_the_case_that_could_not_be_built():
             load_contract_records(base_url, DEV)
 
 
+def test_the_scored_run_writes_one_meter_line_per_case(tmp_path):
+    from tools.scored_run import run_scored
+
+    meter = tmp_path / "meters.jsonl"
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        run_scored(
+            base_url=base_url,
+            data_dir=DEV,
+            gold_path=ROOT / "feedback" / "dev_gold.json",
+            submission_path=tmp_path / "submission.json",
+            report_path=tmp_path / "report.json",
+            meters_path=tmp_path / "scored-meters.json",
+            markdown_path=tmp_path / "report.md",
+            generated_at="2026-10-26T00:00:00Z",
+            git_commit="abc",
+            git_dirty=False,
+            case_meter_path=meter,
+        )
+
+    lines = meter.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0])["case_id"] == "CARD-D01"
+    assert json.loads(lines[0])["model_calls"] == 0
+
+
 def test_main_writes_one_meter_line_per_case(tmp_path, capsys, monkeypatch):
     monkeypatch.chdir(tmp_path)
 

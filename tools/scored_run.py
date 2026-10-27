@@ -8,6 +8,7 @@ with tools.evaluate.evaluate in process, so no second evaluator exists here.
 Artifacts:
   reports/scored-run.json         machine-readable run report
   reports/scored-run-meters.json  one measured meter row per case
+  reports/meters.jsonl            one redacted meter line per case
   reports/scored-run.md           human-readable report
   submissions/scored-run.json     the evaluator submission array
 
@@ -170,6 +171,7 @@ def measure_cases(
     data_dir: Path,
     *,
     build: Callable[[CasePlan], ContractResult] | None = None,
+    meter_path: Path | None = None,
 ) -> list[MeasuredCase]:
     """Build each planned case and record its own elapsed milliseconds.
 
@@ -180,8 +182,11 @@ def measure_cases(
     build_contract_result, and a test can pass a deterministic builder without
     a network.
     """
+    if meter_path is not None and build is None:
+        meter_path.parent.mkdir(parents=True, exist_ok=True)
+        meter_path.write_text("", encoding="utf-8")
     builder = build if build is not None else (
-        lambda plan: build_contract_result(plan, base_url, data_dir)
+        lambda plan: build_contract_result(plan, base_url, data_dir, meter_path=meter_path)
     )
     measured: list[MeasuredCase] = []
     for plan in plans:
@@ -601,6 +606,7 @@ def run_scored(
     generated_at: str,
     git_commit: str,
     git_dirty: bool,
+    case_meter_path: Path | None = None,
 ) -> int:
     """Run every case, score the submission and write every artifact.
 
@@ -618,7 +624,17 @@ def run_scored(
         plans = []
         run_error = f"{type(error).__name__}: the bank case list could not be read"
 
-    measured = measure_cases(plans, base_url, data_dir)
+    destination = (
+        case_meter_path
+        if case_meter_path is not None
+        else ROOT / "reports" / "meters.jsonl"
+    )
+    measured = measure_cases(
+        plans,
+        base_url,
+        data_dir,
+        meter_path=None if run_error else destination,
+    )
 
     submissions: list[Contract] = [
         case["contract"] for case in measured if case["contract"] is not None
