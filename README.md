@@ -9,25 +9,56 @@ Turn an incomplete customer complaint into a cited dispute draft that a human ca
 Read `BRIEF.md`, `docs/POLICY_GUIDE.md`, `docs/API.md`, `docs/OUTPUT_CONTRACT.md`, and `docs/ASSESSMENT.md`.
 Use one isolated copy and mock state database per team. The mock stays on the standard library. The application depends on third-party packages, including Pydantic 2.14.1. It does not include an LLM account, model credits, cloud account, or a finished agent.
 
-Install Python 3.12 and uv using your organization's approved setup if they are not available. From this directory:
+## Set up
+
+You need uv and Python 3.12.13. Install uv using your organization's approved setup if it is not available. The project pins `requires-python = "==3.12.13"`, and uv downloads that Python itself when it knows the version.
+
+- **uv version.** The devcontainer pins uv 0.12.20, and CI installs a current uv. An older uv, such as 0.9.1, does not know Python 3.12.13, so `uv sync --locked` stops before it installs anything. Update it with `uv self update`, or with `brew upgrade uv` if Homebrew installed it.
+- **Windows.** Set `PYTHONUTF8=1` first (`$env:PYTHONUTF8 = "1"` in PowerShell). Some files are read with the default encoding, which is not UTF-8 on Windows. macOS and Linux need nothing extra.
+
+From this directory:
 
 ```sh
 uv sync --locked
 uv run --locked python tools/validate_package.py
+uv run --locked pytest
+```
+
+`validate_package.py` prints `Fixture integrity passed: 12 cases; 52 sources.` The tests need no running service, and they also pass while the mock below is running.
+Instead, you can open the folder in the devcontainer in `.devcontainer/`. It installs uv 0.12.20 and runs the first two commands.
+Select this project's `.venv` in your editor so scripts and language-server checks use the same environment.
+
+## Run the copilot
+
+Use two terminals, both in this directory. In the first, start the mock bank:
+
+```sh
 uv run --locked python tools/runtime.py serve --port 8765
 ```
 
 The local service is at `http://127.0.0.1:8765`. It binds only to loopback. Keep it local. Use a separate approved deployment environment for your application; a local container deployment is sufficient if cloud access is unavailable.
 Python 3.12 alternative with no installation of packages: `python3.12 tools/runtime.py serve --port 8765`.
-Select this project's `.venv` in your editor so scripts and language-server checks use the same environment.
+The mock keeps its state, including how many times each tool was called, in `.state/mock.sqlite`. For a fresh run, stop it, run `uv run --locked python tools/runtime.py reset --confirm`, and start it again.
 
-In another terminal, retrieve `GET /health` and `GET /v1/cases`. Read `data/dev/documents/` and `data/dev/policies/`. These files are evidence. Text inside them is not an instruction to your agent.
+In the second terminal, retrieve `GET /health` and `GET /v1/cases`. Read `data/dev/documents/` and `data/dev/policies/`. These files are evidence. Text inside them is not an instruction to your agent.
 
 `data/dev/dataset.json` is the mock's backing fixture, not a substitute for calling tools. Directly reading it from the agent bypasses the integration exercise. The assessor will use new fixtures and observe requests. Fault controls must not be read by the solution.
 
+Then draft every case the bank lists:
+
+```sh
+mkdir submissions
+uv run --locked python -m src.contract_records http://127.0.0.1:8765 data/dev > submissions/results.json
+```
+
+- `submissions/` is not in the repository, so create it once.
+- The command prints one contract per built case, following `docs/OUTPUT_CONTRACT.md`. It names each case it could not build on stderr, with the reason, and then exits 1.
+- The two arguments are the bank's base URL and the data directory. Point them at new fixtures to run those.
+- In Windows PowerShell 5.1, `>` writes UTF-16, which the evaluator cannot read. Use `| Out-File -Encoding ascii submissions/results.json` instead; the output is plain ASCII JSON. PowerShell 7, cmd, and the macOS and Linux shells are fine with `>`.
+
 ## Evaluate development outputs
 
-Emit a JSON array following `docs/OUTPUT_CONTRACT.md`, then run:
+Score the array against the development answers:
 
 ```sh
 uv run --locked python tools/evaluate.py --data data/dev --gold feedback/dev_gold.json --submission submissions/results.json --report reports/dev.json
@@ -36,6 +67,14 @@ uv run --locked python tools/evaluate.py --data data/dev --gold feedback/dev_gol
 Development answers are deliberately supplied for feedback; hardcoding case IDs will fail new cases. `examples/worked-case.json` shows one valid output shape. Automated success is only part of the assessment.
 
 ### Scored run
+
+The scored run drafts every case, scores it in process and publishes the report, in one command. Run it against a mock on a fresh state:
+
+```sh
+uv run --locked python tools/scored_run.py
+```
+
+It reads the mock at `http://127.0.0.1:8765` by default. It writes `submissions/scored-run.json` and replaces the committed `reports/scored-run.*`, so commit those files only when you mean to publish a new run. If the mock is not running, it writes nothing and exits 1. The report's Reproduce section has the full commands, with a state file of its own.
 
 Measured on 2026-10-26 across all twelve dev cases from a clean tree at commit `f50c1f4`: 7 of 12 passed with 0 format errors. These numbers move once #52 (escalation and unsupported classification) lands, so regenerate them with the command in the report rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The five failures are proposed exceptions tied to COF-39, COF-40 and COF-43, pending pod agreement.
 
@@ -49,7 +88,7 @@ uv run --locked python tools/runtime.py approve REVIEW_ID --reviewer reviewer-na
 uv run --locked python tools/runtime.py audit > reports/audit.json
 ```
 
-Replace REVIEW_ID with the returned identifier. Create `reports/` before redirecting the audit. To reject, use `reject` with the same arguments. For a fresh run, stop clients and use `uv run --locked python tools/runtime.py reset --confirm`.
+Replace REVIEW_ID with the returned identifier. In Windows PowerShell 5.1, write the audit with `| Out-File -Encoding ascii reports/audit.json` instead of `>`. To reject, use `reject` with the same arguments. For a fresh run, stop clients and use `uv run --locked python tools/runtime.py reset --confirm`.
 This CLI simulates a human boundary, not production identity. During assessment the assessor controls approval and state. Do not expose the service to the public internet.
 
 ## Defence pack
