@@ -6,6 +6,7 @@ command run from the test, as a person would run it in another terminal.
 
 import json
 import runpy
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -317,16 +318,25 @@ def test_check_exits_1_while_a_review_is_pending_or_refused(tmp_path, capsys):
 
 
 def test_submit_names_a_case_it_could_not_build_and_exits_1(tmp_path, capsys):
+    # A copy of the dev data where D01's statement wraps onto a second line, which the
+    # draft cannot quote as one excerpt, so the case is not built.
+    data = tmp_path / "data"
+    shutil.copytree(DEV, data)
+    intake = data / "documents" / "CARD-D01-INTAKE.md"
+    intake.write_text(
+        intake.read_text(encoding="utf-8").replace("crowns. I do not", "crowns.\nI do not"),
+        encoding="utf-8",
+    )
     journal = tmp_path / "reviews.json"
     with _mock(tmp_path) as (base_url, state):
         with pytest.raises(SystemExit) as stopped:
-            main(["submit", "--base-url", base_url, "--data", str(DEV), "--journal", str(journal),
-                  "--case", "CARD-D09"])
+            main(["submit", "--base-url", base_url, "--data", str(data), "--journal", str(journal),
+                  "--case", "CARD-D01"])
         events = _write_events(state)
 
     assert stopped.value.code == 1
     assert capsys.readouterr().err == (
-        "CARD-D09: not built: the intake statement is not an exact excerpt of the intake\n"
+        "CARD-D01: not built: the intake statement is not an exact excerpt of the intake\n"
     )
     assert read_journal(journal) == []
     assert events == []
