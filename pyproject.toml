@@ -4,6 +4,8 @@ version = "1.0.0"
 description = "Fictional Associate FDE capstone simulator and fixtures"
 requires-python = "==3.12.13"
 dependencies = [
+    "opentelemetry-api==1.45.1",
+    "opentelemetry-sdk==1.45.1",
     "pydantic==2.14.1",
 ]
 [tool.uv]
