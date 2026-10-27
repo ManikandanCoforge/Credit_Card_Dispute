@@ -19,7 +19,9 @@ committed report with an empty one.
 
 import argparse
 import json
-import subprocess
+
+# Runs git to record the commit the report was produced from.
+import subprocess  # nosec B404
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -568,14 +570,15 @@ def utc_now() -> str:
 
 def git_state(root: Path) -> tuple[str, bool]:
     """Return the HEAD commit and whether the working tree has changes."""
-    commit = subprocess.run(
+    # Fixed argv, never a shell, git from PATH.
+    commit = subprocess.run(  # nosec B603 B607
         ["git", "rev-parse", "HEAD"],
         cwd=root,
         capture_output=True,
         text=True,
         check=False,
     )
-    status = subprocess.run(
+    status = subprocess.run(  # nosec B603 B607
         ["git", "status", "--porcelain"],
         cwd=root,
         capture_output=True,

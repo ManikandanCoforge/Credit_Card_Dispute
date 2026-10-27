@@ -31,6 +31,23 @@ omit = [
 fail_under = 100
 show_missing = true
 
+# CI lints src and tools. The supplied package's own tools are kept as delivered, so
+# they are left out here as they are from coverage.
+[tool.mypy]
+# tools has no __init__.py, so its files are named from the repository root.
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = ["tools.evaluate", "tools.runtime", "tools.validate_package"]
+ignore_errors = true
+
+[tool.ruff]
+extend-exclude = ["tools/evaluate.py", "tools/runtime.py", "tools/validate_package.py"]
+
+[tool.bandit]
+# Leading * so the patterns match on any operating system.
+exclude_dirs = ["*tools/evaluate.py", "*tools/runtime.py", "*tools/validate_package.py"]
+
 [dependency-groups]
 dev = [
     "bandit==1.9.4",
