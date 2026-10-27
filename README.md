@@ -82,7 +82,9 @@ uv run --locked python tools/scored_run.py
 
 It reads the mock at `http://127.0.0.1:8765` by default. It writes `submissions/scored-run.json` and replaces the committed `reports/scored-run.*`, so commit those files only when you mean to publish a new run. If the mock is not running, it writes nothing and exits 1. The report's Reproduce section has the full commands, with a state file of its own.
 
-Measured across all twelve dev cases from a clean tree at the commit in the report: 11 of 12 passed with 0 format errors. These numbers move as the open PRs land, so regenerate them with the command above rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The p95 is D07's: its transaction service never answers, so the run waits about 1s and then 2s between its three attempts, and the audit shows its three reads. The one failure, D09, is a proposed exception tied to COF-43, pending pod agreement.
+Measured across all twelve dev cases from a clean tree at the commit in the report: 11 of 12 passed with 0 format errors. These numbers move as the open PRs land, so regenerate them with the command above rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p95 latency and cost from the meter file, and the reproduction commands. The p95 is D07's 4.3 s: its transaction service never answers, so the run waits 1 s and then 2 s, plus jitter, between its three attempts, and the audit shows three reads (503, 503, 503). D10's read times out once and is answered on its second attempt, so the audit shows two reads there and one read of every other tool. The one failure, D09, is a proposed exception tied to COF-43, pending pod agreement.
+
+The published run was taken on a scratch mock at `127.0.0.1:8792` because 8765 held a stale server; it is the same mock started from this tree on a fresh state. The Reproduce section keeps the default port and the same commands.
 
 ## Hybrid model (optional)
 

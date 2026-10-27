@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-10-27T17:58:57Z",
-  "git_commit": "0f18a344f1d684cc5e61bb1eb39d5e5d33b2a94c",
+  "generated_at": "2026-10-27T22:29:38Z",
+  "git_commit": "ce685eeba30394d1f50ab40da5687cf624c9ec7f",
   "git_dirty": false,
   "git_commit_note": "HEAD at run time. The working tree was clean when the artifacts were generated.",
-  "base_url": "http://127.0.0.1:8765",
+  "base_url": "http://127.0.0.1:8792",
   "dataset": "card-disputes-dev",
-  "pass_count": 9,
+  "pass_count": 11,
   "total_cases": 12,
   "format_errors": [],
-  "p95_latency_ms": 18.102,
+  "p95_latency_ms": 4314.548,
   "cost_per_case_usd": 0.0,
   "total_cost_usd": 0.0,
   "cost_note": "Read from reports/scored-run-meters.json. The deterministic template path makes no model call, so every row records 0 model calls and 0 tokens and the cost is 0.00 USD by construction, not by measurement. No model price is assumed or estimated.",
@@ -17,7 +17,7 @@
       "case_id": "CARD-D01",
       "submitted": true,
       "passed": true,
-      "duration_ms": 15.932,
+      "duration_ms": 20.38,
       "failed_checks": [],
       "error": null
     },
@@ -25,7 +25,7 @@
       "case_id": "CARD-D02",
       "submitted": true,
       "passed": true,
-      "duration_ms": 17.734,
+      "duration_ms": 44.724,
       "failed_checks": [],
       "error": null
     },
@@ -33,7 +33,7 @@
       "case_id": "CARD-D03",
       "submitted": true,
       "passed": true,
-      "duration_ms": 17.25,
+      "duration_ms": 29.604,
       "failed_checks": [],
       "error": null
     },
@@ -41,7 +41,7 @@
       "case_id": "CARD-D04",
       "submitted": true,
       "passed": true,
-      "duration_ms": 16.844,
+      "duration_ms": 36.751,
       "failed_checks": [],
       "error": null
     },
@@ -49,7 +49,7 @@
       "case_id": "CARD-D05",
       "submitted": true,
       "passed": true,
-      "duration_ms": 18.102,
+      "duration_ms": 31.562,
       "failed_checks": [],
       "error": null
     },
@@ -57,25 +57,23 @@
       "case_id": "CARD-D06",
       "submitted": true,
       "passed": true,
-      "duration_ms": 15.7,
+      "duration_ms": 32.22,
       "failed_checks": [],
       "error": null
     },
     {
       "case_id": "CARD-D07",
-      "submitted": false,
-      "passed": false,
-      "duration_ms": 7.96,
-      "failed_checks": [
-        "submitted"
-      ],
-      "error": "BankReadError"
+      "submitted": true,
+      "passed": true,
+      "duration_ms": 4314.548,
+      "failed_checks": [],
+      "error": null
     },
     {
       "case_id": "CARD-D08",
       "submitted": true,
       "passed": true,
-      "duration_ms": 16.511,
+      "duration_ms": 42.514,
       "failed_checks": [],
       "error": null
     },
@@ -83,7 +81,7 @@
       "case_id": "CARD-D09",
       "submitted": false,
       "passed": false,
-      "duration_ms": 17.15,
+      "duration_ms": 31.427,
       "failed_checks": [
         "submitted"
       ],
@@ -91,19 +89,17 @@
     },
     {
       "case_id": "CARD-D10",
-      "submitted": false,
-      "passed": false,
-      "duration_ms": 8.912,
-      "failed_checks": [
-        "submitted"
-      ],
-      "error": "BankReadError"
+      "submitted": true,
+      "passed": true,
+      "duration_ms": 1076.47,
+      "failed_checks": [],
+      "error": null
     },
     {
       "case_id": "CARD-D11",
       "submitted": true,
       "passed": true,
-      "duration_ms": 17.613,
+      "duration_ms": 30.14,
       "failed_checks": [],
       "error": null
     },
@@ -111,22 +107,12 @@
       "case_id": "CARD-D12",
       "submitted": true,
       "passed": true,
-      "duration_ms": 17.774,
+      "duration_ms": 31.427,
       "failed_checks": [],
       "error": null
     }
   ],
   "exceptions": [
-    {
-      "case_id": "CARD-D07",
-      "ticket": "COF-40",
-      "status": "proposed_pending_pod_agreement",
-      "failed_checks": [
-        "submitted"
-      ],
-      "error": "BankReadError",
-      "note": "A persistent transaction failure stops the case instead of routing to manual_review with null facts. Retry and outage handling is COF-40."
-    },
     {
       "case_id": "CARD-D09",
       "ticket": "COF-43",
@@ -136,16 +122,6 @@
       ],
       "error": "the intake statement is not an exact excerpt of the intake",
       "note": "The joined statement is not an exact intake excerpt, so the duplicate redelivery is not built. Duplicate intake and narrative work is COF-43."
-    },
-    {
-      "case_id": "CARD-D10",
-      "ticket": "COF-40",
-      "status": "proposed_pending_pod_agreement",
-      "failed_checks": [
-        "submitted"
-      ],
-      "error": "BankReadError",
-      "note": "A transient transaction fault is not retried, so the case is not built. Retry is COF-40."
     }
   ],
   "exception_status": "proposed_pending_pod_agreement",
