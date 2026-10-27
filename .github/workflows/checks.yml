@@ -21,8 +21,8 @@ jobs:
           python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
-      - run: uv run --locked mypy src
-      - run: uv run --locked ruff check src
+      - run: uv run --locked mypy src evals
+      - run: uv run --locked ruff check src evals
 
   bandit:
     runs-on: ubuntu-26.04
@@ -35,7 +35,7 @@ jobs:
           python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
-      - run: uv run --locked bandit -r src
+      - run: uv run --locked bandit -r src evals
 
   pytest:
     runs-on: ubuntu-26.04
@@ -48,7 +48,7 @@ jobs:
           python-version: "3.12.13"
           save-cache: false
       - run: uv sync --locked
-      - run: uv run --locked pytest --cov=src --cov-report=term-missing --cov-fail-under=100
+      - run: uv run --locked pytest --cov=src --cov=evals --cov-report=term-missing --cov-fail-under=100
 
   env-files:
     runs-on: ubuntu-26.04

@@ -1,0 +1,7 @@
+{
+  "name": "hidden",
+  "data": "data/hidden",
+  "gold": "feedback/hidden_gold.json",
+  "metrics": ["conformance", "grounding", "tools", "escalation", "pii"],
+  "gates": {}
+}

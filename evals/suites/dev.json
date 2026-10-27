@@ -1,0 +1,7 @@
+{
+  "name": "dev",
+  "data": "data/dev",
+  "gold": "feedback/dev_gold.json",
+  "metrics": ["conformance", "grounding", "tools", "escalation", "pii"],
+  "gates": {}
+}
