@@ -31,6 +31,43 @@ from tools.runtime import create_server
 ROOT = Path(__file__).resolve().parents[1]
 DEV = ROOT / "data" / "dev"
 
+# The mechanisms by which the application could bypass the human gate: run the
+# operator command (a child process, the runtime module, its reviewer flag), approve
+# a review itself (write the review table or call an approval endpoint), or claim an
+# approval event it did not receive.
+_OPERATOR_COMMAND_MARKERS = (
+    "subprocess",
+    "os.system",
+    "os.popen",
+    "os.exec",
+    "os.spawn",
+    "os.startfile",
+    "runtime.py",
+    "tools.runtime",
+    "tools/runtime",
+    "--reviewer",
+    "human_approved",
+    "UPDATE reviews",
+    "INSERT INTO reviews",
+    "DELETE FROM reviews",
+    "/approve",
+)
+
+
+def _operator_command_violations(root: Path) -> list[str]:
+    """Each path:line:marker under root that could run the operator command or approve a review.
+
+    The scan is recursive, so a nested package cannot hide one. It reads the source
+    as text: a marker is reported whether it would be executed or only configured.
+    """
+    violations = []
+    for module in sorted(root.rglob("*.py")):
+        for number, line in enumerate(module.read_text(encoding="utf-8").splitlines(), 1):
+            for marker in _OPERATOR_COMMAND_MARKERS:
+                if marker in line:
+                    violations.append(f"{module.relative_to(root).as_posix()}:{number}: {marker}")
+    return violations
+
 
 @contextmanager
 def _mock(tmp_path):
@@ -316,8 +353,61 @@ def test_running_the_module_checks_the_default_journal(tmp_path, monkeypatch, ca
     assert capsys.readouterr().out == ""
 
 
-def test_no_application_module_runs_the_operator_command():
-    for module in (ROOT / "src").glob("*.py"):
-        source = module.read_text(encoding="utf-8")
-        assert "subprocess" not in source, module.name
-        assert "runtime.py" not in source, module.name
+def test_nothing_under_src_runs_the_operator_command_or_approves_a_review():
+    # The gate is manual only if the application cannot reach the operator command
+    # and cannot approve a review itself. The audit repeats this check.
+    assert _operator_command_violations(ROOT / "src") == []
+
+
+def test_the_guard_flags_a_module_that_runs_the_operator_command(tmp_path):
+    package = tmp_path / "src" / "gate"
+    package.mkdir(parents=True)
+    (package / "shortcut.py").write_text(
+        "import subprocess\n\n"
+        'subprocess.run(["python", "tools/runtime.py", "approve", "rev_1"], check=True)\n',
+        encoding="utf-8",
+    )
+
+    violations = _operator_command_violations(tmp_path / "src")
+
+    # Both the import and the call are reported, from a nested module: the scan
+    # recurses and does not look at the top level only.
+    assert violations == [
+        "gate/shortcut.py:1: subprocess",
+        "gate/shortcut.py:3: subprocess",
+        "gate/shortcut.py:3: runtime.py",
+        "gate/shortcut.py:3: tools/runtime",
+    ]
+
+
+def test_the_guard_flags_a_module_that_approves_a_review_itself(tmp_path):
+    package = tmp_path / "src"
+    package.mkdir()
+    (package / "auto.py").write_text(
+        'db.execute("UPDATE reviews SET status = ?", ("approved",))\n',
+        encoding="utf-8",
+    )
+    (package / "endpoint.py").write_text(
+        'http.request("POST", "/approve", body)\n',
+        encoding="utf-8",
+    )
+
+    violations = _operator_command_violations(tmp_path / "src")
+
+    assert violations == [
+        "auto.py:1: UPDATE reviews",
+        "endpoint.py:1: /approve",
+    ]
+
+
+def test_the_guard_allows_the_word_approved_where_a_person_decided(tmp_path):
+    package = tmp_path / "src"
+    package.mkdir()
+    (package / "gate.py").write_text(
+        'if row.status == "approved":\n    record(draft)\n',
+        encoding="utf-8",
+    )
+
+    # Reading the bank's record of a person's decision is the gate working, not a
+    # bypass, so it must not be flagged.
+    assert _operator_command_violations(tmp_path / "src") == []

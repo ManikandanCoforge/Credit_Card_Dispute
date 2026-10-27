@@ -129,11 +129,33 @@ def check_reviews(
 
 
 def read_journal(path: Path) -> list[JournalEntry]:
+    """Read the review journal that submit wrote.
+
+    Args:
+        path: The journal file, usually reports/reviews.json.
+
+    Returns:
+        One entry per opened review, in the order submit wrote them. A journal
+        holding an empty list returns an empty list.
+
+    Raises:
+        FileNotFoundError: The file does not exist, so no review was opened.
+        json.JSONDecodeError: The file is not a journal this runner wrote.
+    """
     entries: list[JournalEntry] = json.loads(path.read_text(encoding="utf-8"))
     return entries
 
 
 def write_journal(path: Path, entries: Sequence[JournalEntry]) -> None:
+    """Write the review journal so a later check can read the decisions.
+
+    Args:
+        path: The journal file; its parent directory is created if missing.
+        entries: The entries to keep, in the order check should read them.
+
+    Returns:
+        None.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(list(entries), indent=2) + "\n", encoding="utf-8")
 
