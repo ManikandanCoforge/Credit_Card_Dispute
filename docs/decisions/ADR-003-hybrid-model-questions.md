@@ -133,7 +133,7 @@ None of their two-problem questions had a recording, so this run does not show h
 
 The hybrid still does not build 13 cases. Three are the gap cases with no recorded answer: `SYN-S03`, `HLD-H07` and `HLD-H08`. The other 10 fail for reasons outside this record:
 
-- 6 hit a tool fault, which is not retried yet (roadmap N3).
+- 6 hit a tool fault, which was not retried in this run (bounded retry is now in COF-40 on the integrated head).
 - 2 have no policy version for their reported date.
 - 1 has an attachment without exactly one Amount line (`HLD-H05`).
 - 1 is `CARD-D09`, whose intake statement is not a single exact excerpt.
