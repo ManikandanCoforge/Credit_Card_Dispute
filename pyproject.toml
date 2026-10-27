@@ -14,12 +14,13 @@ pythonpath = ["."]
 addopts = [
     "--cov=src",
     "--cov=tools",
+    "--cov=evals",
     "--cov-report=term-missing",
     "--cov-fail-under=100",
 ]
 
 [tool.coverage.run]
-source = ["src", "tools"]
+source = ["src", "tools", "evals"]
 # The supplied package's own tools are kept as delivered, so only our scored run is gated.
 omit = [
     "*/tools/evaluate.py",
@@ -31,8 +32,8 @@ omit = [
 fail_under = 100
 show_missing = true
 
-# CI lints src and tools. The supplied package's own tools are kept as delivered, so
-# they are left out here as they are from coverage.
+# CI lints src, tools and evals. The supplied package's own tools are kept as delivered,
+# so they are left out here as they are from coverage.
 [tool.mypy]
 # tools has no __init__.py, so its files are named from the repository root.
 explicit_package_bases = true

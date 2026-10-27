@@ -66,6 +66,12 @@ uv run --locked python tools/evaluate.py --data data/dev --gold feedback/dev_gol
 
 Development answers are deliberately supplied for feedback; hardcoding case IDs will fail new cases. `examples/worked-case.json` shows one valid output shape. Automated success is only part of the assessment.
 
+The supplied evaluator is one metric inside the offline suite in [evals/README.md](evals/README.md). The suite adds evidence grounding, tool-call correctness, escalation accuracy and PII leakage, and it runs the same way against an injected hidden set:
+
+```sh
+uv run --locked python -m evals --suite evals/suites/dev.json
+```
+
 ### Scored run
 
 The scored run drafts every case, scores it in process and publishes the report, in one command. Run it against a mock on a fresh state:

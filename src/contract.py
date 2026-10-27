@@ -36,6 +36,7 @@ from src.narrative import NarrativeMeter, ProseWriter, draft_narrative
 from src.untrusted import (
     ATTACHMENT_INSTRUCTION_NOTICE,
     INSTRUCTION_NOTICE,
+    STATEMENT_INSTRUCTION_NOTICE,
     has_instruction,
     restricted_values,
 )
@@ -368,6 +369,10 @@ def _rules_contract(
         "follow_up_questions": follow_up_questions,
         "narrative": "",
     }
+    # Instruction text without a dispute cue is dropped from the customer's account; the
+    # reviewer is told it was there, as for the merchant record and the attachment.
+    if any(has_instruction(text) or _is_command(text) for text in statements):
+        notes.append(STATEMENT_INSTRUCTION_NOTICE)
     return contract, [*notes, *_untrusted_notes(record, attachment_text)]
 
 
