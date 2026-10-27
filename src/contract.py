@@ -166,16 +166,20 @@ _SERVICE_NOT_DELIVERED = (
 _SERVICE = re.compile("|".join(re.escape(p) for p in _SERVICE_NOT_DELIVERED), re.IGNORECASE)
 # A filing command is not the customer's account of the facts. src.untrusted catches text
 # addressed to the system; these are the commands that try to choose the case's class.
-# A command has the shape "file this as …": a bare "I want to record this complaint" is the
-# customer's account, and a negated command ("do not mark this as resolved") orders nothing.
+# A command has the shape "file this as …" or "mark this complaint as …": a bare "I want to
+# record this complaint" is the customer's account. A negated command ("do not mark this as
+# resolved") orders nothing, unless its own clause names a class ("do not mark this as a
+# duplicate charge"): then there is no account to read, only the sender naming the class.
 _INSTRUCTION_SENTENCE = re.compile(
     r"\b(?:system override"
-    r"|(?:file|classify|mark|treat|record)\s+(?:this|it)\s+(?:as|under)"
+    r"|(?:file|classify|mark|treat|record)\s+(?:this|it)"
+    r"(?:\s+(?:complaint|case|dispute|charge|transaction|report))?\s+(?:as|under)"
     r"|ignore (?:all |the )?(?:above|previous|earlier)"
     r"|disregard (?:all |the )?(?:above|previous|earlier))\b",
     re.IGNORECASE,
 )
 _NEGATED_BEFORE = re.compile(r"\b(?:do\s+not|don't|dont|never|not)\s+$", re.IGNORECASE)
+_CLAUSE_END = re.compile(r"[,;:.!?]")
 # The fields each classification requires: "Required fields absent for the chosen type
 # must all be requested." Every intake form carries every field, so a blank field that
 # another type would need stays out. ambiguous is the procedure's conflict about
@@ -595,7 +599,7 @@ def _attachment_citation(
     that line even for a type that does not request a receipt. An escalated case does
     not rest on the amount, so there, and for a missing receipt without a single status
     line, the Source ID line is cited. Any other attachment without a single Amount
-    line is refused.
+    line is refused, including a supplied one whose status line says "attached".
     """
     receipt_missing = "purchase_receipt" in missing_information
     amounts = _lines_starting(attachment_text, _AMOUNT_LABEL)
@@ -604,7 +608,7 @@ def _attachment_citation(
         quote = statuses[0]
     elif not receipt_missing and len(amounts) == 1:
         quote = amounts[0]
-    elif len(statuses) == 1:
+    elif _declares_missing(statuses):
         quote = statuses[0]
     elif receipt_missing or escalated:
         quote = _unique_line(attachment_text, _SOURCE_ID_LABEL)
@@ -638,14 +642,17 @@ def _missing_information(
     ]
 
 
-def _receipt_as_declared(intake: Intake, attachment_text: str) -> Intake:
-    """The intake, with the receipt absent when the attachment says "Attachment status: missing"."""
-    statuses = _lines_starting(attachment_text, _ATTACHMENT_STATUS_LABEL)
-    declared_missing = (
+def _declares_missing(statuses: list[str]) -> bool:
+    """Whether the attachment's one status line is "Attachment status: missing"."""
+    return (
         len(statuses) == 1
         and statuses[0][len(_ATTACHMENT_STATUS_LABEL) :].strip().lower() == "missing"
     )
-    if not declared_missing:
+
+
+def _receipt_as_declared(intake: Intake, attachment_text: str) -> Intake:
+    """The intake, with the receipt absent when the attachment says "Attachment status: missing"."""
+    if not _declares_missing(_lines_starting(attachment_text, _ATTACHMENT_STATUS_LABEL)):
         return intake
     declared = intake.copy()
     declared["purchase_receipt"] = _ABSENT
@@ -815,11 +822,22 @@ def _account_sentences(statement: str) -> list[str]:
 
 
 def _is_command(text: str) -> bool:
-    """True when text holds a filing command that is not negated."""
+    """True when text holds a filing command that is not negated, or a negated one whose
+    own clause names a class.
+
+    "Do not mark this as a duplicate charge" is a command: the cue is inside it. "Please do
+    not mark this as resolved, they charged me twice" is not: the cue is a later clause, the
+    customer's own account.
+    """
     return any(
         not _NEGATED_BEFORE.search(text[: match.start()])
+        or _names_a_class(_CLAUSE_END.split(text[match.end() :], maxsplit=1)[0])
         for match in _INSTRUCTION_SENTENCE.finditer(text)
     )
+
+
+def _names_a_class(text: str) -> bool:
+    return bool(_DUPLICATE.search(text) or _SERVICE.search(text))
 
 
 def _command_holds_cue(texts: Sequence[str]) -> bool:
@@ -829,8 +847,7 @@ def _command_holds_cue(texts: Sequence[str]) -> bool:
     caller sends the case to a person, as it does for text addressed to the system.
     """
     return any(
-        _is_command(sentence)
-        and (_DUPLICATE.search(sentence) or _SERVICE.search(sentence))
+        _is_command(sentence) and _names_a_class(sentence)
         for text in texts
         for line in text.splitlines()
         for sentence in _SENTENCE_END.split(line)

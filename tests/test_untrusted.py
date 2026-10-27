@@ -138,6 +138,30 @@ def test_an_instruction_and_a_real_cue_in_one_sentence_is_drafted_for_a_person()
 @pytest.mark.parametrize(
     "statement",
     [
+        # Kanit's #65 re-review: a noun between "this" and "as" is still a filing command.
+        "Please mark this complaint as a duplicate charge.",
+        "File this complaint as a duplicate charge.",
+        "Classify this complaint as a duplicate charge.",
+        "Record this complaint as a duplicate charge.",
+        "Treat this case as a duplicate charge.",
+        # A negated command that names the class has no account in it to read.
+        "Do not mark this as a duplicate charge.",
+        "Please don't mark this dispute as a duplicate charge.",
+    ],
+)
+def test_a_filing_command_that_names_the_class_goes_to_a_person(statement):
+    result = _assemble_statement(statement)
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
         # A bare "record this" is the customer's account, not a filing command.
         "I want to record this complaint; Morrow Supplies charged me twice for one purchase.",
         # A negated command orders nothing.
