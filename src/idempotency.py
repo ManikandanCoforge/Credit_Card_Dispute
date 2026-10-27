@@ -12,8 +12,12 @@ from typing import TypedDict
 from pydantic import ValidationError
 
 from src.api_models import ErrorBody, RecordCreated, RecordRow
+from src.build_records import _NOT_SUPPLIED
 
 _DUPLICATE = {"duplicate_case", "idempotency_conflict"}
+
+# The intake sentinel, plus the other ways a form says the reference is absent.
+_MISSING_REFERENCES = frozenset({_NOT_SUPPLIED.casefold(), "n/a", "none", "-"})
 
 
 class RecordRequest(TypedDict):
@@ -39,7 +43,10 @@ class CreateRejected(Exception):
     def __init__(self, status: int, error: str | None = None) -> None:
         self.status = status
         self.error = error
-        super().__init__(f"record create failed with HTTP {status}")
+        detail = f"record create failed with HTTP {status}"
+        if error is not None:
+            detail = f"{detail}: {error}"
+        super().__init__(detail)
 
 
 class MissingRecord(Exception):
@@ -53,11 +60,12 @@ class MissingRecord(Exception):
 def idempotency_key(submission_reference: str) -> str:
     """Return the submission reference as the Idempotency-Key.
 
-    A missing reference cannot name a complaint, so it is rejected. The
-    mock accepts at most 128 characters.
+    A blank value cannot name a complaint. Neither can the intake sentinel
+    or the placeholders N/A, none, and -. The mock accepts at most 128
+    characters.
     """
     reference = submission_reference.strip()
-    if reference == "" or reference == "not supplied":
+    if reference == "" or reference.casefold() in _MISSING_REFERENCES:
         raise ValueError("a submission reference is required")
     if len(reference) > 128:
         raise ValueError("a submission reference must be at most 128 characters")
@@ -91,8 +99,8 @@ def create_record(
 def _created(status: int, payload: object) -> StoredRecord:
     try:
         row = RecordCreated.model_validate(payload)
-    except ValidationError as error:
-        raise CreateRejected(status) from error
+    except ValidationError:
+        raise CreateRejected(status) from None
     return {
         "record_id": row.record_id,
         "case_id": row.case_id,
@@ -104,8 +112,8 @@ def _created(status: int, payload: object) -> StoredRecord:
 def _error_body(status: int, payload: object) -> ErrorBody:
     try:
         return ErrorBody.model_validate(payload)
-    except ValidationError as error:
-        raise CreateRejected(status) from error
+    except ValidationError:
+        raise CreateRejected(status) from None
 
 
 def _existing(case_id: str, lookup: Callable[[str], RecordRow | None]) -> StoredRecord:
