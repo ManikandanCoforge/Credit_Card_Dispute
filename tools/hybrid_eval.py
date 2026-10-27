@@ -22,7 +22,9 @@ run completed, whatever its score; the numbers are the result.
 import argparse
 import json
 import os
-import subprocess
+
+# Starts the repository's own mock as a child process.
+import subprocess  # nosec B404
 import sys
 import tempfile
 import time
@@ -63,7 +65,8 @@ def mock(data_dir: Path, port: int) -> Iterator[str]:
     clean-up of the temporary state is ignored rather than failing the run.
     """
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as state_dir:
-        process = subprocess.Popen(
+        # Fixed argv: this interpreter and tools/runtime.py, never a shell.
+        process = subprocess.Popen(  # nosec B603
             [
                 sys.executable,
                 str(ROOT / "tools" / "runtime.py"),
@@ -199,7 +202,8 @@ def _wait_for(base_url: str) -> None:
     deadline = time.monotonic() + 15
     while True:
         try:
-            with urllib.request.urlopen(f"{base_url}/health", timeout=1):
+            # base_url is http://127.0.0.1 on the --port mock() was given, never a file: URL.
+            with urllib.request.urlopen(f"{base_url}/health", timeout=1):  # nosec B310
                 return
         except OSError:
             if time.monotonic() > deadline:
