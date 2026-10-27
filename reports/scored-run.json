@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-10-27T22:31:14Z",
-  "git_commit": "e082e91fc13926e2b6f611b1affbd9c3d875fa16",
+  "generated_at": "2026-10-27T23:14:27Z",
+  "git_commit": "b36054734a76fd470d5cd6bb54bd8309bc7e71c8",
   "git_dirty": false,
   "git_commit_note": "HEAD at run time. The working tree was clean when the artifacts were generated.",
-  "base_url": "http://127.0.0.1:8792",
+  "base_url": "http://127.0.0.1:8794",
   "dataset": "card-disputes-dev",
   "pass_count": 9,
   "total_cases": 12,
@@ -18,103 +18,115 @@
       "case_id": "CARD-D01",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.982,
+      "duration_ms": 6.354,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D02",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.323,
+      "duration_ms": 7.369,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D03",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.732,
+      "duration_ms": 7.106,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D04",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.383,
+      "duration_ms": 7.327,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D05",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.389,
+      "duration_ms": 6.811,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D06",
       "submitted": true,
       "passed": true,
-      "duration_ms": 6.89,
+      "duration_ms": 7.001,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D07",
       "submitted": false,
       "passed": false,
-      "duration_ms": 3.477,
+      "duration_ms": 3.817,
       "failed_checks": [
         "submitted"
       ],
-      "error": "BankReadError"
+      "error": "BankReadError",
+      "meter_error": null
     },
     {
       "case_id": "CARD-D08",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.033,
+      "duration_ms": 8.052,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D09",
       "submitted": false,
       "passed": false,
-      "duration_ms": 7.331,
+      "duration_ms": 7.289,
       "failed_checks": [
         "submitted"
       ],
-      "error": "the intake statement is not an exact excerpt of the intake"
+      "error": "the intake statement is not an exact excerpt of the intake",
+      "meter_error": null
     },
     {
       "case_id": "CARD-D10",
       "submitted": false,
       "passed": false,
-      "duration_ms": 3.747,
+      "duration_ms": 3.456,
       "failed_checks": [
         "submitted"
       ],
-      "error": "BankReadError"
+      "error": "BankReadError",
+      "meter_error": null
     },
     {
       "case_id": "CARD-D11",
       "submitted": true,
       "passed": true,
-      "duration_ms": 7.134,
+      "duration_ms": 7.201,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D12",
       "submitted": true,
       "passed": true,
-      "duration_ms": 8.259,
+      "duration_ms": 7.93,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     }
   ],
   "exceptions": [
