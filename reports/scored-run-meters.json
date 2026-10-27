@@ -1,7 +1,7 @@
 [
   {
     "case_id": "CARD-D01",
-    "duration_ms": 7.982,
+    "duration_ms": 31.891,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -10,7 +10,7 @@
   },
   {
     "case_id": "CARD-D02",
-    "duration_ms": 7.323,
+    "duration_ms": 31.297,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -19,7 +19,7 @@
   },
   {
     "case_id": "CARD-D03",
-    "duration_ms": 7.732,
+    "duration_ms": 30.506,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -28,7 +28,7 @@
   },
   {
     "case_id": "CARD-D04",
-    "duration_ms": 7.383,
+    "duration_ms": 31.323,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -37,7 +37,7 @@
   },
   {
     "case_id": "CARD-D05",
-    "duration_ms": 7.389,
+    "duration_ms": 31.741,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -46,7 +46,7 @@
   },
   {
     "case_id": "CARD-D06",
-    "duration_ms": 6.89,
+    "duration_ms": 30.588,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -55,7 +55,7 @@
   },
   {
     "case_id": "CARD-D07",
-    "duration_ms": 3.477,
+    "duration_ms": 3390.669,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -64,7 +64,7 @@
   },
   {
     "case_id": "CARD-D08",
-    "duration_ms": 7.033,
+    "duration_ms": 30.233,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -73,7 +73,7 @@
   },
   {
     "case_id": "CARD-D09",
-    "duration_ms": 7.331,
+    "duration_ms": 31.189,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -82,7 +82,7 @@
   },
   {
     "case_id": "CARD-D10",
-    "duration_ms": 3.747,
+    "duration_ms": 1136.649,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -91,7 +91,7 @@
   },
   {
     "case_id": "CARD-D11",
-    "duration_ms": 7.134,
+    "duration_ms": 29.873,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,
@@ -100,7 +100,7 @@
   },
   {
     "case_id": "CARD-D12",
-    "duration_ms": 8.259,
+    "duration_ms": 31.726,
     "model_calls": 0,
     "model_tokens_in": 0,
     "model_tokens_out": 0,

@@ -1,14 +1,14 @@
 # Scored run across the twelve dev cases
 
-Generated at 2026-10-27T22:31:14Z from commit `e082e91fc13926e2b6f611b1affbd9c3d875fa16` against `http://127.0.0.1:8792`.
+Generated at 2026-10-27T22:48:11Z from commit `f37cc78f5f344a12e5c00c51e6093c573bc8043e` against `http://127.0.0.1:8792`.
 Dataset: `card-disputes-dev`.
 
 ## Result
 
-- Pass: 9 / 12
+- Pass: 11 / 12
 - Format errors: 0
-- p50 draft latency: 7.000 ms (nearest-rank over the latency_ms values in reports/meters.jsonl)
-- p95 draft latency: 8.000 ms (nearest-rank over the latency_ms values in reports/meters.jsonl)
+- p50 draft latency: 31.000 ms (nearest-rank over the latency_ms values in reports/meters.jsonl)
+- p95 draft latency: 3390.000 ms (nearest-rank over the latency_ms values in reports/meters.jsonl)
 - Cost per case: 0.00 USD (0 model calls and 0 tokens in the meter file)
 - Total cost: 0.00 USD
 
@@ -16,26 +16,24 @@ Dataset: `card-disputes-dev`.
 
 | Case | Submitted | Passed | Duration (ms) | Failed checks | Error |
 |---|---|---|---|---|---|
-| CARD-D01 | yes | yes | 7.982 | - | - |
-| CARD-D02 | yes | yes | 7.323 | - | - |
-| CARD-D03 | yes | yes | 7.732 | - | - |
-| CARD-D04 | yes | yes | 7.383 | - | - |
-| CARD-D05 | yes | yes | 7.389 | - | - |
-| CARD-D06 | yes | yes | 6.890 | - | - |
-| CARD-D07 | no | no | 3.477 | submitted | BankReadError |
-| CARD-D08 | yes | yes | 7.033 | - | - |
-| CARD-D09 | no | no | 7.331 | submitted | the intake statement is not an exact excerpt of the intake |
-| CARD-D10 | no | no | 3.747 | submitted | BankReadError |
-| CARD-D11 | yes | yes | 7.134 | - | - |
-| CARD-D12 | yes | yes | 8.259 | - | - |
+| CARD-D01 | yes | yes | 31.891 | - | - |
+| CARD-D02 | yes | yes | 31.297 | - | - |
+| CARD-D03 | yes | yes | 30.506 | - | - |
+| CARD-D04 | yes | yes | 31.323 | - | - |
+| CARD-D05 | yes | yes | 31.741 | - | - |
+| CARD-D06 | yes | yes | 30.588 | - | - |
+| CARD-D07 | yes | yes | 3390.669 | - | - |
+| CARD-D08 | yes | yes | 30.233 | - | - |
+| CARD-D09 | no | no | 31.189 | submitted | the intake statement is not an exact excerpt of the intake |
+| CARD-D10 | yes | yes | 1136.649 | - | - |
+| CARD-D11 | yes | yes | 29.873 | - | - |
+| CARD-D12 | yes | yes | 31.726 | - | - |
 
 ## Failing cases
 
 | Case | Exact failed check(s) | Reason |
 |---|---|---|
-| CARD-D07 | submitted | BankReadError |
 | CARD-D09 | submitted | the intake statement is not an exact excerpt of the intake |
-| CARD-D10 | submitted | BankReadError |
 
 ## Exceptions (proposed, pending pod agreement)
 
@@ -43,9 +41,7 @@ Dataset: `card-disputes-dev`.
 
 | Case | Ticket | Failed checks | Note |
 |---|---|---|---|
-| CARD-D07 | COF-40 | submitted | A persistent transaction failure stops the case instead of routing to manual_review with null facts. Retry and outage handling is COF-40. |
 | CARD-D09 | COF-43 | submitted | The joined statement is not an exact intake excerpt, so the duplicate redelivery is not built. Duplicate intake and narrative work is COF-43. |
-| CARD-D10 | COF-40 | submitted | A transient transaction fault is not retried, so the case is not built. Retry is COF-40. |
 
 ## Metered cost
 
@@ -53,18 +49,18 @@ Cost comes from `reports/scored-run-meters.json`, one row per case. The p50 and 
 
 | Case | Duration (ms) | Calls | Tokens in | Tokens out | Cost (USD) | Path |
 |---|---|---|---|---|---|---|
-| CARD-D01 | 7.982 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D02 | 7.323 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D03 | 7.732 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D04 | 7.383 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D05 | 7.389 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D06 | 6.890 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D07 | 3.477 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D08 | 7.033 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D09 | 7.331 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D10 | 3.747 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D11 | 7.134 | 0 | 0 | 0 | 0.00 | deterministic_template |
-| CARD-D12 | 8.259 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D01 | 31.891 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D02 | 31.297 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D03 | 30.506 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D04 | 31.323 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D05 | 31.741 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D06 | 30.588 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D07 | 3390.669 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D08 | 30.233 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D09 | 31.189 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D10 | 1136.649 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D11 | 29.873 | 0 | 0 | 0 | 0.00 | deterministic_template |
+| CARD-D12 | 31.726 | 0 | 0 | 0 | 0.00 | deterministic_template |
 
 ## Reproduce
 
