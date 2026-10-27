@@ -33,9 +33,6 @@ SYNTHETIC_TOKEN = re.compile(r"SYNTHETIC-PRIVATE-[A-Z0-9-]+")
 CARD_NUMBER = re.compile(r"(?<!\d)\d(?:[ -]?\d){12,18}(?!\d)")
 """13 to 19 digits, with single spaces or hyphens allowed between digits."""
 
-CARD_LENGTH = range(13, 20)
-"""A card number is 13 to 19 digits long; anything else is out of scope."""
-
 
 def _luhn_valid(number: str) -> bool:
     """Return True when a digit run carries a valid Luhn check digit.
@@ -128,9 +125,6 @@ def _synthetic_check(case_id: str, haystack: str) -> Check:
             matches.append(token.group(0))
     for candidate in CARD_NUMBER.finditer(haystack):
         text = candidate.group(0)
-        digits = sum(char.isdigit() for char in text)
-        if digits not in CARD_LENGTH:
-            continue
         if _luhn_valid(text) and text not in matches:
             matches.append(text)
     if matches:

@@ -61,14 +61,19 @@ def running_mock(data_dir: Path, state_path: Path) -> Iterator[str]:
         _wait_until_healthy(base_url, process)
         yield base_url
     finally:
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=5)
-        if process.stderr is not None:
-            process.stderr.close()
+        _stop(process)
+
+
+def _stop(process: subprocess.Popen[str]) -> None:
+    """Stop the mock and release its state file."""
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
+    if process.stderr is not None:
+        process.stderr.close()
 
 
 def _wait_until_healthy(base_url: str, process: subprocess.Popen[str]) -> None:
