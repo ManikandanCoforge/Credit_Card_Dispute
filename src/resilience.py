@@ -1,8 +1,9 @@
 """Retry a transient tool timeout, then stop calling a dead dependency.
 
 CARD-PROCEDURE-01 allows three total attempts. Between those attempts the
-wait is min(0.2 * 2**attempt, 2) seconds plus a fraction of a second of
-jitter. With three attempts the waits are about 0.2s, then about 0.4s.
+wait is 2**attempt seconds plus a fraction of a second of jitter: 1s, then
+2s, then 4s, and so on. With three attempts the waits are about 1s, then
+about 2s.
 
 Not wired into the case runner yet. When it is, keep one breaker per tool for
 the whole run. The breaker counts complaints that used all three attempts. It
@@ -21,10 +22,6 @@ from typing import Literal
 
 # One try and two retries. The procedure's cap, not a tuning guess.
 MAX_ATTEMPTS = 3
-
-# 0.2s, then 0.4s, doubling, and never more than 2s. Jitter is added on top.
-BACKOFF_BASE = 0.2
-BACKOFF_CAP = 2.0
 
 # One probe is allowed after this many seconds, to see if the tool recovered.
 RESET_TIMEOUT = 60
@@ -164,12 +161,12 @@ def call_with_backoff[T](
 ) -> T:
     """Call func until it returns or the dependency is unavailable.
 
-    A transient failure waits ``min(0.2 * 2**attempt, 2)`` seconds plus
-    jitter, then tries again. With three attempts the waits are about 0.2s,
-    then about 0.4s. The last attempt does not wait. The caller that uses
-    the whole budget counts once toward opening the breaker, and only while
-    the breaker is closed. Any error other than TransientFailure propagates
-    on the attempt that raised it.
+    A transient failure waits ``2**attempt`` seconds plus jitter, then tries
+    again: about 1s, then about 2s, then about 4s, and so on. With three
+    attempts the waits are about 1s, then about 2s. The last attempt does
+    not wait. The caller that uses the whole budget counts once toward
+    opening the breaker, and only while the breaker is closed. Any error
+    other than TransientFailure propagates on the attempt that raised it.
     """
     if max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
@@ -186,13 +183,8 @@ def call_with_backoff[T](
                 break
             if breaker.state == "open":
                 break
-            wait(_backoff_delay(attempt) + pause())
+            wait((2**attempt) + pause())
     raise AttemptsExhausted(attempt + 1) from error
-
-
-def _backoff_delay(attempt: int) -> float:
-    """The wait before the next attempt, before jitter."""
-    return min(BACKOFF_BASE * (2**attempt), BACKOFF_CAP)
 
 
 def _default_jitter() -> float:

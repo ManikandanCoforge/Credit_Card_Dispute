@@ -1,9 +1,9 @@
 """Retry budget and circuit breaker for one tool dependency.
 
-Expected waits for three attempts are about 0.2 seconds, then about 0.4
-seconds, and no wait after the attempt that stops the call. The wait
-doubles and never exceeds 2 seconds. The breaker opens after three
-callers in a row use that whole budget.
+Expected waits are 1 second, then 2 seconds, then 4 seconds, and so on,
+plus jitter. With three attempts the waits are about 1s, then about 2s,
+and there is no wait after the attempt that stops the call. The breaker
+opens after three callers in a row use that whole budget.
 """
 
 import threading
@@ -37,7 +37,7 @@ def test_timeouts_wait_then_stop_at_three_attempts():
 
     assert calls["n"] == 3
     assert raised.value.attempts == 3
-    assert slept == pytest.approx([0.45, 0.65])
+    assert slept == [1.25, 2.25]
     assert raised.value.__cause__ is not None
     assert breaker.state == "closed"
     assert breaker.failure_count == 1
@@ -238,18 +238,18 @@ def test_the_attempt_cap_stops_while_the_breaker_is_still_closed():
 
     assert calls["n"] == 2
     assert raised.value.attempts == 2
-    assert slept == pytest.approx([0.2])
+    assert slept == [1]
     assert breaker.state == "closed"
 
 
-def test_the_wait_doubles_and_then_stops_at_two_seconds():
+def test_the_wait_doubles_by_powers_of_two():
     slept = []
     breaker = CircuitBreaker(failure_threshold=9, clock=lambda: 0)
 
     with pytest.raises(AttemptsExhausted):
         call_with_backoff(_timeout, breaker, max_attempts=6, sleep=slept.append, jitter=lambda: 0)
 
-    assert slept == pytest.approx([0.2, 0.4, 0.8, 1.6, 2.0])
+    assert slept == [1, 2, 4, 8, 16]
     assert breaker.state == "closed"
 
 
@@ -285,7 +285,7 @@ def test_the_default_jitter_is_added_to_the_backoff(monkeypatch):
         return "ready"
 
     assert call_with_backoff(fail_twice, CircuitBreaker(), sleep=slept.append) == "ready"
-    assert slept == pytest.approx([0.2, 0.65])
+    assert slept == [1, 2.25]
 
 
 def test_a_stale_success_does_not_admit_a_second_caller_during_a_probe():
