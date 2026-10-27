@@ -146,6 +146,27 @@ def test_manual_review_rule_citation_satisfies_claim_sources(claim: str) -> None
     assert result[CLAIM_SOURCES].evidence["missing"] == []
 
 
+def test_outage_citation_satisfies_the_manual_review_rule() -> None:
+    """The procedure's stop-retrying sentence is a rule citation too."""
+    payload = contract(
+        classification="unsupported",
+        routing="manual_review",
+        deadline=None,
+        citations=[
+            citation("routing", "PROC-1", "unauthorized disputes route to"),
+            citation(
+                "transaction_service_unavailable",
+                "PROC-1",
+                "Procedure: unauthorized",
+            ),
+        ],
+    )
+    result = checks(make_case(contract=payload))
+    assert result[CITATION_EXACT].passed
+    assert result[CLAIM_SOURCES].passed
+    assert result[CLAIM_SOURCES].evidence["missing"] == []
+
+
 def test_unsupported_classification_needs_no_classification_citation() -> None:
     payload = contract(
         classification="unsupported",

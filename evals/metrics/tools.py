@@ -2,8 +2,9 @@
 
 Owned by the tool-call metric. Checks per case:
 
-* `tools.required_reads` -- every tool the dataset declares was read and at
-  least one attempt answered 200.
+* `tools.required_reads` -- every tool the dataset declares answered 200, or
+  exhausted the retry budget with retryable 503s. A persistent outage retried
+  three times is a correct outcome; a 503 that was never retried is a failure.
 * `tools.no_forbidden_writes` -- no audit event is a write or record creation.
 * `tools.retry_bound` -- no tool had more than three total attempts (the first
   attempt plus two retries is the contract).
@@ -91,7 +92,7 @@ def _required_reads(
     reads: Sequence[_Read],
     attempts: Mapping[str, Sequence[object]],
 ) -> Check:
-    """Require at least one 200 read for every tool the case declares."""
+    """Require a 200, or a retryable outage taken to the retry limit, per tool."""
     evidence: dict[str, Any] = {
         "declared_tools": list(declared),
         "attempts": _status_map(attempts),
@@ -104,7 +105,7 @@ def _required_reads(
     missing = [
         tool
         for tool in declared
-        if not any(_answered(status) for status in attempts.get(tool, ()))
+        if not _satisfied(attempts.get(tool, ()))
     ]
     evidence["missing"] = missing
     if not missing:
@@ -243,10 +244,34 @@ def _answered(status: object) -> bool:
     return status == 200 or status == "200"
 
 
+def _retryable(status: object) -> bool:
+    """Return True for the only retryable status the mock produces."""
+    return status == 503 or status == "503"
+
+
+def _exhausted_outage(statuses: Sequence[object]) -> bool:
+    """Return True when a tool used the whole retry budget on retryable 503s."""
+    return len(statuses) == MAX_ATTEMPTS_PER_TOOL and all(
+        _retryable(status) for status in statuses
+    )
+
+
+def _satisfied(statuses: Sequence[object]) -> bool:
+    """Return True when a tool answered, or failed retryably with no retries left."""
+    return any(_answered(status) for status in statuses) or _exhausted_outage(statuses)
+
+
 def _missing_reason(tool: str, statuses: Sequence[object]) -> str:
     """Return why one declared tool did not satisfy required_reads."""
     if not statuses:
         return f"{tool} was never read"
+    if all(_retryable(status) for status in statuses):
+        if len(statuses) < MAX_ATTEMPTS_PER_TOOL:
+            return f"{tool} answered 503 and was not retried"
+        return (
+            f"{tool} answered 503 {len(statuses)} times, "
+            f"beyond the retry budget of {MAX_ATTEMPTS_PER_TOOL}"
+        )
     return f"{tool} never answered 200 (attempts: {_statuses(statuses)})"
 
 
@@ -257,7 +282,7 @@ def _statuses(statuses: Sequence[object]) -> str:
 
 def _listed(names: Sequence[str]) -> str:
     """Return names as prose: one name, or a comma list with a final 'and'."""
-    if len(names) <= 1:
-        return names[0] if names else ""
+    if len(names) == 1:
+        return names[0]
     return f"{', '.join(names[:-1])} and {names[-1]}"
 

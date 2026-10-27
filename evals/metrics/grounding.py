@@ -34,8 +34,15 @@ _DEADLINE_CLAIM = "deadline"
 _ROUTING_CLAIM = "routing"
 _CLASSIFICATION_CLAIM = "classification"
 _MANUAL_REVIEW = "manual_review"
-_RULE_CLAIMS = frozenset({"ambiguous_rule", "unsupported_rule"})
-"""The rule claims that justify sending a case to a person."""
+_RULE_CLAIMS = frozenset(
+    {"ambiguous_rule", "unsupported_rule", "transaction_service_unavailable"}
+)
+"""The rule claims that justify sending a case to a person.
+
+`transaction_service_unavailable` is the outage route: the procedure says to
+stop retrying and draft the case with null facts, so the citation that carries
+that sentence is the rule citation for a manual review.
+"""
 
 _MANUAL_REVIEW_REQUIREMENT = "manual_review_rule"
 """Requirement name reported when the manual-review rule citation is absent."""

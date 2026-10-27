@@ -140,6 +140,70 @@ def test_three_attempts_stay_within_the_retry_bound() -> None:
     assert result[REQUIRED_READS].passed
 
 
+def test_three_retryable_failures_are_a_correct_outage() -> None:
+    """A tool that used the whole retry budget on 503s is not a missing read."""
+    result = checks(
+        make_case(
+            audit=[
+                tool_event(CASE, "transactions", 1, 503),
+                tool_event(CASE, "transactions", 2, 503),
+                tool_event(CASE, "transactions", 3, 503),
+                tool_event(CASE, "merchant", 1, 200),
+            ]
+        )
+    )
+    assert result[REQUIRED_READS].passed
+    assert result[REQUIRED_READS].evidence["missing"] == []
+    assert result[RETRY_BOUND].passed
+
+
+def test_one_503_without_a_retry_fails_with_the_missing_retry() -> None:
+    """Giving up after one transient failure is the defect, not the outage."""
+    result = checks(
+        make_case(
+            audit=[
+                tool_event(CASE, "transactions", 1, 200),
+                tool_event(CASE, "merchant", 1, 503),
+            ]
+        )
+    )
+    assert result[REQUIRED_READS].passed is False
+    assert result[REQUIRED_READS].reason == "merchant answered 503 and was not retried"
+
+
+def test_two_503s_without_a_third_attempt_do_not_exhaust_the_budget() -> None:
+    """Two attempts leave a retry unused, so the outage was not handled."""
+    result = checks(
+        make_case(
+            audit=[
+                tool_event(CASE, "transactions", 1, 200),
+                tool_event(CASE, "merchant", 1, 503),
+                tool_event(CASE, "merchant", 2, 503),
+            ]
+        )
+    )
+    assert result[REQUIRED_READS].passed is False
+    assert "was not retried" in result[REQUIRED_READS].reason
+
+
+def test_a_fourth_attempt_on_a_persistent_outage_fails_both_checks() -> None:
+    """More than three 503 attempts breaks the retry budget and the read check."""
+    result = checks(
+        make_case(
+            audit=[
+                tool_event(CASE, "transactions", 1, 503),
+                tool_event(CASE, "transactions", 2, 503),
+                tool_event(CASE, "transactions", 3, 503),
+                tool_event(CASE, "transactions", 4, 503),
+                tool_event(CASE, "merchant", 1, 200),
+            ]
+        )
+    )
+    assert result[REQUIRED_READS].passed is False
+    assert "beyond the retry budget" in result[REQUIRED_READS].reason
+    assert result[RETRY_BOUND].passed is False
+
+
 def test_undeclared_tool_read_fails_no_extra_reads() -> None:
     result = checks(
         make_case(audit=clean_audit() + [tool_event(CASE, "customer_profile", 1, 200)])
