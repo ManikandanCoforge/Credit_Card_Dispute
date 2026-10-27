@@ -328,6 +328,27 @@ def test_a_memory_store_replaces_sqlite(monkeypatch, tmp_path):
     assert records[2]["attributes"]["gen_ai.usage.output_tokens"] == 7
 
 
+def test_a_second_start_tracing_keeps_the_store_already_open(monkeypatch, tmp_path):
+    _private_provider(monkeypatch)
+    provider = start_tracing(store=MemorySpanStore())
+    unused = tmp_path / "unused.sqlite3"
+
+    assert start_tracing(unused) is provider
+
+    assert not unused.exists()
+
+
+def test_a_second_start_tracing_does_not_open_the_trace_db(monkeypatch, tmp_path):
+    _private_provider(monkeypatch)
+    path = tmp_path / "from-env.sqlite3"
+    monkeypatch.setenv("TRACE_DB", str(path))
+    provider = start_tracing(store=MemorySpanStore())
+
+    assert start_tracing() is provider
+
+    assert not path.exists()
+
+
 def test_a_closed_store_stops_writing(tmp_path):
     exporter = SpanStoreExporter(SqliteSpanStore(tmp_path / "traces.sqlite3"))
     assert exporter.force_flush() is True

@@ -234,6 +234,8 @@ def start_tracing(
     file, and ``path`` is ignored when ``store`` is given. A second call keeps
     the store already open. Nothing in the complaint flow calls this yet.
     """
+    if _provider is not None:
+        return _provider
     if store is None:
         if path is None:
             path = os.environ.get("TRACE_DB", os.path.join(".state", "traces.sqlite3"))
