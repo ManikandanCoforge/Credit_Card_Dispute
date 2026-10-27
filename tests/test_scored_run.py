@@ -1,17 +1,26 @@
-"""Pure helpers behind the scored run. No live server is used.
+"""The scored run: its pure helpers, and whole runs against the supplied mock.
 
-The tests cover the nearest-rank p95, failed-check extraction, exception
+The helper tests cover the nearest-rank p95, failed-check extraction, exception
 mapping, meter row shape and report assembly, including a not-built case that
-must be reported with its reason and submitted=false. They also cover the run
-itself when the case list cannot be read, and the command-line defaults.
+must be reported with its reason and submitted=false. The run tests start the
+supplied mock in process on a free port with a temporary state, so they never
+touch a developer's mock or the committed reports. They cover a full dev run,
+a failing case, a run where every case passes, an unreadable case list, the
+command-line defaults and the script entry point.
 """
 
 import json
+import runpy
+import shutil
+import sys
+import threading
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
 
 from src.load_records import CaseListError
+from tools.runtime import create_server
 from tools.scored_run import (
     DETERMINISTIC_PATH,
     EXCEPTION_STATUS,
@@ -33,6 +42,8 @@ from tools.scored_run import (
 _PASSING = {1, 2, 3, 4, 8, 11, 12}
 _FAILING = {5, 6, 7, 9, 10}
 ROOT = Path(__file__).resolve().parents[1]
+DEV = ROOT / "data" / "dev"
+GOLD = ROOT / "feedback" / "dev_gold.json"
 
 
 @pytest.mark.parametrize(
@@ -372,6 +383,109 @@ def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
     assert "Nothing was written" in captured.err
 
 
+def test_a_full_dev_run_against_the_mock_writes_four_artifacts_that_agree(
+    tmp_path, capsys
+):
+    paths = _outputs(tmp_path)
+
+    with _mock(DEV, tmp_path) as base_url:
+        status = run_scored(base_url=base_url, data_dir=DEV, gold_path=GOLD, **_run(paths))
+
+    report, meters, submission = _written(paths)
+    assert status == (0 if run_succeeded(report) else 1)
+    assert report["total_cases"] == len(meters) == 12
+    assert report["format_errors"] == []
+    assert report["base_url"] == base_url
+    assert report["pass_count"] == sum(1 for case in report["cases"] if case["passed"])
+    assert [contract["case_id"] for contract in submission] == [
+        case["case_id"] for case in report["cases"] if case["submitted"]
+    ]
+    assert paths["markdown_path"].read_text(encoding="utf-8") == render_markdown(
+        report, meters
+    )
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0].startswith(
+        f"{report['pass_count']} / 12 cases passed; 0 format errors; p95 "
+    )
+    failing = [case["case_id"] for case in report["cases"] if not case["passed"]]
+    assert [line.split(":")[0].strip() for line in printed[1:]] == failing
+
+
+def test_a_failing_case_is_printed_with_its_checks_and_the_run_exits_1(
+    tmp_path, capsys
+):
+    data_dir, gold_path = _case_set(
+        tmp_path, ["CARD-D01", "CARD-D02"], {"CARD-D02": {"routing": "manual_review"}}
+    )
+    paths = _outputs(tmp_path)
+
+    with _mock(data_dir, tmp_path) as base_url:
+        status = run_scored(
+            base_url=base_url, data_dir=data_dir, gold_path=gold_path, **_run(paths)
+        )
+
+    report, _meters, _submission = _written(paths)
+    assert status == 1
+    assert (report["pass_count"], report["total_cases"]) == (1, 2)
+    [failing] = [case for case in report["cases"] if not case["passed"]]
+    assert failing["case_id"] == "CARD-D02"
+    assert "routing" in failing["failed_checks"]
+    assert report["unplanned_failures"] == [
+        {"case_id": "CARD-D02", "failed_checks": failing["failed_checks"], "error": None}
+    ]
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert "### Unplanned failures (not exceptions)" in markdown
+    assert "None. No failing case has a proposed ticket." in markdown
+    assert capsys.readouterr().out.splitlines()[1:] == [
+        f"  CARD-D02: {', '.join(failing['failed_checks'])}"
+    ]
+
+
+def test_a_run_where_every_case_passes_exits_0(tmp_path, capsys):
+    data_dir, gold_path = _case_set(tmp_path, ["CARD-D01"])
+    paths = _outputs(tmp_path)
+
+    with _mock(data_dir, tmp_path) as base_url:
+        status = run_scored(
+            base_url=base_url, data_dir=data_dir, gold_path=gold_path, **_run(paths)
+        )
+
+    report, _meters, _submission = _written(paths)
+    assert status == 0
+    assert (report["pass_count"], report["total_cases"]) == (1, 1)
+    assert "None. Every case passed." in paths["markdown_path"].read_text(encoding="utf-8")
+    assert capsys.readouterr().out.splitlines()[1:] == []
+
+
+def test_the_script_runs_from_another_directory_without_the_repository_on_sys_path(
+    tmp_path, monkeypatch
+):
+    data_dir, gold_path = _case_set(tmp_path, ["CARD-D01"])
+    paths = _outputs(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "path", [entry for entry in sys.path if entry != str(ROOT)])
+
+    with _mock(data_dir, tmp_path) as base_url:
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "scored_run.py",
+                *("--base-url", base_url, "--data", str(data_dir), "--gold", str(gold_path)),
+                *("--submission", str(paths["submission_path"])),
+                *("--report", str(paths["report_path"])),
+                *("--meters", str(paths["meters_path"])),
+                *("--markdown", str(paths["markdown_path"])),
+            ],
+        )
+        with pytest.raises(SystemExit) as exited:
+            runpy.run_path(str(ROOT / "tools" / "scored_run.py"), run_name="__main__")
+
+    assert exited.value.code == 0
+    assert sys.path[0] == str(ROOT)
+    assert paths["report_path"].exists()
+
+
 def test_the_run_reads_the_mock_on_the_readme_port_by_default(monkeypatch):
     seen = {}
 
@@ -385,6 +499,63 @@ def test_the_run_reads_the_mock_on_the_readme_port_by_default(monkeypatch):
     assert seen["base_url"] == "http://127.0.0.1:8765"
     assert seen["data_dir"] == ROOT / "data" / "dev"
     assert seen["gold_path"] == ROOT / "feedback" / "dev_gold.json"
+
+
+@contextmanager
+def _mock(data_dir, tmp_path):
+    server = create_server(data_dir, tmp_path / "mock.sqlite", port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    try:
+        yield f"http://{host}:{port}"
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+
+def _case_set(tmp_path, case_ids, gold_changes=None):
+    """A copy of the dev set listing only case_ids, and its gold with any changes."""
+    data_dir = tmp_path / "data"
+    shutil.copytree(DEV, data_dir)
+    dataset = json.loads((data_dir / "dataset.json").read_text(encoding="utf-8"))
+    dataset["cases"] = [case for case in dataset["cases"] if case["case_id"] in case_ids]
+    (data_dir / "dataset.json").write_text(json.dumps(dataset), encoding="utf-8")
+    gold = json.loads(GOLD.read_text(encoding="utf-8"))
+    changes = gold_changes or {}
+    gold_path = tmp_path / "gold.json"
+    gold_path.write_text(
+        json.dumps({case_id: {**gold[case_id], **changes.get(case_id, {})} for case_id in case_ids}),
+        encoding="utf-8",
+    )
+    return data_dir, gold_path
+
+
+def _outputs(tmp_path):
+    """Artifact paths in directories that do not exist yet."""
+    return {
+        "submission_path": tmp_path / "out" / "submissions" / "scored-run.json",
+        "report_path": tmp_path / "out" / "reports" / "scored-run.json",
+        "meters_path": tmp_path / "out" / "reports" / "scored-run-meters.json",
+        "markdown_path": tmp_path / "out" / "reports" / "scored-run.md",
+    }
+
+
+def _run(paths):
+    return {
+        **paths,
+        "generated_at": "2026-10-27T00:00:00Z",
+        "git_commit": "abc123",
+        "git_dirty": False,
+    }
+
+
+def _written(paths):
+    return tuple(
+        json.loads(paths[name].read_text(encoding="utf-8"))
+        for name in ("report_path", "meters_path", "submission_path")
+    )
 
 
 def _case(
