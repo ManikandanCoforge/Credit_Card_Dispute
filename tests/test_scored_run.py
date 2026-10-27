@@ -342,6 +342,7 @@ def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
         "report_path": tmp_path / "reports" / "scored-run.json",
         "meters_path": tmp_path / "reports" / "scored-run-meters.json",
         "markdown_path": tmp_path / "reports" / "scored-run.md",
+        "case_meter_path": tmp_path / "reports" / "meters.jsonl",
     }
     paths["report_path"].parent.mkdir()
     for name in ("report_path", "meters_path", "markdown_path"):
