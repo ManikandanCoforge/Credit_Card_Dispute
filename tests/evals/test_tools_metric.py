@@ -140,6 +140,47 @@ def test_three_attempts_stay_within_the_retry_bound() -> None:
     assert result[REQUIRED_READS].passed
 
 
+def test_the_pass_reason_names_how_each_tool_answered() -> None:
+    """A pass must not claim 200 for a tool that used its retry budget."""
+    result = checks(make_case(audit=clean_audit()))
+    assert (
+        result[REQUIRED_READS].reason
+        == "transactions answered 200; merchant answered 200"
+    )
+
+
+def test_the_pass_reason_names_a_retry_budget() -> None:
+    """A persistent outage that exhausted the budget is reported as such."""
+    result = checks(
+        make_case(
+            audit=[
+                tool_event(CASE, "transactions", 1, 503),
+                tool_event(CASE, "transactions", 2, 503),
+                tool_event(CASE, "transactions", 3, 503),
+                tool_event(CASE, "merchant", 1, 200),
+            ]
+        )
+    )
+    assert result[REQUIRED_READS].passed is True
+    assert result[REQUIRED_READS].reason == (
+        "transactions used its retry budget (503, 503, 503); merchant answered 200"
+    )
+
+
+def test_the_pass_reason_names_the_attempt_that_answered() -> None:
+    """A retried read says which attempt answered."""
+    result = checks(
+        make_case(
+            audit=[
+                tool_event(CASE, "transactions", 1, 503),
+                tool_event(CASE, "transactions", 2, 200),
+                tool_event(CASE, "merchant", 1, 200),
+            ]
+        )
+    )
+    assert "transactions answered 200 on attempt 2" in result[REQUIRED_READS].reason
+
+
 def test_three_retryable_failures_are_a_correct_outage() -> None:
     """A tool that used the whole retry budget on 503s is not a missing read."""
     result = checks(

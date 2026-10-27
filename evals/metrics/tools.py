@@ -113,7 +113,7 @@ def _required_reads(
             REQUIRED_READS,
             case_id,
             True,
-            f"{_listed(declared)} answered 200",
+            _success_reason(declared, attempts),
             evidence,
         )
     if not reads:
@@ -259,6 +259,30 @@ def _exhausted_outage(statuses: Sequence[object]) -> bool:
 def _satisfied(statuses: Sequence[object]) -> bool:
     """Return True when a tool answered, or failed retryably with no retries left."""
     return any(_answered(status) for status in statuses) or _exhausted_outage(statuses)
+
+
+def _success_reason(
+    declared: Sequence[str], attempts: Mapping[str, Sequence[object]]
+) -> str:
+    """Return one clause per tool saying how it satisfied required_reads."""
+    parts: list[str] = []
+    for tool in declared:
+        statuses = attempts.get(tool, ())
+        answered = next(
+            (
+                index
+                for index, status in enumerate(statuses, start=1)
+                if _answered(status)
+            ),
+            None,
+        )
+        if answered is None:
+            parts.append(f"{tool} used its retry budget ({_statuses(statuses)})")
+        elif answered == 1:
+            parts.append(f"{tool} answered 200")
+        else:
+            parts.append(f"{tool} answered 200 on attempt {answered}")
+    return "; ".join(parts)
 
 
 def _missing_reason(tool: str, statuses: Sequence[object]) -> str:
