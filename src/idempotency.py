@@ -1,9 +1,8 @@
-"""Create one case record per complaint, keyed by the submission reference.
+"""Create one case record per idempotency key.
 
-CARD-D09 is a redelivery of CARD-D02. Both intakes carry the submission
-reference dispute-double-02, and that string is the Idempotency-Key. A
-second create for the same reference returns the stored record. It does
-not mint a new key and it does not open a second case.
+The caller chooses the key. The review gate passes ``case_id:review_id``,
+one key per approved draft. A second create with the same key returns the
+stored record. It does not mint a new key and it does not open a second case.
 """
 
 from collections.abc import Callable
@@ -57,36 +56,36 @@ class MissingRecord(Exception):
         super().__init__(f"no stored record for {case_id}")
 
 
-def idempotency_key(submission_reference: str) -> str:
-    """Return the submission reference as the Idempotency-Key.
+def idempotency_key(key: str) -> str:
+    """Return the caller's key, stripped, as the Idempotency-Key.
 
-    A blank value cannot name a complaint. Neither can the intake sentinel
-    or the placeholders N/A, none, and -. The mock accepts at most 128
-    characters.
+    The review gate supplies ``case_id:review_id``. A blank value cannot
+    name a record. Neither can the intake sentinel or the placeholders
+    N/A, none, and -. The mock accepts at most 128 characters.
     """
-    reference = submission_reference.strip()
+    reference = key.strip()
     if reference == "" or reference.casefold() in _MISSING_REFERENCES:
-        raise ValueError("a submission reference is required")
+        raise ValueError("an idempotency key is required")
     if len(reference) > 128:
-        raise ValueError("a submission reference must be at most 128 characters")
+        raise ValueError("an idempotency key must be at most 128 characters")
     return reference
 
 
 def create_record(
     submit: Callable[[str, RecordRequest], tuple[int, object]],
     request: RecordRequest,
-    submission_reference: str,
+    key: str,
     *,
     lookup: Callable[[str], RecordRow | None],
 ) -> StoredRecord:
-    """Create the case, or return the record already stored for this reference.
+    """Create the case, or return the record already stored for this key.
 
     submit sends POST /v1/records with the key as the Idempotency-Key.
     lookup is GET /v1/records/{case_id}, which follows a redelivery to the
     original complaint. HTTP 201 is the first write. HTTP 200 is an exact
     replay. HTTP 409 means the complaint already has a record.
     """
-    key = idempotency_key(submission_reference)
+    key = idempotency_key(key)
     status, payload = submit(key, request)
     if status in {200, 201}:
         return _created(status, payload)

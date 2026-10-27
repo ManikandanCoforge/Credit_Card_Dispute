@@ -1,14 +1,16 @@
 """Read the bank and emit one contract object per complaint.
 
-load_contract_records
-  load_complaint_records
+load_contract_results
+  load_cases
     GET /v1/cases
+  records_from_case_list
     read the intake
     match the policy version
   for each case
+    read every other listed document: a customer statement is kept, anything else refuses the case
     read the intake, attachment, procedure and policy documents
     GET /v1/cases/{case_id}/transactions and /v1/cases/{case_id}/merchant
-    assemble_contract
+    assemble_draft: the rules, then the narrative (template, or a configured writer)
 
 Both tool reads go through the mock service, which audits each one. A failed
 read stops the case: an outage is never treated as an empty transaction history.
@@ -17,6 +19,7 @@ reports the reason for each case it could not build.
 """
 
 import json
+import re
 import sys
 import time
 from datetime import UTC, datetime
@@ -28,7 +31,7 @@ from pydantic import ValidationError
 
 from src.api_models import MerchantToolPayload, TransactionToolPayload
 from src.build_records import build_merchant, build_transaction
-from src.contract import Contract, ContractError, assemble_contract
+from src.contract import Contract, ContractError, assemble_draft
 from src.load_records import (
     BankReadError,
     CaseListError,
@@ -44,10 +47,18 @@ from src.models import (
     TransactionTool,
     WorkingRecord,
 )
+from src.narrative import NarrativeMeter, ProseWriter
+from src.untrusted import RestrictedValueError, guard
 
 # The case list names an intake and an attachment that share one prefix.
 _INTAKE_SUFFIX = "-INTAKE"
 _ATTACHMENT_SUFFIX = "-ATTACHMENT"
+_CUSTOMER_REFERENCE_LABEL = "Customer reference:"
+# A further listed document is a customer statement when its heading says so (any case).
+_CUSTOMER_HEADING = "# customer"
+# Source ids become file names, so only plain ids are read: letters, digits, dot, dash and
+# underscore, starting with a letter or digit, never "..". "../x" or "a/b" is never a path.
+_SOURCE_ID = re.compile(r"(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 class ContractRecordError(Exception):
@@ -58,6 +69,7 @@ class ContractResult(TypedDict):
     case_id: str
     contract: Contract | None
     error: str | None
+    narrative_meter: NarrativeMeter | None
 
 
 class CasePlan(TypedDict):
@@ -87,43 +99,54 @@ def build_contract_result(
     plan: CasePlan,
     base_url: str,
     data_dir: str | Path,
+    writer: ProseWriter | None = None,
     *,
     meter_path: Path | None = None,
 ) -> ContractResult:
     """Build one case's contract from the bank and the dataset, or report the reason.
 
     The reason is one of this application's own messages or an exception class
-    name, never text from a payload or document. When meter_path is set, one
-    meter line is appended for this case after it finishes.
+    name, never text from a payload or document. writer, when given, may reword the
+    narrative; see src/narrative.py. When meter_path is set, one meter line is
+    appended for this case after it finishes, including a case that stops.
     """
     started_at = datetime.now(UTC)
     started = time.perf_counter()
     tally = {"tool_attempts": 0, "retry_count": 0}
+    case_id = plan["record"]["case_id"]
     try:
-        contract = _contract_record(
-            plan["record"], base_url, Path(data_dir), plan["documents"], tally
+        contract, meter = _contract_record(
+            plan["record"],
+            base_url,
+            Path(data_dir),
+            plan["documents"],
+            writer,
+            tally,
         )
     except ContractRecordError as error:
         result: ContractResult = {
-            "case_id": plan["record"]["case_id"],
+            "case_id": case_id,
             "contract": None,
             "error": _reason(error),
+            "narrative_meter": None,
         }
     else:
         result = {
-            "case_id": plan["record"]["case_id"],
+            "case_id": case_id,
             "contract": contract,
             "error": None,
+            "narrative_meter": meter,
         }
     if meter_path is not None:
         finished = result["contract"]
+        narrative = result["narrative_meter"]
         record_case_meter(
             meter_path,
             case_id=result["case_id"],
             route=finished["routing"] if finished is not None else "not_built",
             started_at=started_at,
             latency_ms=round((time.perf_counter() - started) * 1000),
-            model_calls=0,
+            model_calls=0 if narrative is None else narrative["model_calls"],
             input_tokens=0,
             output_tokens=0,
             tool_attempts=tally["tool_attempts"],
@@ -133,7 +156,11 @@ def build_contract_result(
 
 
 def load_contract_results(
-    base_url: str, data_dir: str | Path, *, meter_path: Path | None = None
+    base_url: str,
+    data_dir: str | Path,
+    writer: ProseWriter | None = None,
+    *,
+    meter_path: Path | None = None,
 ) -> list[ContractResult]:
     """Return one result per case in the bank case list, in bank order.
 
@@ -141,12 +168,17 @@ def load_contract_results(
     remaining cases still run. The reason is one of this application's own
     messages or an exception class name, never text from a payload or document.
     When meter_path is set, the file is replaced and each case appends one line.
+    A case list that cannot be read leaves the previous meter file alone.
+
+    writer, when given, may reword each narrative; see src/narrative.py. Each
+    built case carries its narrative meter, and the meter line records that
+    meter's model-call count. Token counts stay 0: this meter does not count tokens.
     """
     data_dir = Path(data_dir)
     plans = contract_case_plans(base_url, data_dir)
     _prepare_meter_file(meter_path)
     return [
-        build_contract_result(plan, base_url, data_dir, meter_path=meter_path)
+        build_contract_result(plan, base_url, data_dir, writer, meter_path=meter_path)
         for plan in plans
     ]
 
@@ -220,13 +252,15 @@ def _contract_record(
     base_url: str,
     data_dir: Path,
     documents: list[str],
+    writer: ProseWriter | None,
     tally: dict[str, int],
-) -> Contract:
+) -> tuple[Contract, NarrativeMeter]:
     """Read the evidence and the tools for one case, then assemble its contract.
 
-    documents is the evidence the case list names for this case. A source this
-    step does not read is refused rather than ignored, so a follow-up or a
-    second statement can never be silently left out of the draft.
+    documents is the evidence the case list names for this case. Besides the
+    intake and the attachment, a listed customer statement, such as a follow-up
+    email, is read and passed on. Any other listed source is refused rather than
+    ignored, so evidence can never be silently left out of the draft.
     """
     # load_complaint_records always stores an intake object, even for a document
     # it could not read, so a record reaching this runner always has one.
@@ -237,29 +271,39 @@ def _contract_record(
         raise ContractRecordError("the reported date selected no policy version")
     attachment_source = _attachment_source(intake["source_id"])
     consumed = {intake["source_id"], attachment_source}
-    unread = sorted(set(documents) - consumed)
-    if unread:
-        raise ContractRecordError(
-            "the case names evidence this step cannot read: " + ", ".join(unread)
-        )
+    customer_texts = _customer_statements(
+        data_dir, [source_id for source_id in documents if source_id not in consumed]
+    )
     intake_text = _document(data_dir, "documents", intake["source_id"])
     attachment_text = _document(data_dir, "documents", attachment_source)
     procedure_text = _document(data_dir, "policies", procedure_id)
     policy_text = _document(data_dir, "policies", version_id)
     transactions, transactions_text = _transactions(base_url, record["case_id"], tally)
     enriched = build_transaction(record, transactions)
-    enriched = build_merchant(enriched, _merchant(base_url, record["case_id"], tally))
+    merchant, private_token = _merchant(base_url, record["case_id"], tally)
+    enriched = build_merchant(enriched, merchant)
+    # The drafting and the output guard use the same known values, so a sentence holding
+    # one is cited by its Source ID line instead of being quoted and then refused.
+    known = [private_token, _customer_reference(intake_text)]
     try:
-        return assemble_contract(
+        contract, meter = assemble_draft(
             enriched,
             intake_text=intake_text,
             attachment_text=attachment_text,
             procedure_text=procedure_text,
             policy_text=policy_text,
             transactions_text=transactions_text,
+            customer_texts=customer_texts,
+            writer=writer,
+            known_values=known,
         )
     except ContractError as error:
         raise ContractRecordError from error
+    try:
+        guard(contract, known=known)
+    except RestrictedValueError as error:
+        raise ContractRecordError(str(error)) from None
+    return contract, meter
 
 
 def _transactions(
@@ -288,20 +332,35 @@ def _transactions(
     return tool, json.dumps(json.loads(raw), sort_keys=True)
 
 
-def _merchant(base_url: str, case_id: str, tally: dict[str, int]) -> MerchantTool:
-    """The merchant tool body. The private token is not copied out of it."""
+def _merchant(
+    base_url: str, case_id: str, tally: dict[str, int]
+) -> tuple[MerchantTool, str]:
+    """The merchant tool body, and its private token for the restricted-value guard.
+
+    The private token is never copied into the merchant record.
+    """
     try:
         payload = MerchantToolPayload.model_validate_json(
             _read_tool(base_url, case_id, "merchant", tally)
         )
     except ValidationError as error:
         raise ContractRecordError from error
-    return {
+    token = (payload.model_extra or {}).get("private_token")
+    merchant: MerchantTool = {
         "source_id": payload.source_id,
         "merchant_id": payload.merchant_id,
         "display_name": payload.display_name,
         "note": payload.note,
     }
+    return merchant, token if isinstance(token, str) else ""
+
+
+def _customer_reference(intake_text: str) -> str:
+    """The customer reference on the intake form, so the guard can refuse it exactly."""
+    for line in intake_text.splitlines():
+        if line.strip().startswith(_CUSTOMER_REFERENCE_LABEL):
+            return line.strip()[len(_CUSTOMER_REFERENCE_LABEL) :].strip()
+    return ""
 
 
 def _read_tool(base_url: str, case_id: str, tool: str, tally: dict[str, int]) -> bytes:
@@ -314,11 +373,46 @@ def _read_tool(base_url: str, case_id: str, tool: str, tally: dict[str, int]) ->
 
 
 def _document(data_dir: Path, folder: str, source_id: str) -> str:
-    """One evidence source, by the source id that identifies it."""
+    """One evidence source, by the source id that identifies it.
+
+    An id that is not a plain source id is refused before any path is built.
+    """
     try:
-        return (data_dir / folder / f"{source_id}.md").read_text()
+        return _path(data_dir, folder, source_id).read_text(encoding="utf-8")
     except OSError as error:
         raise ContractRecordError from error
+
+
+def _customer_statements(data_dir: Path, source_ids: list[str]) -> list[str]:
+    """The further listed documents, each of which must be a customer statement.
+
+    A listed document that is missing, or whose heading does not mark it as
+    customer correspondence, is evidence this step cannot read, so the case is
+    refused instead of being drafted without it.
+    """
+    statements: list[str] = []
+    unread: list[str] = []
+    for source_id in source_ids:
+        try:
+            text = _path(data_dir, "documents", source_id).read_text(encoding="utf-8")
+        except OSError:
+            unread.append(source_id)
+            continue
+        if text.lstrip().lower().startswith(_CUSTOMER_HEADING):
+            statements.append(text)
+        else:
+            unread.append(source_id)
+    if unread:
+        raise ContractRecordError(
+            "the case names evidence this step cannot read: " + ", ".join(sorted(unread))
+        )
+    return statements
+
+
+def _path(data_dir: Path, folder: str, source_id: str) -> Path:
+    if _SOURCE_ID.fullmatch(source_id) is None:
+        raise ContractRecordError("a source id is not a plain document id")
+    return data_dir / folder / f"{source_id}.md"
 
 
 def _attachment_source(intake_source: str) -> str:
