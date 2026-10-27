@@ -31,7 +31,7 @@ A qualified, approved model may answer two closed questions. Code decides what e
 
 - No model is configured. This is the default.
 - A customer statement holds text the detectors recognise as an order to the system, a filing command, text addressed to a model (such as "Hi AI:", "note to the assistant", "approve this" or "classify it as"), or `<evidence>` markup. The detectors are `src/untrusted.py` `has_instruction` and `addresses_a_model`, and `src/contract.py` `_INSTRUCTION_SENTENCE`.
-- A restricted value would survive redaction, such as a card number split across two lines or broken up by hidden characters.
+- A restricted value would survive redaction, such as a card number split at any point across a line break or broken up by hidden characters. The lines are scanned joined by a space and joined with nothing.
 - A customer statement has no `Source ID` line to cite its lines by.
 - The case has no customer lines, or more than 64.
 
@@ -47,7 +47,7 @@ The detectors are patterns. Text written to steer a model in a way they do not r
 
 | Model answer | What code does |
 |---|---|
-| `duplicate_charge`, `service_not_received` | The rules draft that type: routing, missing fields, deadline and citations. The named line is cited exactly as `model_assisted_classification`. The narrative says "Classification is model-assisted: {provider}/{model} read line {label} as {type}. Verify that line before approving." |
+| `duplicate_charge`, `service_not_received` | The rules draft that type: routing, missing fields, deadline and citations. The named line is cited exactly as `model_assisted_classification`. The narrative says "Classification is model-assisted: {provider}/{model} read line {label} as {type}. Verify that line before approving." A duplicate whose second charge is not on record goes to `manual_review`, as a rules duplicate does, because the procedure asks for both transaction records. |
 | `unauthorized`, with the form showing `Authorization: confirmed` in any letter case | `ambiguous` and `manual_review`. Code cites the line as `authorization_denied`, the form line as `authorization_confirmed`, and the procedure's conflict sentence. |
 | `unauthorized`, with the form showing `denied` in a letter case the rules do not read | The rules draft `unauthorized`, as for the first row. |
 | `unauthorized`, any other form value | The procedure's provisional `unauthorized`. `authorization_confirmation` is requested, so the draft goes to `request_information` and is never ready on the model's reading alone. |
@@ -59,6 +59,8 @@ The detectors are patterns. Text written to steer a model in a way they do not r
 | More than one problem: false, or no answer | The rules' draft is unchanged. |
 
 A model answer can fill the rules' gap or send a case to a person. It cannot override a type the rules found, and it can mark a draft ready only in the gap the rules left.
+
+Only the word `confirmed`, in any letter case, counts as a confirming form, as in `src/escalation.py`. A form that says `Authorization: yes` is therefore treated as neither confirmed nor denied, and a model-read denial on it is the provisional `unauthorized`. Reading a wider confirmation vocabulary would change the rules' own path as well, so it is a separate decision.
 
 **Which models may answer.** `src/model_clients.py` enforces three rules:
 

@@ -403,8 +403,16 @@ def test_a_complaint_with_instruction_text_is_never_sent_to_the_model(statement,
     [
         (TWO_TIMES, _followup("My card is 4111 1111\n1111 1111 and it was used again.")),
         ("The shop took my money two times with card 4111\u200b1111\u200b1111\u200b1111.", None),
+        # Kanit's review of #65: a split at an offset that is not a 4-digit group.
+        (TWO_TIMES, _followup("My card 378282\n246310005 was charged.")),
+        (TWO_TIMES, _followup("My card 3056 9309\n02 5904 was charged.")),
     ],
-    ids=["card split across two lines", "hidden characters between the digits"],
+    ids=[
+        "card split across two lines",
+        "hidden characters between the digits",
+        "Amex split 6 and 9",
+        "Diners split mid-group",
+    ],
 )
 def test_a_card_number_redaction_would_miss_keeps_the_model_away(statement, followup):
     model = _Model(_type("duplicate_charge"))
@@ -438,6 +446,19 @@ def test_text_addressed_to_a_model_also_keeps_the_two_problem_question_from_it()
     assert contract["routing"] == "ready_for_review"
     assert model.asked == []
     assert calls == []
+
+
+def test_a_14_digit_diners_card_is_redacted_for_the_model_and_never_quoted():
+    # Kanit's review of #65: 30569309025904 reached both prompts and the contract.
+    statement = "My card 30569309025904 shows the same 90 crown order on two lines."
+    model = _Model(_type("duplicate_charge"), NO)
+
+    contract, _calls, sources = _draft(statement, model)
+
+    assert all("30569309025904" not in prompt for prompt in model.asked)
+    assert "[redacted]" in model.asked[0]
+    assert "30569309025904" not in json.dumps(contract)
+    _assert_exact_quotes(contract, sources)
 
 
 def test_a_known_restricted_value_is_redacted_for_the_model_and_never_quoted():

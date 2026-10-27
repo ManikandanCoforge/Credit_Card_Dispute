@@ -682,7 +682,10 @@ def _model_lines(statements: Sequence[str], known: Sequence[str]) -> list[Statem
     except ContractError:
         return None
     lines = statement_lines(sources, known)
-    if restricted_values(visible(" ".join(line["shown"] for line in lines)), known):
+    # The lines are scanned joined by a space and joined with nothing, so a card number
+    # split at any point across a line break is found ("378282" then "246310005").
+    shown = [line["shown"] for line in lines]
+    if any(restricted_values(visible(joiner.join(shown)), known) for joiner in (" ", "")):
         return None
     return lines
 
