@@ -607,6 +607,30 @@ def test_an_attachment_that_declares_itself_missing_is_cited_by_its_status_line(
     } in result["citations"]
 
 
+def test_an_attachment_that_declares_itself_missing_outranks_an_intake_that_says_attached():
+    # SYN-S21: the intake says "Purchase receipt: attached" and the attachment says it is
+    # missing. The attachment governs, so the receipt a service case needs is requested.
+    record = _d04_like("I paid for a cleaning that was not delivered.", authorization="confirmed")
+
+    result = _assemble(
+        record,
+        intake_text=_d04_like_text(record["intake"]["statement"], authorization="confirmed"),
+        attachment_text="Source ID: CARD-D04-ATTACHMENT\nAttachment status: missing\n",
+        transactions_text=_transactions_text("CARD-D04-TRANSACTIONS", [D04_CHARGE]),
+    )
+
+    assert (result["classification"], result["routing"]) == (
+        "service_not_received",
+        "request_information",
+    )
+    assert result["missing_information"] == ["purchase_receipt"]
+    assert {
+        "claim": "customer_evidence",
+        "source_id": "CARD-D04-ATTACHMENT",
+        "quote": "Attachment status: missing",
+    } in result["citations"]
+
+
 def test_a_call_to_customer_service_twice_is_not_a_duplicate_charge():
     statement = (
         "I called customer service twice about this charge and it is still on my "

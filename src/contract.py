@@ -404,7 +404,7 @@ def _rules_contract(
     if reported is None:
         raise ContractError("the intake has no reported date")
     missing_information, follow_up_questions = _missing_information(
-        record, intake, classification
+        record, intake, classification, attachment_text
     )
     if provisional and "authorization_confirmation" not in missing_information:
         missing_information.append("authorization_confirmation")
@@ -530,7 +530,9 @@ def _escalated_contract(
     procedure_id = record["policy"]["procedure_id"]
     if version_id is None or procedure_id is None:
         raise ContractError("the reported date selected no policy version")
-    missing, questions = _missing_information(record, intake, escalation["classification"])
+    missing, questions = _missing_information(
+        record, intake, escalation["classification"], attachment_text
+    )
     procedure_source = _source_id(procedure_text)
     policy_source = _source_id(policy_text)
     escalation_citations: list[Citation] = [
@@ -616,22 +618,38 @@ def _lines_starting(text: str, prefix: str) -> list[str]:
 
 
 def _missing_information(
-    record: WorkingRecord, intake: Intake, classification: str
+    record: WorkingRecord, intake: Intake, classification: str, attachment_text: str
 ) -> tuple[list[str], list[FollowUpQuestion]]:
     """The missing fields the classification requires, each with one targeted question.
 
     The working record's list comes first, in its procedure order, keeping only the
     fields the classification requires; a required field the record left out is
     added after it. A listed field the intake supplies, or an identifier outside the
-    contract's allowed set, is refused rather than questioned.
+    contract's allowed set, is refused rather than questioned. An attachment that
+    declares itself missing governs over an intake that says the receipt is attached,
+    so the receipt is then requested when the classification requires it.
     """
     asked = _follow_up_questions(intake, list(record["missing_information"]))
-    required = _required_missing(intake, classification)
+    required = _required_missing(_receipt_as_declared(intake, attachment_text), classification)
     missing = [q["field"] for q in asked if q["field"] in required]
     missing += [field for field in required if field not in missing]
     return missing, [
         {"field": field, "question": _QUESTION_BY_MISSING_FIELD[field]} for field in missing
     ]
+
+
+def _receipt_as_declared(intake: Intake, attachment_text: str) -> Intake:
+    """The intake, with the receipt absent when the attachment says "Attachment status: missing"."""
+    statuses = _lines_starting(attachment_text, _ATTACHMENT_STATUS_LABEL)
+    declared_missing = (
+        len(statuses) == 1
+        and statuses[0][len(_ATTACHMENT_STATUS_LABEL) :].strip().lower() == "missing"
+    )
+    if not declared_missing:
+        return intake
+    declared = intake.copy()
+    declared["purchase_receipt"] = _ABSENT
+    return declared
 
 
 def _classification(intake: Intake) -> str | None:
