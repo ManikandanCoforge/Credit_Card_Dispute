@@ -70,6 +70,16 @@ def test_report_only_returns_zero_on_the_same_failures(tmp_path):
     assert base.with_suffix(".md").exists()
 
 
+def test_the_summary_prints_every_failing_check(tmp_path, capsys):
+    # The injected case has no tools, so it is never built and fails conformance. This
+    # does not depend on any development case still failing.
+    suite = _injected_suite(tmp_path, metrics=["conformance"])
+    code = main(["--suite", str(suite), "--out", str(tmp_path / "eval-failing")])
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "  FAIL HID-01 conformance.submitted: " in out
+
+
 def test_an_unknown_metric_exits_two_without_a_traceback(tmp_path, capsys):
     suite = _injected_suite(tmp_path, metrics=["pii", "pii.restricted_values"])
     code = main(["--suite", str(suite), "--out", str(tmp_path / "eval-unknown")])

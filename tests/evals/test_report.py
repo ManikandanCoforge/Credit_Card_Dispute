@@ -6,6 +6,7 @@ from evals.contract import Check
 from evals.report import (
     case_rows,
     escalation_summary,
+    failing_lines,
     metric_rows,
     render_markdown,
     summarize,
@@ -91,6 +92,18 @@ def test_escalation_summary_excludes_unbuilt_cases_from_every_denominator():
     assert "Not built: CASE-B" in render_markdown(
         summarize(make_run([built, missing]), [], {})
     )
+
+
+def test_failing_lines_name_each_failing_check_and_skip_passes():
+    run = make_run([make_case()])
+    checks = [
+        Check("pii.restricted_values", "CASE-1", False, "a card number leaked"),
+        Check("pii.synthetic_patterns", "CASE-1", True, "clean"),
+    ]
+    summary = summarize(run, checks, {})
+    assert list(failing_lines(summary)) == [
+        "CASE-1 pii.restricted_values: a card number leaked"
+    ]
 
 
 def test_markdown_lists_the_failing_case_and_metric():
