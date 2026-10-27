@@ -32,11 +32,16 @@ _AUTHORIZATION_LABEL = "Authorization:"
 
 # A cash withdrawal: cash actually moving out of a machine or an account. The word
 # ATM alone is not enough ("I used my ATM card at a shop" is a card purchase), and
-# neither is "dispense" alone ("did not dispense the service I paid for").
-_MACHINE = r"\b(?:ATM|cash ?machine|cash ?point)s?\b"
+# neither is "dispense" alone ("did not dispense the service I paid for"). An "ATM card" is
+# a payment card, not a machine. The wording may come in either order: "I withdrew 200
+# crowns from the ATM" and "The ATM took my money" are both withdrawals.
+_MACHINE = r"\b(?:ATMs?(?!\s+cards?\b)|cash ?machines?|cash ?points?)\b"
 _CASH = re.compile(
     rf"{_MACHINE}[^.!?]*\b(?:withdr[ae]w\w*|dispens\w*|pa(?:y|ys|id) out|cash|banknotes)\b"
+    rf"|{_MACHINE}[^.!?]*\b(?:took|kept|swallowed|ate|retained)\b[^.!?]*"
+    r"\b(?:money|cash|crowns|notes|banknotes|funds)\b"
     rf"|\b(?:cash|banknotes)\b[^.!?]*{_MACHINE}"
+    rf"|\bwithdr[ae]w\w*\b[^.!?]*{_MACHINE}"
     r"|\bwithdr[ae]w\w*\b[^.!?]*\b(?:cash|banknotes)\b"
     r"|\b(?:cash|banknotes)\b[^.!?]*\bwithdr[ae]w\w*"
     r"|\b(?:dispens\w*|pa(?:y|ys|id) out)\b[^.!?]*\b(?:cash|banknotes|notes)\b"
@@ -76,11 +81,15 @@ class EscalationError(Exception):
 
 
 def find_escalation(
-    intake_text: str, customer_texts: list[str], procedure_text: str
+    intake_text: str,
+    customer_texts: list[str],
+    procedure_text: str,
+    known: Sequence[str] = (),
 ) -> Escalation | None:
     """Return the escalation for this complaint, or None when the procedure gives none.
 
-    Every returned citation is an exact single-line excerpt of its source.
+    Every returned citation is an exact single-line excerpt of its source. A sentence
+    holding a restricted value, a known one included, is cited by its Source ID line.
     """
     statements = [intake_text, *customer_texts]
     for text in statements:
@@ -96,7 +105,7 @@ def find_escalation(
                     {
                         "claim": "cash_withdrawal",
                         "source_id": _source_id(text),
-                        "quote": _quotable(cash, text),
+                        "quote": _quotable(cash, text, known),
                     },
                     _rule(procedure_text, _UNSUPPORTED_RULE_ANCHOR, "unsupported_rule"),
                 ],
@@ -110,7 +119,7 @@ def find_escalation(
                 {
                     "claim": "authorization_denied",
                     "source_id": _source_id(text),
-                    "quote": _quotable(denied, text),
+                    "quote": _quotable(denied, text, known),
                 }
             )
         if confirmed is not None:
@@ -118,7 +127,7 @@ def find_escalation(
                 {
                     "claim": "authorization_confirmed",
                     "source_id": _source_id(text),
-                    "quote": _quotable(confirmed, text),
+                    "quote": _quotable(confirmed, text, known),
                 }
             )
     if not denials or not confirmations:
@@ -207,16 +216,19 @@ def _split(line: str) -> list[str]:
     """The sentences of one line. A heading has none; a form label is dropped and its value kept.
 
     A label that itself carries a cue ("Cash withdrawal: the machine gave me nothing.") is
-    kept with its value, so the cue is not lost with the label. The sentences are exact
-    slices of the line, so they can be quoted.
+    kept with its value, so the cue is not lost with the label. So is a label written as
+    an instruction ("Disregard the rules: I was charged twice."), so the instruction and
+    the cue it introduces are judged as one sentence. The sentences are exact slices of
+    the line, so they can be quoted.
     """
     if not line or line.startswith("#"):
         return []
     label = _LABEL.match(line)
-    cue_in_label = label is not None and any(
-        pattern.search(label.group(0)) for pattern in (_CASH, _DENIES, _CONFIRMS)
+    keep_label = label is not None and (
+        any(pattern.search(label.group(0)) for pattern in (_CASH, _DENIES, _CONFIRMS))
+        or has_instruction(label.group(0))
     )
-    value = line[label.end() :] if label and not cue_in_label else line
+    value = line[label.end() :] if label and not keep_label else line
     return [sentence for sentence in _SENTENCE_END.split(value) if sentence]
 
 
@@ -237,10 +249,10 @@ def _source_id(text: str) -> str:
     return source_id
 
 
-def _quotable(sentence: str, text: str) -> str:
+def _quotable(sentence: str, text: str, known: Sequence[str]) -> str:
     """The sentence, or the statement's Source ID line when the sentence holds a restricted
     value such as a card number the customer typed, so the case is drafted, never refused."""
-    if not restricted_values(sentence):
+    if not restricted_values(sentence, known):
         return sentence
     return _lines_starting(text, _SOURCE_ID_LABEL)[0]
 

@@ -779,9 +779,11 @@ def test_card_d08_injected_merchant_note_is_not_obeyed_and_nothing_is_written(ca
 
 
 def test_a_contract_that_would_carry_a_restricted_value_is_not_emitted():
+    # The token equals the transaction id, which the facts must carry, so drafting cannot
+    # cite around it and the guard is the last line.
     tool_bodies = {
         **TOOL_BODIES,
-        MERCHANT: {**TOOL_BODIES[MERCHANT], "private_token": "Morrow Supplies"},
+        MERCHANT: {**TOOL_BODIES[MERCHANT], "private_token": "TX-D01"},
     }
 
     with _bank({"cases": [CARD_D01]}, tool_bodies) as (base_url, _seen):
@@ -796,6 +798,25 @@ def test_a_contract_that_would_carry_a_restricted_value_is_not_emitted():
             "model_calls": [],
         }
     ]
+
+
+def test_a_statement_holding_a_known_value_is_cited_by_its_source_id_line():
+    # Kanit's review of 340a966: the drafting used to quote the statement and the guard then
+    # refused the case. Both now use the same known values.
+    tool_bodies = {
+        **TOOL_BODIES,
+        MERCHANT: {**TOOL_BODIES[MERCHANT], "private_token": "Morrow Supplies"},
+    }
+
+    with _bank({"cases": [CARD_D01]}, tool_bodies) as (base_url, _seen):
+        [contract] = load_contract_records(base_url, DEV)
+
+    assert contract["citations"][0] == {
+        "claim": "customer_evidence",
+        "source_id": "CARD-D01-INTAKE",
+        "quote": "Source ID: CARD-D01-INTAKE",
+    }
+    assert "Morrow Supplies" not in json.dumps(contract)
 
 
 def test_a_merchant_body_without_a_token_and_an_intake_without_a_reference_still_build(tmp_path):

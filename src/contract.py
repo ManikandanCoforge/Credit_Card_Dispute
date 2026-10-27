@@ -43,6 +43,7 @@ from src.models import (
 )
 from src.narrative import NarrativeMeter, ProseWriter, draft_narrative
 from src.untrusted import (
+    ATTACHMENT_INSTRUCTION_NOTICE,
     INSTRUCTION_NOTICE,
     addresses_a_model,
     has_instruction,
@@ -95,25 +96,29 @@ _DUPLICATE = re.compile(
 # A denial of the duplicate itself is not a report of one. It is checked on the same
 # sentence as the cue, so "charged twice, not a double charge" stays reported.
 _NOT_DUPLICATE = re.compile(
-    r"\bnot (?:a |an )?(?:double|duplicate)\b|\bnot (?:charged )?twice\b"
+    r"\bnot (?:a |an )?(?:double|duplicate)\b|\bnot (?:charged )?(?:twice|two times|2 times)\b"
     r"|(?:\bnot|n't|\bnever)\s+(?:appear\w*|show\w*|listed|posted|go through|went through)"
     r"\b[^.!?]{0,30}\btwice\b"
-    r"|\b(?:not|never|no)\b[^.!?]{0,25}\b(?:charged|billed|debited)\b[^.!?]{0,25}\btwice\b"
+    r"|\b(?:not|never|no)\b[^.!?]{0,25}\b(?:charged|billed|debited)\b[^.!?]{0,25}"
+    r"\b(?:twice|two times|2 times)\b"
+    r"|(?:\bnot|n't|\bnever|\bno)\s+(?:(?:see|find|have|notice|show)\w*\s+)?(?:any\s+)?"
+    r"two\s+(?:identical\s+|separate\s+)?(?:charges|debits|payments)\b"
     r"|\b(?:not|never|no)\b\s+(?:a\s+|an\s+|the\s+)?"
     r"(?:double|duplicate)[- ]?(?:charge|charges|transaction|transactions|payment|payments)\b",
     re.IGNORECASE,
 )
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 # A complaint that gives a dispute detail inside text addressed to the system.
-_INSTRUCTION_ESCALATION: Escalation = {
-    "classification": "ambiguous",
-    "reason": (
-        "A customer statement gives a dispute detail inside text addressed to the system. "
-        "That text is not read for the dispute type, so a person must classify the case. "
-        "It was treated as evidence and not followed."
-    ),
-    "citations": [],
-}
+_INSTRUCTION_REASON = (
+    "A customer statement gives a dispute detail inside text addressed to the system. "
+    "That text is not read for the dispute type, so a person must classify the case. "
+    "It was treated as evidence and not followed."
+)
+# A duplicate needs both charges: "retrieve both transaction records".
+_ONE_CHARGE_NOTE = (
+    "Only one charge for this purchase is on record, and the procedure asks for both "
+    "transaction records, so a person must find the second charge before this draft is used."
+)
 # The hybrid's escalations (ADR-003). A model answer can send a case to a person; it never
 # makes a case ready by itself.
 _MULTIPLE_PROBLEMS_ESCALATION: Escalation = {
@@ -161,12 +166,16 @@ _SERVICE_NOT_DELIVERED = (
 _SERVICE = re.compile("|".join(re.escape(p) for p in _SERVICE_NOT_DELIVERED), re.IGNORECASE)
 # A filing command is not the customer's account of the facts. src.untrusted catches text
 # addressed to the system; these are the commands that try to choose the case's class.
+# A command has the shape "file this as …": a bare "I want to record this complaint" is the
+# customer's account, and a negated command ("do not mark this as resolved") orders nothing.
 _INSTRUCTION_SENTENCE = re.compile(
-    r"\b(?:system override|file this|classify this|mark this|treat this|record this"
+    r"\b(?:system override"
+    r"|(?:file|classify|mark|treat|record)\s+(?:this|it)\s+(?:as|under)"
     r"|ignore (?:all |the )?(?:above|previous|earlier)"
     r"|disregard (?:all |the )?(?:above|previous|earlier))\b",
     re.IGNORECASE,
 )
+_NEGATED_BEFORE = re.compile(r"\b(?:do\s+not|don't|dont|never|not)\s+$", re.IGNORECASE)
 # The fields each classification requires: "Required fields absent for the chosen type
 # must all be requested." Every intake form carries every field, so a blank field that
 # another type would need stays out. ambiguous is the procedure's conflict about
@@ -253,9 +262,13 @@ def assemble_draft(
     customer describes more than one problem, only once a complete draft would be marked
     ready. Its answer can fill the rules' gap or send the case to a person; every other
     field is still computed here. See _model_lines for when it is never asked. Each call
-    is appended to model_calls when a list is given. known_values are restricted values
-    known for this case, such as the merchant's private token and the customer
-    reference; what the model is shown never holds them.
+    is appended to model_calls when a list is given.
+
+    known_values are restricted values known for this case, such as the merchant's
+    private token and the customer reference. A customer sentence holding one is cited
+    by its Source ID line, as one holding a card number is, so the output guard in
+    src/contract_records.py never has to refuse the draft, and what a model is shown
+    never holds one.
 
     customer_texts are further customer statements about the complaint, such as
     a follow-up email. A cash withdrawal, or customer statements that conflict
@@ -278,7 +291,9 @@ def assemble_draft(
     only the fields the chosen classification requires, and adds any required field
     that the record left out. Each field gets exactly one targeted question, and a
     field the intake supplies is refused rather than questioned. Routing is
-    request_information when any field is missing and ready_for_review otherwise.
+    request_information when any field is missing and ready_for_review otherwise. A
+    duplicate whose second charge is not on record goes to manual_review instead,
+    because the procedure asks for both transaction records.
 
     Citations are exact slices of the supplied sources. A slice that cannot be
     made exactly raises ContractError.
@@ -317,17 +332,15 @@ def _rules_contract(
     if intake is None:
         raise ContractError("the working record has no intake")
     try:
-        escalation = find_escalation(intake_text, list(customer_texts), procedure_text)
+        escalation = find_escalation(intake_text, list(customer_texts), procedure_text, known)
     except EscalationError as error:
         raise ContractError(str(error)) from error
     # Text addressed to the system is never read for a cue, and dropping it must not
     # hide one: when it holds a cue, a person classifies the case. So such text can
     # only ever send a case to a person, never choose its class or make it ready.
     statements = [intake_text, *customer_texts]
-    if escalation is None and (
-        instruction_holds_cue(statements, _DUPLICATE, _SERVICE) or _command_holds_cue(statements)
-    ):
-        escalation = _INSTRUCTION_ESCALATION
+    if escalation is None:
+        escalation = _instruction_escalation(statements)
     if escalation is not None:
         return _escalated_contract(
             record,
@@ -338,6 +351,7 @@ def _rules_contract(
             procedure_text=procedure_text,
             policy_text=policy_text,
             transactions_text=transactions_text,
+            known=known,
         )
     escalated = {
         "intake_text": intake_text,
@@ -371,7 +385,9 @@ def _rules_contract(
             )
         model_escalation = _model_escalation(answer, intake, statements, procedure_text, known)
         if model_escalation is not None:
-            return _escalated_contract(record, intake, model_escalation, **escalated, notes=notes)
+            return _escalated_contract(
+                record, intake, model_escalation, **escalated, known=known, notes=notes
+            )
         classification = answer["type"]
         model_citations.append(
             _line_quote("model_assisted_classification", answer["line"], statements, known)
@@ -408,8 +424,11 @@ def _rules_contract(
         if classification == "duplicate_charge"
         else []
     )
+    if classification == "duplicate_charge" and not second_charges:
+        routing = _MANUAL_REVIEW
+        notes.append(_ONE_CHARGE_NOTE)
     citations: list[Citation] = [
-        _customer_evidence(intake, intake_text),
+        _customer_evidence(intake, intake_text, known),
         _attachment_citation(attachment_text, missing_information),
         _transaction_citation(intake["transaction_id"], transactions_text),
         *second_charges,
@@ -453,8 +472,37 @@ def _rules_contract(
                 calls.append(call)
             if multiple:
                 escalation = {**_MULTIPLE_PROBLEMS_ESCALATION, "citations": [*model_citations]}
-                return _escalated_contract(record, intake, escalation, **escalated, notes=notes)
-    return contract, [*notes, *_untrusted_notes(record)]
+                return _escalated_contract(
+                    record, intake, escalation, **escalated, known=known, notes=notes
+                )
+    return contract, [*notes, *_untrusted_notes(record, attachment_text)]
+
+
+def _instruction_escalation(statements: Sequence[str]) -> Escalation | None:
+    """The escalation for a dispute detail given inside text addressed to the system.
+
+    Each statement holding such text is cited by its Source ID line, so the reviewer
+    sees where it was found; the text itself is never quoted.
+    """
+    holders = [
+        text
+        for text in statements
+        if instruction_holds_cue([text], _DUPLICATE, _SERVICE) or _command_holds_cue([text])
+    ]
+    if not holders:
+        return None
+    return {
+        "classification": "ambiguous",
+        "reason": _INSTRUCTION_REASON,
+        "citations": [
+            {
+                "claim": "instruction_text",
+                "source_id": _source_id(text),
+                "quote": _unique_line(text, _SOURCE_ID_LABEL),
+            }
+            for text in holders
+        ],
+    }
 
 
 def _escalated_contract(
@@ -467,6 +515,7 @@ def _escalated_contract(
     procedure_text: str,
     policy_text: str,
     transactions_text: str,
+    known: Sequence[str],
     notes: Sequence[str] = (),
 ) -> tuple[Contract, list[str]]:
     """A complaint the procedure sends to a human.
@@ -489,7 +538,7 @@ def _escalated_contract(
         for quote in escalation["citations"]
     ]
     citations: list[Citation] = [
-        _customer_evidence(intake, intake_text),
+        _customer_evidence(intake, intake_text, known),
         _attachment_citation(attachment_text, missing, escalated=True),
         _transaction_citation(intake["transaction_id"], transactions_text),
         *escalation_citations,
@@ -529,7 +578,7 @@ def _escalated_contract(
         "follow_up_questions": questions,
         "narrative": "",
     }
-    return contract, [escalation["reason"], *notes, *_untrusted_notes(record)]
+    return contract, [escalation["reason"], *notes, *_untrusted_notes(record, attachment_text)]
 
 
 def _attachment_citation(
@@ -537,24 +586,33 @@ def _attachment_citation(
 ) -> Citation:
     """The attachment evidence the draft cites.
 
-    A supplied receipt is cited by its Amount line, and a draft whose receipt has no
-    single Amount line is refused. When the receipt itself is missing, the attachment's
-    status line is cited instead, so a missing-evidence draft still quotes the
-    attachment exactly. An escalated case does not rest on the amount, so there, and for
-    a missing receipt without a single status line, the Source ID line is cited.
+    A supplied receipt is cited by its Amount line. When the receipt is missing, the
+    attachment's status line is cited instead, so a missing-evidence draft still quotes
+    the attachment exactly. That holds whatever the classification requires: an
+    attachment that declares itself missing ("Attachment status: missing") is cited by
+    that line even for a type that does not request a receipt. An escalated case does
+    not rest on the amount, so there, and for a missing receipt without a single status
+    line, the Source ID line is cited. Any other attachment without a single Amount
+    line is refused.
     """
     receipt_missing = "purchase_receipt" in missing_information
-    label = _ATTACHMENT_STATUS_LABEL if receipt_missing else _AMOUNT_LABEL
-    lines = [
-        line.strip() for line in attachment_text.splitlines() if line.strip().startswith(label)
-    ]
-    if len(lines) == 1:
-        quote = lines[0]
+    amounts = _lines_starting(attachment_text, _AMOUNT_LABEL)
+    statuses = _lines_starting(attachment_text, _ATTACHMENT_STATUS_LABEL)
+    if receipt_missing and len(statuses) == 1:
+        quote = statuses[0]
+    elif not receipt_missing and len(amounts) == 1:
+        quote = amounts[0]
+    elif len(statuses) == 1:
+        quote = statuses[0]
     elif receipt_missing or escalated:
         quote = _unique_line(attachment_text, _SOURCE_ID_LABEL)
     else:
         quote = _unique_line(attachment_text, _AMOUNT_LABEL)
     return {"claim": "customer_evidence", "source_id": _source_id(attachment_text), "quote": quote}
+
+
+def _lines_starting(text: str, prefix: str) -> list[str]:
+    return [line.strip() for line in text.splitlines() if line.strip().startswith(prefix)]
 
 
 def _missing_information(
@@ -614,7 +672,7 @@ def _model_lines(statements: Sequence[str], known: Sequence[str]) -> list[Statem
     """
     if any(
         has_instruction(text)
-        or _INSTRUCTION_SENTENCE.search(visible(text))
+        or _is_command(visible(text))
         or addresses_a_model(text)
         for text in statements
     ):
@@ -731,8 +789,16 @@ def _account_sentences(statement: str) -> list[str]:
         sentence
         for line in statement.splitlines()
         for sentence in _SENTENCE_END.split(line)
-        if not has_instruction(sentence) and not _INSTRUCTION_SENTENCE.search(sentence)
+        if not has_instruction(sentence) and not _is_command(sentence)
     ]
+
+
+def _is_command(text: str) -> bool:
+    """True when text holds a filing command that is not negated."""
+    return any(
+        not _NEGATED_BEFORE.search(text[: match.start()])
+        for match in _INSTRUCTION_SENTENCE.finditer(text)
+    )
 
 
 def _command_holds_cue(texts: Sequence[str]) -> bool:
@@ -742,7 +808,7 @@ def _command_holds_cue(texts: Sequence[str]) -> bool:
     caller sends the case to a person, as it does for text addressed to the system.
     """
     return any(
-        _INSTRUCTION_SENTENCE.search(sentence)
+        _is_command(sentence)
         and (_DUPLICATE.search(sentence) or _SERVICE.search(sentence))
         for text in texts
         for line in text.splitlines()
@@ -750,12 +816,13 @@ def _command_holds_cue(texts: Sequence[str]) -> bool:
     )
 
 
-def _customer_evidence(intake: Intake, intake_text: str) -> Citation:
+def _customer_evidence(intake: Intake, intake_text: str, known: Sequence[str]) -> Citation:
     """The customer's own words, quoted exactly; the intake's Source ID line when they hold a
-    restricted value (a card number the customer typed), so the case is drafted, not refused.
+    restricted value (a card number the customer typed, or a value known for the case), so
+    the case is drafted, not refused.
     """
     statement = _statement(intake, intake_text)
-    if restricted_values(statement):
+    if restricted_values(statement, known):
         statement = _unique_line(intake_text, _SOURCE_ID_LABEL)
     return {"claim": "customer_evidence", "source_id": _source_id(intake_text), "quote": statement}
 
@@ -765,10 +832,12 @@ def _other_charge_citations(
 ) -> list[Citation]:
     """Cite the second charge of a duplicate, so both transaction records are on file.
 
-    At most one row is cited. It must be the five contract fields and either be named
-    by the customer, or match the named charge's merchant, amount and currency and be
-    posted within two days of it. Any other row, even one of the same amount, is
-    unrelated and is never quoted; a row with extra fields is skipped, not fatal.
+    At most one row is cited. It must be the five contract fields and match the named
+    charge's merchant, amount and currency. A row the customer names is preferred, and
+    naming it stands in for the posting date; any other row must be posted within two
+    days of the named charge. Any other row, even one the customer names or one of the
+    same amount, is unrelated and is never quoted; a row with extra fields is skipped,
+    not fatal.
     """
     source_id, charges = _tool_charges(transactions_text)
     named = next((c for c in charges if c.get("transaction_id") == transaction_id), None)
@@ -780,6 +849,7 @@ def _other_charge_citations(
         if isinstance(charge.get("transaction_id"), str)
         and charge.get("transaction_id") != transaction_id
         and set(charge) == _TRANSACTION_ROW_KEYS
+        and all(charge.get(k) == named.get(k) for k in ("merchant_id", "amount", "currency"))
     ]
     ranked = [c for c in candidates if _named_in(str(c["transaction_id"]), statement)] + [
         c for c in candidates if _same_charge(c, named)
@@ -794,13 +864,12 @@ def _named_in(transaction_id: str, statement: str) -> bool:
 
 
 def _same_charge(charge: dict[str, object], named: dict[str, object]) -> bool:
-    """Same merchant, amount and currency as the named charge, posted within two days.
+    """Posted within two days of the named charge; the caller has already matched the
+    merchant, amount and currency.
 
     A posted date may be a plain date or a full ISO datetime ("2025-03-02T09:00:00"); only
     the calendar day counts. An unreadable date is not the same charge.
     """
-    if any(charge.get(k) != named.get(k) for k in ("merchant_id", "amount", "currency")):
-        return False
     try:
         gap = _posted_day(charge.get("posted_date")) - _posted_day(named.get("posted_date"))
     except ValueError:
@@ -812,12 +881,15 @@ def _posted_day(value: object) -> date:
     return datetime.fromisoformat(str(value)).date()
 
 
-def _untrusted_notes(record: WorkingRecord) -> list[str]:
-    """A warning for the reviewer when the merchant text is written as instructions."""
+def _untrusted_notes(record: WorkingRecord, attachment_text: str) -> list[str]:
+    """A warning for the reviewer when merchant or attachment text is written as instructions."""
+    notes: list[str] = []
     merchant = record.get("merchant")
     if merchant is not None and has_instruction(merchant["note"]):
-        return [INSTRUCTION_NOTICE]
-    return []
+        notes.append(INSTRUCTION_NOTICE)
+    if has_instruction(attachment_text):
+        notes.append(ATTACHMENT_INSTRUCTION_NOTICE)
+    return notes
 
 
 def _required_missing(intake: Intake, classification: str) -> list[str]:

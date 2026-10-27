@@ -148,6 +148,9 @@ def test_manual_review_outranks_missing_information_and_still_lists_the_fields()
         "I tried to withdraw 90 crowns in cash and the machine gave me nothing.",
         "The cash machine kept my money.",
         "The atm never dispensed the notes.",
+        # Kanit's review of 340a966: the withdrawal word before the machine, and no cash word.
+        "I withdrew 200 crowns from the ATM and it gave me nothing.",
+        "The ATM took my money.",
     ],
 )
 def test_cash_that_did_not_come_out_of_a_machine_is_unsupported(statement):
@@ -164,6 +167,7 @@ def test_cash_that_did_not_come_out_of_a_machine_is_unsupported(statement):
         "I found a card purchase I do not recognize.",
         "I paid for a service that never arrived.",
         "The merchant charged me twice for one purchase.",
+        "I paid with my ATM card and the shop took 90 crowns.",
     ],
 )
 def test_a_card_purchase_that_mentions_an_atm_card_or_dispensing_is_not_escalated(statement):

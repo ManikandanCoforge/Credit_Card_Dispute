@@ -258,6 +258,8 @@ def _contract_record(
     enriched = build_transaction(record, transactions)
     merchant, private_token = _merchant(base_url, record["case_id"])
     enriched = build_merchant(enriched, merchant)
+    # The drafting and the output guard use the same known values, so a sentence holding
+    # one is cited by its Source ID line instead of being quoted and then refused.
     known = [private_token, _customer_reference(intake_text)]
     try:
         contract, meter = assemble_draft(

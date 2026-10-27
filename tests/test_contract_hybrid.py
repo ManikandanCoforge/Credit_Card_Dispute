@@ -24,7 +24,12 @@ CHARGE = {
     "merchant_id": "MER-TEST",
     "posted_date": "2026-08-19",
 }
+# Both charges are on record, as a duplicate needs ("retrieve both transaction records").
+SECOND_CHARGE = {**CHARGE, "transaction_id": "TX-TEST-B"}
 TRANSACTIONS_TEXT = json.dumps(
+    {"source_id": "TEST-TRANSACTIONS", "transactions": [CHARGE, SECOND_CHARGE]}, sort_keys=True
+)
+ONE_CHARGE_TEXT = json.dumps(
     {"source_id": "TEST-TRANSACTIONS", "transactions": [CHARGE]}, sort_keys=True
 )
 CHARGE_QUOTE = json.dumps(CHARGE, sort_keys=True)
@@ -119,6 +124,11 @@ def test_a_type_the_model_reads_is_drafted_by_the_rules_and_cited_to_its_line():
         {"claim": "customer_evidence", "source_id": "TEST-INTAKE", "quote": TWO_TIMES},
         {"claim": "customer_evidence", "source_id": "TEST-ATTACHMENT", "quote": "Amount: 90 XCR"},
         {"claim": "transaction_record", "source_id": "TEST-TRANSACTIONS", "quote": CHARGE_QUOTE},
+        {
+            "claim": "second_charge",
+            "source_id": "TEST-TRANSACTIONS",
+            "quote": json.dumps(SECOND_CHARGE, sort_keys=True),
+        },
         {"claim": "model_assisted_classification", "source_id": "TEST-INTAKE", "quote": TWO_TIMES},
         {
             "claim": "classification",
@@ -136,6 +146,24 @@ def test_a_type_the_model_reads_is_drafted_by_the_rules_and_cited_to_its_line():
         },
     ]
     assert [call["purpose"] for call in calls] == ["dispute_type", "multiple_problems"]
+    _assert_exact_quotes(contract, sources)
+
+
+def test_a_model_read_duplicate_with_one_charge_on_record_goes_to_a_person():
+    # Kanit's review of #65: the model may type a duplicate, but CARD-PROCEDURE-01 still
+    # asks for both transaction records before a draft can be ready.
+    model = _Model(_type("duplicate_charge"))
+
+    contract, calls, sources = _draft(TWO_TIMES, model, transactions_text=ONE_CHARGE_TEXT)
+
+    assert (contract["classification"], contract["routing"], contract["deadline"]) == (
+        "duplicate_charge",
+        "manual_review",
+        "2026-11-15",
+    )
+    assert "Only one charge for this purchase is on record" in contract["narrative"]
+    # Not ready, so the two-problem question is never asked.
+    assert [call["purpose"] for call in calls] == ["dispute_type"]
     _assert_exact_quotes(contract, sources)
 
 
@@ -573,6 +601,7 @@ def _draft(
     calls=None,
     attachment_text=ATTACHMENT_TEXT,
     known_values=(),
+    transactions_text=TRANSACTIONS_TEXT,
 ):
     record = _record(authorization, missing)
     record["intake"]["statement"] = statement
@@ -584,7 +613,7 @@ def _draft(
         attachment_text=attachment_text,
         procedure_text=PROCEDURE_TEXT,
         policy_text=POLICY_TEXT,
-        transactions_text=TRANSACTIONS_TEXT,
+        transactions_text=transactions_text,
         customer_texts=list(customer_texts),
         model=model,
         model_calls=calls,
@@ -593,7 +622,7 @@ def _draft(
     sources = {
         "TEST-INTAKE": intake_text,
         "TEST-ATTACHMENT": attachment_text,
-        "TEST-TRANSACTIONS": TRANSACTIONS_TEXT,
+        "TEST-TRANSACTIONS": transactions_text,
         "CARD-PROCEDURE-01": PROCEDURE_TEXT,
         "CARD-POLICY-V2": POLICY_TEXT,
     }
@@ -631,5 +660,5 @@ def _record(authorization, missing=None):
         "policy": {"version_id": "CARD-POLICY-V2", "procedure_id": "CARD-PROCEDURE-01"},
         "missing_information": missing,
         "routing": None,
-        "transactions": [dict(CHARGE)],
+        "transactions": [dict(CHARGE), dict(SECOND_CHARGE)],
     }

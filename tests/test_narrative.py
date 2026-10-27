@@ -165,8 +165,25 @@ def test_a_model_may_not_reword_an_escalation_note_into_a_decision():
     assert text == template
     assert narrative_problems(decided, template, [ESCALATION_NOTE]) == [
         "a boundary sentence or note is missing or reworded",
+        "a reworded sentence adds or drops a negation",
         "a reworded sentence states a decision or an outcome",
     ]
+
+
+@pytest.mark.parametrize(
+    "old, new",
+    [
+        # Kanit's repro on 340a966: every fact token is kept, the meaning is reversed.
+        ("The transaction service shows 117 XCR.", "The transaction service shows no charge of 117 XCR."),
+        ("Our dispute team will review your report.", "Our dispute team will not review your report."),
+    ],
+)
+def test_a_model_may_not_turn_a_sentence_around(old, new):
+    template = template_narrative(assemble_contract(**_d01_arguments()))
+    inverted = template.replace(old, new)
+
+    assert inverted != template
+    assert "a reworded sentence adds or drops a negation" in narrative_problems(inverted, template)
 
 
 def test_a_model_that_keeps_the_note_verbatim_is_used():
