@@ -758,8 +758,12 @@ def test_the_committed_report_matches_its_meters_and_markdown():
 
     assert report["total_cases"] == len(meters) == 12
     assert report["pass_count"] == sum(1 for case in report["cases"] if case["passed"])
-    assert isinstance(report["p50_latency_ms"], int)
-    assert isinstance(report["p95_latency_ms"], int)
+    committed_meters = ROOT / "reports" / "meters.jsonl"
+    latencies = latency_percentiles(committed_meters)
+    assert isinstance(latencies["p50"], int)
+    assert isinstance(latencies["p95"], int)
+    assert report["p50_latency_ms"] == latencies["p50"]
+    assert report["p95_latency_ms"] == latencies["p95"]
     assert report["p50_latency_ms"] <= report["p95_latency_ms"]
     assert report["total_cost_usd"] == round(
         sum(row["cost_usd"] for row in meters), 6
