@@ -199,9 +199,7 @@ def measure_cases(
                 "duration_ms": duration_ms,
                 "contract": result["contract"],
                 "error": result["error"],
-                "meter_error": (
-                    result["meter_error"] if "meter_error" in result else None
-                ),
+                "meter_error": result.get("meter_error"),
             }
         )
     return measured
@@ -234,9 +232,7 @@ def build_case_reports(
                 "duration_ms": case["duration_ms"],
                 "failed_checks": failed_checks(checks),
                 "error": case["error"],
-                "meter_error": (
-                    case["meter_error"] if "meter_error" in case else None
-                ),
+                "meter_error": case.get("meter_error"),
             }
         )
     return reports
