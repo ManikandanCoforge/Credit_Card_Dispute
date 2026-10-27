@@ -22,6 +22,8 @@ The suite is derived from the eval-harness project (MIT): spec, case set, per-ca
 
 The supplied evaluator is used as an oracle, not copied. Its own limitations line still holds: semantic grounding, prose safety, human approval and readiness are human review.
 
+The scored run also applies `pii.artifact_checks` to `reports/meters.jsonl`, the redacted per-case meter file. The same detectors run over each line, and a leak refuses the run with the file and the case named.
+
 ## Run the development set
 
 ```sh

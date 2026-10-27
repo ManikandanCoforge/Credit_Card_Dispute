@@ -28,7 +28,9 @@ import json
 import os
 import re
 import sys
+import time
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict, cast
 from urllib.parse import quote
@@ -46,6 +48,7 @@ from src.load_records import (
     read_body,
     records_from_case_list,
 )
+from src.meters import MeterLeak, record_case_meter
 from src.model_clients import ModelSetupError, model_from_env
 from src.model_cue import ModelCall, ModelClient
 from src.models import (
@@ -82,11 +85,18 @@ class ContractRecordError(Exception):
 
 
 class ContractResult(TypedDict):
+    """One case's contract, its reason when it could not be built, and its meter.
+
+    meter_error names the error that refused this case's meter line, or is None.
+    A refused line never stops the run and never discards the case's result.
+    """
+
     case_id: str
     contract: Contract | None
     error: str | None
     narrative_meter: NarrativeMeter | None
     model_calls: list[ModelCall]
+    meter_error: str | None
 
 
 class CasePlan(TypedDict):
@@ -101,11 +111,15 @@ class ToolRetry:
 
     A run keeps one ToolRetry for all its cases, so each breaker counts the complaints
     in a row that used every attempt. sleep is None for time.sleep; a test passes its own.
+    tool_attempts and retry_count are running totals over the whole run; a case's meter
+    line records the difference across that case's build.
     """
 
     def __init__(self, sleep: Callable[[float], None] | None = None) -> None:
         self.breakers = {tool: CircuitBreaker() for tool in _TOOLS}
         self.sleep = sleep
+        self.tool_attempts = 0
+        self.retry_count = 0
 
 
 def contract_case_plans(base_url: str, data_dir: str | Path) -> list[CasePlan]:
@@ -131,6 +145,8 @@ def build_contract_result(
     writer: ProseWriter | None = None,
     retry: ToolRetry | None = None,
     model: ModelClient | None = None,
+    *,
+    meter_path: Path | None = None,
 ) -> ContractResult:
     """Build one case's contract from the bank and the dataset, or report the reason.
 
@@ -140,9 +156,20 @@ def build_contract_result(
     case gets its own. model, when given, may answer the hybrid's two closed
     questions (ADR-003); its calls are kept even when the case is not built, because
     they were still made.
+
+    When meter_path is set, one meter line is appended for this case after it
+    finishes, including a case that stops. The line counts the tool attempts and
+    the retries this case made. A line that would carry a restricted value is
+    refused: the case keeps its result and meter_error names "MeterLeak", so one
+    refused line never stops the run.
     """
+    started_at = datetime.now(UTC)
+    started = time.perf_counter()
     case_id = plan["record"]["case_id"]
     calls: list[ModelCall] = []
+    retry = ToolRetry() if retry is None else retry
+    attempts_before = retry.tool_attempts
+    retries_before = retry.retry_count
     try:
         contract, meter = _contract_record(
             plan["record"],
@@ -150,25 +177,48 @@ def build_contract_result(
             Path(data_dir),
             plan["documents"],
             writer,
-            ToolRetry() if retry is None else retry,
+            retry,
             model,
             calls,
         )
     except ContractRecordError as error:
-        return {
+        result: ContractResult = {
             "case_id": case_id,
             "contract": None,
             "error": _reason(error),
             "narrative_meter": None,
             "model_calls": calls,
+            "meter_error": None,
         }
-    return {
-        "case_id": case_id,
-        "contract": contract,
-        "error": None,
-        "narrative_meter": meter,
-        "model_calls": calls,
-    }
+    else:
+        result = {
+            "case_id": case_id,
+            "contract": contract,
+            "error": None,
+            "narrative_meter": meter,
+            "model_calls": calls,
+            "meter_error": None,
+        }
+    if meter_path is not None:
+        finished = result["contract"]
+        narrative = result["narrative_meter"]
+        try:
+            record_case_meter(
+                meter_path,
+                case_id=result["case_id"],
+                route=finished["routing"] if finished is not None else "not_built",
+                started_at=started_at,
+                latency_ms=round((time.perf_counter() - started) * 1000),
+                model_calls=len(calls)
+                + (0 if narrative is None else narrative["model_calls"]),
+                input_tokens=sum(call["input_tokens"] or 0 for call in calls),
+                output_tokens=sum(call["output_tokens"] or 0 for call in calls),
+                tool_attempts=retry.tool_attempts - attempts_before,
+                retry_count=retry.retry_count - retries_before,
+            )
+        except MeterLeak:
+            result["meter_error"] = "MeterLeak"
+    return result
 
 
 def load_contract_results(
@@ -177,24 +227,42 @@ def load_contract_results(
     writer: ProseWriter | None = None,
     retry: ToolRetry | None = None,
     model: ModelClient | None = None,
+    *,
+    meter_path: Path | None = None,
 ) -> list[ContractResult]:
     """Return one result per case in the bank case list, in bank order.
 
     A case that cannot be built has a null contract and the reason, and the
     remaining cases still run. The reason is one of this application's own
     messages or an exception class name, never text from a payload or document.
+    When meter_path is set, the file is replaced and each case appends one line.
+    A case list that cannot be read leaves the previous meter file alone.
 
     writer, when given, may reword each narrative; see src/narrative.py. Each
-    built case carries its narrative meter (path, latency, model calls), ready for
-    the #45 meter line. main() does not print it, so the meter line must be built
-    from these results. Every case shares one ToolRetry, retry or a new one.
-    model, when given, may answer the hybrid's questions, and each result lists the
-    calls made for its case.
+    built case carries its narrative meter (path, latency, model calls). Every case
+    shares one ToolRetry, retry or a new one. model, when given, may answer the
+    hybrid's questions, and each result lists the calls made for its case.
+
+    The meter line records every model call made for the case (the hybrid's and the
+    narrative writer's) and sums their input and output tokens, counting a call that
+    reported no count as 0. A meter line that would carry a restricted value is
+    skipped for that case, and its result carries "MeterLeak" in meter_error.
     """
+    data_dir = Path(data_dir)
+    plans = contract_case_plans(base_url, data_dir)
+    _prepare_meter_file(meter_path)
     shared = ToolRetry() if retry is None else retry
     return [
-        build_contract_result(plan, base_url, data_dir, writer, retry=shared, model=model)
-        for plan in contract_case_plans(base_url, data_dir)
+        build_contract_result(
+            plan,
+            base_url,
+            data_dir,
+            writer,
+            retry=shared,
+            model=model,
+            meter_path=meter_path,
+        )
+        for plan in plans
     ]
 
 
@@ -216,7 +284,7 @@ def main() -> None:
 
     Each case that was not built is named on stderr with its reason, and the exit
     status is 1 when any case was not built, so a partial array is never mistaken
-    for a complete one.
+    for a complete one. One meter line per case is written to reports/meters.jsonl.
 
     MODEL_PROVIDER and its settings, when set, add a qualified model's answers
     (ADR-003; see src/model_clients.py). A model that cannot be used stops the run
@@ -230,7 +298,12 @@ def main() -> None:
         sys.stderr.write(f"the model cannot be used: {error}\n")
         raise SystemExit(1) from None
     try:
-        results = load_contract_results(base_url, data_dir, model=model)
+        results = load_contract_results(
+            base_url,
+            data_dir,
+            model=model,
+            meter_path=Path("reports") / "meters.jsonl",
+        )
     except CaseListError:
         sys.stderr.write("the bank case list could not be read\n")
         raise SystemExit(1) from None
@@ -259,6 +332,14 @@ def _reason(error: BaseException) -> str:
         deepest = current
         current = current.__cause__
     return type(deepest).__name__
+
+
+def _prepare_meter_file(meter_path: Path | None) -> None:
+    """Replace any previous run so this run owns every line in the file."""
+    if meter_path is None:
+        return
+    meter_path.parent.mkdir(parents=True, exist_ok=True)
+    meter_path.write_text("", encoding="utf-8")
 
 
 def _contract_record(
@@ -400,13 +481,21 @@ def _customer_reference(intake_text: str) -> str:
 def _read_tool(base_url: str, case_id: str, tool: str, retry: ToolRetry) -> bytes:
     """One tool read, tried again after a retryable failure, up to three attempts in all.
 
-    Every attempt is a separate observed request. Any other failure stops the case at
-    once: it is an error, never an empty result. DependencyUnavailable, when every
-    attempt failed or the tool's breaker is open, is left to the caller.
+    Every attempt is a separate observed request and counts toward the run's
+    tool_attempts; each try after the first counts toward retry_count. Any other
+    failure stops the case at once: it is an error, never an empty result.
+    DependencyUnavailable, when every attempt failed or the tool's breaker is open,
+    is left to the caller.
     """
     path = f"/v1/cases/{quote(case_id, safe='')}/{tool}"
+    attempts = 0
 
     def attempt() -> bytes:
+        nonlocal attempts
+        attempts += 1
+        retry.tool_attempts += 1
+        if attempts > 1:
+            retry.retry_count += 1
         try:
             return read_body(base_url, path)
         except BankUnavailable as error:

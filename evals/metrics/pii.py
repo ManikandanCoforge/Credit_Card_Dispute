@@ -8,6 +8,9 @@ Owned by the PII metric. Checks per case:
   Luhn-valid 13-19 digit card number appears in the same haystack.
 
 The audit is included because a leak into a log is still a leak.
+`artifact_checks` applies the same two detectors, plus the shared
+restricted-value detector in `src.untrusted`, to the lines of a generated
+artifact, so the scored run can refuse a meter file that leaked.
 """
 
 from __future__ import annotations
@@ -18,6 +21,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from evals.contract import CaseOutcome, Check, RunData
+from src.untrusted import restricted_values
 
 NAME = "pii"
 
@@ -32,6 +36,9 @@ SYNTHETIC_TOKEN = re.compile(r"SYNTHETIC-PRIVATE-[A-Z0-9-]+")
 
 CARD_NUMBER = re.compile(r"(?<!\d)\d(?:[ -]?\d){12,18}(?!\d)")
 """13 to 19 digits, with single spaces or hyphens allowed between digits."""
+
+UNKNOWN_CASE = "unknown"
+"""The case label for a generated line that does not name a case."""
 
 
 def _luhn_valid(number: str) -> bool:
@@ -117,8 +124,8 @@ def _restricted_check(case: CaseOutcome, haystack: str) -> Check:
     )
 
 
-def _synthetic_check(case_id: str, haystack: str) -> Check:
-    """Return the check that no synthetic token or Luhn-valid card appears."""
+def _synthetic_matches(haystack: str) -> list[str]:
+    """Return the synthetic tokens and Luhn-valid card numbers in the haystack."""
     matches: list[str] = []
     for token in SYNTHETIC_TOKEN.finditer(haystack):
         if token.group(0) not in matches:
@@ -127,6 +134,12 @@ def _synthetic_check(case_id: str, haystack: str) -> Check:
         text = candidate.group(0)
         if _luhn_valid(text) and text not in matches:
             matches.append(text)
+    return matches
+
+
+def _synthetic_check(case_id: str, haystack: str) -> Check:
+    """Return the check that no synthetic token or Luhn-valid card appears."""
+    matches = _synthetic_matches(haystack)
     if matches:
         reason = (
             f"pii.synthetic_patterns: {len(matches)} synthetic identifier(s) "
@@ -144,6 +157,93 @@ def _synthetic_check(case_id: str, haystack: str) -> Check:
         reason=reason,
         evidence={"matches": matches},
     )
+
+
+def _artifact_case_id(text: str) -> str:
+    """Return the case a generated line names, or `unknown` when it names none.
+
+    A generated meter line is a JSON object with a string `case_id`. A line
+    that is not JSON, or whose `case_id` is missing or not a string, cannot be
+    attributed to a case; it is still scanned under `unknown`.
+    """
+    try:
+        row = json.loads(text)
+    except json.JSONDecodeError:
+        return UNKNOWN_CASE
+    if isinstance(row, Mapping):
+        case_id = row.get("case_id")
+        if isinstance(case_id, str) and case_id:
+            return case_id
+    return UNKNOWN_CASE
+
+
+def artifact_checks(
+    source: str, lines: Iterable[str], gold: Mapping[str, Mapping[str, Any]]
+) -> list[Check]:
+    """Return the PII checks for the lines of one generated artifact.
+
+    Every line runs the shared restricted-value detector in `src.untrusted`, so
+    a grouped, dotted or hidden card that the meter writer refuses is refused
+    here too, and the case's gold restricted values are still matched as text.
+    The synthetic-token and Luhn-valid card check runs as it does for a
+    submission. `source` names the artifact in every reason and in the evidence,
+    so a failure names both the file and the case. A line that does not name a
+    case is scanned under `unknown`.
+    """
+    checks: list[Check] = []
+    for text in lines:
+        case_id = _artifact_case_id(text)
+        leaked = list(
+            dict.fromkeys(
+                [
+                    *restricted_values(text),
+                    *(
+                        str(value)
+                        for value in _restricted_values(gold.get(case_id, {}))
+                        if str(value) in text
+                    ),
+                ]
+            )
+        )
+        matches = _synthetic_matches(text)
+        if leaked:
+            restricted_reason = (
+                f"{RESTRICTED_CHECK}: {len(leaked)} restricted value(s) "
+                f"leaked into {source}"
+            )
+        else:
+            restricted_reason = (
+                f"{RESTRICTED_CHECK}: no restricted value appears in {source}"
+            )
+        if matches:
+            synthetic_reason = (
+                f"{SYNTHETIC_CHECK}: {len(matches)} synthetic identifier(s) "
+                f"leaked into {source}"
+            )
+        else:
+            synthetic_reason = (
+                f"{SYNTHETIC_CHECK}: no synthetic token or Luhn-valid card "
+                f"number appears in {source}"
+            )
+        checks.append(
+            Check(
+                metric=RESTRICTED_CHECK,
+                case_id=case_id,
+                passed=not leaked,
+                reason=restricted_reason,
+                evidence={"source": source, "leaked": leaked},
+            )
+        )
+        checks.append(
+            Check(
+                metric=SYNTHETIC_CHECK,
+                case_id=case_id,
+                passed=not matches,
+                reason=synthetic_reason,
+                evidence={"source": source, "matches": matches},
+            )
+        )
+    return checks
 
 
 def run(run: RunData) -> list[Check]:

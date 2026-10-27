@@ -8,6 +8,7 @@ with tools.evaluate.evaluate in process, so no second evaluator exists here.
 Artifacts:
   reports/scored-run.json         machine-readable run report
   reports/scored-run-meters.json  one measured meter row per case
+  reports/meters.jsonl            one redacted meter line per case
   reports/scored-run.md           human-readable report
   submissions/scored-run.json     the evaluator submission array
 
@@ -15,6 +16,10 @@ Exit status is 0 only when every case in the case list passes. Every artifact
 is still written when they do not. When the case list cannot be read, nothing
 is written and the exit status is 1, so an unreachable bank never replaces the
 committed report with an empty one.
+
+The p50 and p95 latency in the report are read back from the meter file this
+run wrote, not recomputed from the in-process durations, so the one published
+number has one source.
 """
 
 import argparse
@@ -33,6 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from evals.metrics.pii import artifact_checks
 from src.contract import Contract
 from src.contract_records import (
     CasePlan,
@@ -42,6 +48,7 @@ from src.contract_records import (
     contract_case_plans,
 )
 from src.load_records import BankReadError
+from src.meters import LatencyPercentiles, latency_percentiles
 from tools.evaluate import evaluate
 
 EXPECTED_CASES = 12
@@ -118,20 +125,6 @@ class ExceptionEntry(TypedDict):
     note: str
 
 
-def p95_nearest_rank(durations: Sequence[float]) -> float | None:
-    """Return the nearest-rank 95th percentile, or None when nothing was measured.
-
-    Rank is ceil(0.95 * n), computed with integers so the result is exactly
-    reproducible and does not depend on floating-point rounding. Over the twelve
-    measured cases the rank is twelve, which is the slowest case.
-    """
-    values = sorted(durations)
-    if not values:
-        return None
-    rank = max(1, (95 * len(values) + 99) // 100)
-    return float(values[rank - 1])
-
-
 def failed_checks(checks: Mapping[str, bool]) -> list[str]:
     """Every check that did not pass, sorted, without the boolean detail."""
     return sorted(name for name, passed in checks.items() if not passed)
@@ -161,6 +154,7 @@ def measure_cases(
     data_dir: Path,
     *,
     build: Callable[[CasePlan], ContractResult] | None = None,
+    meter_path: Path | None = None,
 ) -> list[MeasuredCase]:
     """Build each planned case and record its own elapsed milliseconds.
 
@@ -170,11 +164,17 @@ def measure_cases(
     build is an injection seam: production passes the bank-backed
     build_contract_result, and a test can pass a deterministic builder without
     a network. The bank-backed builder shares one ToolRetry across the run, so a
-    retried case's duration includes its waits between attempts.
+    retried case's duration includes its waits between attempts. When meter_path
+    is set and build is not, the meter file is replaced before the first case.
     """
     retry = ToolRetry()
+    if meter_path is not None and build is None:
+        meter_path.parent.mkdir(parents=True, exist_ok=True)
+        meter_path.write_text("", encoding="utf-8")
     builder = build if build is not None else (
-        lambda plan: build_contract_result(plan, base_url, data_dir, retry=retry)
+        lambda plan: build_contract_result(
+            plan, base_url, data_dir, retry=retry, meter_path=meter_path
+        )
     )
     measured: list[MeasuredCase] = []
     for plan in plans:
@@ -308,15 +308,18 @@ def assemble_report(
     git_dirty: bool,
     base_url: str,
     dataset_name: str,
+    latencies: LatencyPercentiles,
     meters: Sequence[MeterRow] | None = None,
 ) -> dict[str, Any]:
     """Assemble the scored-run report from measured cases and evaluator output.
 
-    Cost and latency are read from the meter rows, the one artifact the report
-    claims as their source. When meters are not supplied they are derived from
-    the case reports, so a caller cannot silently report a different cost.
+    Cost is read from the meter rows and the percentiles are the ones the caller
+    read from the generated redacted meter file, the artifacts the report claims
+    as their source. Neither number is recomputed here from the in-process
+    durations, so the report cannot publish a second, hand-computed latency.
+    When meters are not supplied they are derived from the case reports, so a
+    caller cannot silently report a different cost.
     """
-    durations = [case["duration_ms"] for case in case_reports]
     total_cases = len(case_reports)
     meter_rows_used = list(meters) if meters is not None else meter_rows(case_reports)
     total_cost = round(sum(row["cost_usd"] for row in meter_rows_used), 6)
@@ -338,7 +341,8 @@ def assemble_report(
         "pass_count": sum(1 for case in case_reports if case["passed"]),
         "total_cases": total_cases,
         "format_errors": list(evaluation["format_errors"]),
-        "p95_latency_ms": p95_nearest_rank(durations),
+        "p50_latency_ms": latencies["p50"],
+        "p95_latency_ms": latencies["p95"],
         "cost_per_case_usd": (
             0.0 if total_cases == 0 else round(total_cost / total_cases, 6)
         ),
@@ -388,8 +392,12 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         f"- Pass: {report['pass_count']} / {total}",
         f"- Format errors: {len(report['format_errors'])}",
         (
+            f"- p50 draft latency: {_fmt_ms(report['p50_latency_ms'])} "
+            "(nearest-rank over the latency_ms values in reports/meters.jsonl)"
+        ),
+        (
             f"- p95 draft latency: {_fmt_ms(report['p95_latency_ms'])} "
-            "(nearest-rank over the measured durations)"
+            "(nearest-rank over the latency_ms values in reports/meters.jsonl)"
         ),
         (
             f"- Cost per case: {report['cost_per_case_usd']:.2f} USD "
@@ -474,11 +482,13 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         "## Metered cost",
         "",
         (
-            "Latency and cost come from `reports/scored-run-meters.json`, one "
-            "row per case. The path is `deterministic_template`, so "
-            "`model_calls`, `model_tokens_in` and `model_tokens_out` are 0 and "
-            "the cost is 0.00 USD by construction: this run wires no model call, "
-            "so the meter shows what the run did, not what a model would cost."
+            "Cost comes from `reports/scored-run-meters.json`, one row per case. "
+            "The p50 and p95 in the result section are read from "
+            "`reports/meters.jsonl`, the redacted per-case meter file. The path "
+            "is `deterministic_template`, so `model_calls`, `model_tokens_in` "
+            "and `model_tokens_out` are 0 and the cost is 0.00 USD by "
+            "construction: this run wires no model call, so the meter shows what "
+            "the run did, not what a model would cost."
         ),
         "",
         (
@@ -598,13 +608,16 @@ def run_scored(
     generated_at: str,
     git_commit: str,
     git_dirty: bool,
+    case_meter_path: Path | None = None,
 ) -> int:
     """Run every case, score the submission and write every artifact.
 
     Returns 0 only when every case in the case list passes. The artifacts are
     written before the status is returned, so a failing run still publishes its
     numbers. When the case list cannot be read there are no numbers to publish:
-    nothing is written, the reason goes to stderr, and the status is 1.
+    nothing is written, the reason goes to stderr, and the status is 1. When
+    the meter file the run wrote holds a restricted value, the run is refused
+    the same way: the reason names the file and the case.
     """
     dataset = json.loads((data_dir / "dataset.json").read_text(encoding="utf-8"))
     gold = json.loads(gold_path.read_text(encoding="utf-8"))
@@ -619,7 +632,36 @@ def run_scored(
         )
         return 1
 
-    measured = measure_cases(plans, base_url, data_dir)
+    destination = (
+        case_meter_path
+        if case_meter_path is not None
+        else ROOT / "reports" / "meters.jsonl"
+    )
+    measured = measure_cases(
+        plans,
+        base_url,
+        data_dir,
+        meter_path=destination,
+    )
+    latencies = latency_percentiles(destination)
+
+    leaks = [
+        check
+        for check in artifact_checks(
+            str(destination),
+            destination.read_text(encoding="utf-8").splitlines(),
+            gold,
+        )
+        if not check.passed
+    ]
+    for check in leaks:
+        print(
+            f"{destination}: case {check.case_id}: {check.metric} found a "
+            "restricted value. The run is refused and no report was written.",
+            file=sys.stderr,
+        )
+    if leaks:
+        return 1
 
     submissions: list[Contract] = [
         case["contract"] for case in measured if case["contract"] is not None
@@ -636,6 +678,7 @@ def run_scored(
         git_dirty=git_dirty,
         base_url=base_url,
         dataset_name=dataset["name"],
+        latencies=latencies,
         meters=meters,
     )
     _write_json(report_path, report)
@@ -646,6 +689,7 @@ def run_scored(
     print(
         f"{report['pass_count']} / {report['total_cases']} cases passed; "
         f"{len(report['format_errors'])} format errors; "
+        f"p50 {_fmt_ms(report['p50_latency_ms'])}; "
         f"p95 {_fmt_ms(report['p95_latency_ms'])}; "
         f"cost per case {report['cost_per_case_usd']:.2f} USD"
     )
@@ -699,6 +743,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=ROOT / "reports" / "scored-run.md",
         help="Where to write the human-readable report.",
     )
+    parser.add_argument(
+        "--case-meters",
+        type=Path,
+        default=ROOT / "reports" / "meters.jsonl",
+        help="Where the run writes its one redacted meter line per case.",
+    )
     args = parser.parse_args(argv)
     commit, dirty = git_state(ROOT)
     return run_scored(
@@ -709,6 +759,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         report_path=args.report,
         meters_path=args.meters,
         markdown_path=args.markdown,
+        case_meter_path=args.case_meters,
         generated_at=utc_now(),
         git_commit=commit,
         git_dirty=dirty,
