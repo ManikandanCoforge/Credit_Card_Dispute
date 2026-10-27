@@ -25,7 +25,8 @@ def test_dev_suite_writes_both_reports_and_matches_its_exit_code(tmp_path):
 
 
 
-def test_report_only_returns_zero_on_the_same_failures(tmp_path):
+def _injected_suite(tmp_path, metrics=None):
+    """Build a one-case suite outside the repository and return its path."""
     data = tmp_path / "data"
     data.mkdir()
     dataset = {
@@ -53,12 +54,38 @@ def test_report_only_returns_zero_on_the_same_failures(tmp_path):
                 "name": "injected",
                 "data": str(data),
                 "gold": str(gold),
-                "metrics": ["pii"],
+                "metrics": ["pii"] if metrics is None else metrics,
             }
         ),
         encoding="utf-8",
     )
+    return suite
+
+
+def test_report_only_returns_zero_on_the_same_failures(tmp_path):
+    suite = _injected_suite(tmp_path)
     base = tmp_path / "eval-injected"
     code = main(["--suite", str(suite), "--out", str(base), "--report-only"])
     assert code == 0
     assert base.with_suffix(".md").exists()
+
+
+def test_an_unknown_metric_exits_two_without_a_traceback(tmp_path, capsys):
+    suite = _injected_suite(tmp_path, metrics=["pii", "pii.restricted_values"])
+    code = main(["--suite", str(suite), "--out", str(tmp_path / "eval-unknown")])
+    error = capsys.readouterr().err
+    assert code == 2
+    assert "unknown metrics" in error
+    assert "Traceback" not in error
+
+
+def test_an_unwritable_report_path_exits_two_without_a_traceback(tmp_path, capsys):
+    (tmp_path / "eval-dev.json").mkdir()
+    code = main(
+        ["--suite", "evals/suites/dev.json", "--out", str(tmp_path / "eval-dev")]
+    )
+    error = capsys.readouterr().err
+    assert code == 2
+    assert "cannot write" in error
+    assert "Traceback" not in error
+

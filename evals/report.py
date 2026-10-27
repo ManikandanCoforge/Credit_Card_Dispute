@@ -27,7 +27,7 @@ def metric_rows(checks: Sequence[Check]) -> list[dict[str, Any]]:
     for metric, items in grouped.items():
         passed = sum(1 for item in items if item.passed)
         rate = proportion(passed, len(items))
-        low, high = wilson_interval(passed, len(items)) if items else (None, None)
+        low, high = wilson_interval(passed, len(items))
         rows.append(
             {
                 "metric": metric,
@@ -188,13 +188,8 @@ def render_markdown(summary: Mapping[str, Any]) -> str:
         "| --- | ---: | ---: | ---: | --- |",
     ]
     for row in summary["metrics"]:
-        rate = _percent(row["rate"])
-        interval = (
-            "n/a"
-            if row["ci_low"] is None
-            else f"{_percent(row['ci_low'])} - {_percent(row['ci_high'])}"
-        )
-        lines.append(f"| `{row['metric']}` | {row['passed']} | {row['n']} | {rate} | {interval} |")
+        interval = f"{_percent(row['ci_low'])} - {_percent(row['ci_high'])}"
+        lines.append(f"| `{row['metric']}` | {row['passed']} | {row['n']} | {_percent(row['rate'])} | {interval} |")
     if summary["gates"]:
         lines += ["", "## Gates", ""]
         for gate in summary["gates"]:
