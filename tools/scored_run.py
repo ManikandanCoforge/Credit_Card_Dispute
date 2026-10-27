@@ -8,7 +8,8 @@ with tools.evaluate.evaluate in process, so no second evaluator exists here.
 Artifacts:
   reports/scored-run.json         machine-readable run report
   reports/scored-run-meters.json  one measured meter row per case
-  reports/meters.jsonl            one redacted meter line per case
+  reports/meters.jsonl            one redacted meter line per case; a
+                                  refused line is named in the report instead
   reports/scored-run.md           human-readable report
   submissions/scored-run.json     the evaluator submission array
 
@@ -102,6 +103,7 @@ class MeasuredCase(TypedDict):
     duration_ms: float
     contract: Contract | None
     error: str | None
+    meter_error: str | None
 
 
 class CaseReport(TypedDict):
@@ -113,6 +115,7 @@ class CaseReport(TypedDict):
     duration_ms: float
     failed_checks: list[str]
     error: str | None
+    meter_error: str | None
 
 
 class MeterRow(TypedDict):
@@ -176,7 +179,8 @@ def measure_cases(
 
     build is an injection seam: production passes the bank-backed
     build_contract_result, and a test can pass a deterministic builder without
-    a network.
+    a network. A case whose meter line the meter refuses keeps its measured
+    result and carries the refusal in meter_error.
     """
     if meter_path is not None and build is None:
         meter_path.parent.mkdir(parents=True, exist_ok=True)
@@ -195,6 +199,9 @@ def measure_cases(
                 "duration_ms": duration_ms,
                 "contract": result["contract"],
                 "error": result["error"],
+                "meter_error": (
+                    result["meter_error"] if "meter_error" in result else None
+                ),
             }
         )
     return measured
@@ -227,6 +234,9 @@ def build_case_reports(
                 "duration_ms": case["duration_ms"],
                 "failed_checks": failed_checks(checks),
                 "error": case["error"],
+                "meter_error": (
+                    case["meter_error"] if "meter_error" in case else None
+                ),
             }
         )
     return reports
@@ -440,6 +450,18 @@ def render_markdown(
             f"{_bool(case['passed'])} | {case['duration_ms']:.3f} | "
             f"{_md_cell(checks)} | {_md_cell(case['error'] or '-')} |"
         )
+
+    refused = [case for case in report["cases"] if case.get("meter_error")]
+    if refused:
+        lines += [""]
+        lines += [
+            (
+                f"- {_md_cell(case['case_id'])}: the meter refused this case's "
+                f"line ({_md_cell(case['meter_error'])}), so the meter file has "
+                "no line for it."
+            )
+            for case in refused
+        ]
 
     failing = [case for case in report["cases"] if not case["passed"]]
     lines += [

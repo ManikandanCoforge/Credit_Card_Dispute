@@ -169,6 +169,7 @@ def test_a_not_built_case_is_reported_with_its_reason_and_submitted_false():
             "error": (
                 "the case names evidence this step cannot read: CARD-D05-FOLLOWUP"
             ),
+            "meter_error": None,
         }
     ]
 
@@ -764,9 +765,46 @@ def test_measure_cases_times_the_injected_builder(tmp_path):
             "duration_ms": measured[0]["duration_ms"],
             "contract": None,
             "error": "stop",
+            "meter_error": None,
         }
     ]
     assert measured[0]["duration_ms"] >= 0.0
+
+
+def test_a_refused_meter_line_is_named_in_the_report(tmp_path):
+    plans = [{"record": {"case_id": "CARD-D01"}, "documents": []}]
+
+    def build(plan):
+        return {
+            "case_id": "CARD-D01",
+            "contract": None,
+            "error": None,
+            "meter_error": "MeterLeak",
+        }
+
+    measured = measure_cases(plans, "http://127.0.0.1:8899", tmp_path, build=build)
+    reports = build_case_reports(
+        measured,
+        _evaluation(
+            [{"case_id": "CARD-D01", "passed": False, "checks": {"submitted": False}}]
+        ),
+    )
+    report = assemble_report(
+        reports,
+        _evaluation([]),
+        generated_at="2026-10-27T00:00:00Z",
+        git_commit="abc123",
+        git_dirty=False,
+        base_url="http://127.0.0.1:8899",
+        dataset_name="card-disputes-dev",
+        latencies={"p50": None, "p95": None},
+        meters=meter_rows(reports),
+    )
+
+    assert report["cases"][0]["meter_error"] == "MeterLeak"
+    markdown = render_markdown(report, meter_rows(reports))
+    assert "CARD-D01" in markdown
+    assert "MeterLeak" in markdown
 
 
 def test_the_committed_report_matches_its_meters_and_markdown():
