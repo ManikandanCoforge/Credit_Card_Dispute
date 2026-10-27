@@ -33,6 +33,7 @@ from src.contract import Contract
 from src.contract_records import (
     CasePlan,
     ContractResult,
+    ToolRetry,
     build_contract_result,
     contract_case_plans,
 )
@@ -60,25 +61,11 @@ _PROPOSED_EXCEPTIONS: dict[str, tuple[str, str]] = {
             "Conflict and unsupported handling is COF-39."
         ),
     ),
-    "CARD-D07": (
-        "COF-40",
-        (
-            "A persistent transaction failure stops the case instead of routing "
-            "to manual_review with null facts. Retry and outage handling is COF-40."
-        ),
-    ),
     "CARD-D09": (
         "COF-43",
         (
             "The joined statement is not an exact intake excerpt, so the duplicate "
             "redelivery is not built. Duplicate intake and narrative work is COF-43."
-        ),
-    ),
-    "CARD-D10": (
-        "COF-40",
-        (
-            "A transient transaction fault is not retried, so the case is not "
-            "built. Retry is COF-40."
         ),
     ),
 }
@@ -178,10 +165,12 @@ def measure_cases(
 
     build is an injection seam: production passes the bank-backed
     build_contract_result, and a test can pass a deterministic builder without
-    a network.
+    a network. The bank-backed builder shares one ToolRetry across the run, so a
+    retried case's duration includes its waits between attempts.
     """
+    retry = ToolRetry()
     builder = build if build is not None else (
-        lambda plan: build_contract_result(plan, base_url, data_dir)
+        lambda plan: build_contract_result(plan, base_url, data_dir, retry=retry)
     )
     measured: list[MeasuredCase] = []
     for plan in plans:

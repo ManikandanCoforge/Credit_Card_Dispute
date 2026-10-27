@@ -70,9 +70,7 @@ def test_a_not_submitted_case_fails_only_the_submitted_check():
     [
         ("CARD-D05", "COF-39"),
         ("CARD-D06", "COF-39"),
-        ("CARD-D07", "COF-40"),
         ("CARD-D09", "COF-43"),
-        ("CARD-D10", "COF-40"),
     ],
 )
 def test_each_failing_dev_case_maps_to_a_proposed_ticket(case_id, ticket):
@@ -82,8 +80,9 @@ def test_each_failing_dev_case_maps_to_a_proposed_ticket(case_id, ticket):
     assert mapping[1]
 
 
-def test_a_passing_case_has_no_proposed_ticket():
-    assert proposed_exception("CARD-D01") is None
+@pytest.mark.parametrize("case_id", ["CARD-D01", "CARD-D07", "CARD-D10"])
+def test_a_passing_case_has_no_proposed_ticket(case_id):
+    assert proposed_exception(case_id) is None
 
 
 def test_another_failure_of_a_mapped_case_is_not_excused():

@@ -1,5 +1,6 @@
 """Load the bank case list into working records."""
 
+import json
 from http.client import HTTPConnection, HTTPSConnection
 from pathlib import Path
 from urllib.parse import urlparse
@@ -19,11 +20,17 @@ class CaseListError(BankReadError):
     """The bank case list could not be read. Nothing was taken from the dataset."""
 
 
+class BankUnavailable(BankReadError):
+    """A read that a later attempt may answer: a dropped connection, or a 503 marked retryable."""
+
+
 def read_body(base_url: str, path: str) -> bytes:
     """GET one bank path and return the body of a 200 response.
 
     A URL that is not http(s), a connection failure, or any other status raises
     BankReadError, so a failed read can never be mistaken for an empty result.
+    A connection failure, and a 503 whose body says "retryable": true, raise the
+    subclass BankUnavailable, so a caller can retry those and nothing else.
     """
     origin = urlparse(base_url)
     hostname = origin.hostname
@@ -40,12 +47,23 @@ def read_body(base_url: str, path: str) -> bytes:
         status = response.status
         body = response.read()
     except OSError as error:
-        raise BankReadError from error
+        raise BankUnavailable from error
     finally:
         connection.close()
+    if status == 503 and _retryable(body):
+        raise BankUnavailable
     if status != 200:
         raise BankReadError
     return body
+
+
+def _retryable(body: bytes) -> bool:
+    """Whether an error body marks the failure retryable, as the mock's upstream timeout does."""
+    try:
+        parsed = json.loads(body)
+    except ValueError:
+        return False
+    return isinstance(parsed, dict) and parsed.get("retryable") is True
 
 
 def load_cases(base_url: str) -> CaseListResponse:

@@ -7,7 +7,13 @@ from pathlib import Path
 import pytest
 
 from src.app import prepare_complaints
-from src.load_records import CaseListError, load_complaint_records
+from src.load_records import (
+    BankReadError,
+    BankUnavailable,
+    CaseListError,
+    load_complaint_records,
+    read_body,
+)
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
@@ -234,6 +240,56 @@ def test_url_without_a_port_uses_the_default_port(
         load_complaint_records(base_url, dataset)
 
     assert seen == {"host": "127.0.0.1", "port": port}
+
+
+@pytest.mark.parametrize(
+    ("status", "body", "retryable"),
+    [
+        (503, {"error": "upstream_timeout", "retryable": True}, True),
+        (503, {"error": "upstream_timeout", "retryable": False}, False),
+        (503, {"error": "failed"}, False),
+        (503, ["retryable"], False),
+        (500, {"error": "upstream_timeout", "retryable": True}, False),
+    ],
+)
+def test_only_a_503_marked_retryable_is_a_read_a_later_attempt_may_answer(status, body, retryable):
+    with _bank(body, status=status) as base_url, pytest.raises(BankReadError) as raised:
+        read_body(base_url, "/v1/cases")
+
+    assert isinstance(raised.value, BankUnavailable) is retryable
+
+
+def test_a_503_whose_body_is_not_json_is_not_retryable(monkeypatch):
+    class Response:
+        status = 503
+
+        def read(self):
+            return b"Service Unavailable"
+
+    class Gateway:
+        def __init__(self, host, port):
+            return
+
+        def request(self, method, path):
+            return
+
+        def getresponse(self):
+            return Response()
+
+        def close(self):
+            return
+
+    monkeypatch.setattr("src.load_records.HTTPConnection", Gateway)
+
+    with pytest.raises(BankReadError) as raised:
+        read_body("http://127.0.0.1:8765", "/v1/cases")
+
+    assert not isinstance(raised.value, BankUnavailable)
+
+
+def test_a_dropped_connection_is_a_read_a_later_attempt_may_answer():
+    with pytest.raises(BankUnavailable):
+        read_body(_closed_bank(), "/v1/cases")
 
 
 def _closed_bank():
