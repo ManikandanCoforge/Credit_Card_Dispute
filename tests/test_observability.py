@@ -255,6 +255,9 @@ def test_sqlite_stores_a_case_its_api_call_and_its_model_call(monkeypatch, tmp_p
     # its model call can share one start_time, and ORDER BY start_time cannot
     # recover the order they started in. Read the rows by name and pin the
     # shape instead: one root case span and two children that point at it.
+    # A dict by name would hide an extra span that reused a name, so the count is
+    # pinned from the raw rows first.
+    assert len(rows) == 3
     by_name = {row[0]: row for row in rows}
     assert set(by_name) == {"case CARD-D04", "HTTP GET", "chat demo.model-v1:mini"}
     case, api, model = (
@@ -321,7 +324,9 @@ def test_a_memory_store_replaces_sqlite(monkeypatch, tmp_path):
     shutdown_tracing()
 
     assert not unused.exists()
-    # The same coarse-clock caveat as the SQLite test above, so read by name.
+    # The same coarse-clock caveat as the SQLite test above, so read by name, with
+    # the count pinned from the raw records so a duplicate name cannot hide a span.
+    assert len(store.records) == 3
     by_name = {record["name"]: record for record in store.records}
     assert set(by_name) == {"case CARD-D04", "HTTP GET", "chat demo.model-v1:mini"}
     case = by_name["case CARD-D04"]
