@@ -4,9 +4,12 @@ CARD-D02 and CARD-D09 both carry dispute-double-02. That string is the
 Idempotency-Key. A replay and a redelivery return the stored record.
 """
 
+import traceback
+
 import pytest
 
 from src.api_models import RecordRow
+from src.build_records import _NOT_SUPPLIED
 from src.idempotency import (
     CreateRejected,
     MissingRecord,
@@ -30,7 +33,20 @@ def test_the_idempotency_key_is_the_submission_reference():
     assert idempotency_key("k" * 128) == "k" * 128
 
 
-@pytest.mark.parametrize("reference", ["", "   ", "not supplied", "  not supplied  "])
+@pytest.mark.parametrize(
+    "reference",
+    [
+        "",
+        "   ",
+        _NOT_SUPPLIED,
+        "Not Supplied",
+        "NOT SUPPLIED",
+        "  not supplied  ",
+        "N/A",
+        "none",
+        "-",
+    ],
+)
 def test_a_missing_submission_reference_is_rejected(reference):
     with pytest.raises(ValueError, match="submission reference is required"):
         idempotency_key(reference)
@@ -83,10 +99,11 @@ def test_a_redelivery_is_the_existing_record_and_not_an_error():
         calls.append((key, request["case_id"]))
         if request["case_id"] == "CARD-D02":
             return 201, _ORIGINAL
-        return 409, {"error": "duplicate_case", "existing_record_id": _KEY}
+        return 409, {"error": "idempotency_conflict"}
 
     def lookup(case_id):
         calls.append(("lookup", case_id))
+        assert case_id == "CARD-D09"
         return _ledger_row()
 
     first = create_record(submit, _request(), _KEY, lookup=lookup)
@@ -104,17 +121,6 @@ def test_a_redelivery_is_the_existing_record_and_not_an_error():
         (_KEY, "CARD-D09"),
         ("lookup", "CARD-D09"),
     ]
-
-
-def test_an_idempotency_conflict_returns_the_stored_record():
-    def submit(key, request):
-        assert key == _KEY
-        return 409, {"error": "idempotency_conflict"}
-
-    result = create_record(submit, _request(), _KEY, lookup=lambda _case_id: _ledger_row())
-
-    assert result["created"] is False
-    assert result["record_id"] == _KEY
 
 
 def test_a_duplicate_with_no_ledger_row_names_the_case():
@@ -137,6 +143,7 @@ def test_an_unrecognized_conflict_is_rejected():
 
     assert raised.value.status == 409
     assert raised.value.error == "read_only_mission"
+    assert str(raised.value) == "record create failed with HTTP 409: read_only_mission"
 
 
 def test_a_refused_create_keeps_the_status_and_drops_the_payload_message():
@@ -151,29 +158,41 @@ def test_a_refused_create_keeps_the_status_and_drops_the_payload_message():
 
     assert raised.value.status == 403
     assert raised.value.error == "approval_missing_or_draft_changed"
+    assert str(raised.value) == (
+        "record create failed with HTTP 403: approval_missing_or_draft_changed"
+    )
     assert "SYNTHETIC" not in str(raised.value)
 
 
 def test_a_create_response_without_a_record_is_rejected():
     def submit(key, request):
-        return 201, {"status": "created"}
+        return 201, {"status": "created", "message": "CUST-1234-SECRET"}
 
     with pytest.raises(CreateRejected) as raised:
         create_record(submit, _request(), _KEY, lookup=lambda _case_id: None)
 
     assert raised.value.status == 201
     assert raised.value.error is None
+    _assert_the_payload_is_not_in_the_traceback(raised.value)
 
 
 def test_an_unreadable_error_body_is_rejected():
     def submit(key, request):
-        return 400, {"retryable": True}
+        return 400, {"message": "CUST-1234-SECRET"}
 
     with pytest.raises(CreateRejected) as raised:
         create_record(submit, _request(), _KEY, lookup=lambda _case_id: None)
 
     assert raised.value.status == 400
     assert raised.value.error is None
+    _assert_the_payload_is_not_in_the_traceback(raised.value)
+
+
+def _assert_the_payload_is_not_in_the_traceback(error: CreateRejected) -> None:
+    rendered = "".join(traceback.format_exception(error))
+    assert error.__cause__ is None
+    assert "CUST-1234-SECRET" not in rendered
+    assert "ValidationError" not in rendered
 
 
 def _request(case_id="CARD-D02", review_id="rev_d02"):
