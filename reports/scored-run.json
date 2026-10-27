@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-10-27T22:48:11Z",
-  "git_commit": "f37cc78f5f344a12e5c00c51e6093c573bc8043e",
+  "generated_at": "2026-10-27T23:18:22Z",
+  "git_commit": "ac13f991d0c6db2c31def8025bc89e8cdac6ee91",
   "git_dirty": false,
   "git_commit_note": "HEAD at run time. The working tree was clean when the artifacts were generated.",
-  "base_url": "http://127.0.0.1:8792",
+  "base_url": "http://127.0.0.1:8794",
   "dataset": "card-disputes-dev",
-  "pass_count": 11,
+  "pass_count": 9,
   "total_cases": 12,
   "format_errors": [],
-  "p50_latency_ms": 31,
-  "p95_latency_ms": 3390,
+  "p50_latency_ms": 6,
+  "p95_latency_ms": 8,
   "cost_per_case_usd": 0.0,
   "total_cost_usd": 0.0,
   "cost_note": "Read from reports/scored-run-meters.json. The deterministic template path makes no model call, so every row records 0 model calls and 0 tokens and the cost is 0.00 USD by construction, not by measurement. No model price is assumed or estimated.",
@@ -18,102 +18,128 @@
       "case_id": "CARD-D01",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.891,
+      "duration_ms": 7.961,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D02",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.297,
+      "duration_ms": 6.616,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D03",
       "submitted": true,
       "passed": true,
-      "duration_ms": 30.506,
+      "duration_ms": 6.122,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D04",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.323,
+      "duration_ms": 6.59,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D05",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.741,
+      "duration_ms": 6.181,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D06",
       "submitted": true,
       "passed": true,
-      "duration_ms": 30.588,
+      "duration_ms": 6.478,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D07",
-      "submitted": true,
-      "passed": true,
-      "duration_ms": 3390.669,
-      "failed_checks": [],
-      "error": null
+      "submitted": false,
+      "passed": false,
+      "duration_ms": 3.112,
+      "failed_checks": [
+        "submitted"
+      ],
+      "error": "BankReadError",
+      "meter_error": null
     },
     {
       "case_id": "CARD-D08",
       "submitted": true,
       "passed": true,
-      "duration_ms": 30.233,
+      "duration_ms": 6.532,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D09",
       "submitted": false,
       "passed": false,
-      "duration_ms": 31.189,
+      "duration_ms": 5.925,
       "failed_checks": [
         "submitted"
       ],
-      "error": "the intake statement is not an exact excerpt of the intake"
+      "error": "the intake statement is not an exact excerpt of the intake",
+      "meter_error": null
     },
     {
       "case_id": "CARD-D10",
-      "submitted": true,
-      "passed": true,
-      "duration_ms": 1136.649,
-      "failed_checks": [],
-      "error": null
+      "submitted": false,
+      "passed": false,
+      "duration_ms": 3.279,
+      "failed_checks": [
+        "submitted"
+      ],
+      "error": "BankReadError",
+      "meter_error": null
     },
     {
       "case_id": "CARD-D11",
       "submitted": true,
       "passed": true,
-      "duration_ms": 29.873,
+      "duration_ms": 6.249,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     },
     {
       "case_id": "CARD-D12",
       "submitted": true,
       "passed": true,
-      "duration_ms": 31.726,
+      "duration_ms": 6.067,
       "failed_checks": [],
-      "error": null
+      "error": null,
+      "meter_error": null
     }
   ],
   "exceptions": [
+    {
+      "case_id": "CARD-D07",
+      "ticket": "COF-40",
+      "status": "proposed_pending_pod_agreement",
+      "failed_checks": [
+        "submitted"
+      ],
+      "error": "BankReadError",
+      "note": "A persistent transaction failure stops the case instead of routing to manual_review with null facts. Retry and outage handling is COF-40."
+    },
     {
       "case_id": "CARD-D09",
       "ticket": "COF-43",
@@ -123,6 +149,16 @@
       ],
       "error": "the intake statement is not an exact excerpt of the intake",
       "note": "The joined statement is not an exact intake excerpt, so the duplicate redelivery is not built. Duplicate intake and narrative work is COF-43."
+    },
+    {
+      "case_id": "CARD-D10",
+      "ticket": "COF-40",
+      "status": "proposed_pending_pod_agreement",
+      "failed_checks": [
+        "submitted"
+      ],
+      "error": "BankReadError",
+      "note": "A transient transaction fault is not retried, so the case is not built. Retry is COF-40."
     }
   ],
   "exception_status": "proposed_pending_pod_agreement",

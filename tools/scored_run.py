@@ -8,7 +8,8 @@ with tools.evaluate.evaluate in process, so no second evaluator exists here.
 Artifacts:
   reports/scored-run.json         machine-readable run report
   reports/scored-run-meters.json  one measured meter row per case
-  reports/meters.jsonl            one redacted meter line per case
+  reports/meters.jsonl            one redacted meter line per case; a
+                                  refused line is named in the report instead
   reports/scored-run.md           human-readable report
   submissions/scored-run.json     the evaluator submission array
 
@@ -89,6 +90,7 @@ class MeasuredCase(TypedDict):
     duration_ms: float
     contract: Contract | None
     error: str | None
+    meter_error: str | None
 
 
 class CaseReport(TypedDict):
@@ -100,6 +102,7 @@ class CaseReport(TypedDict):
     duration_ms: float
     failed_checks: list[str]
     error: str | None
+    meter_error: str | None
 
 
 class MeterRow(TypedDict):
@@ -163,9 +166,11 @@ def measure_cases(
 
     build is an injection seam: production passes the bank-backed
     build_contract_result, and a test can pass a deterministic builder without
-    a network. The bank-backed builder shares one ToolRetry across the run, so a
-    retried case's duration includes its waits between attempts. When meter_path
-    is set and build is not, the meter file is replaced before the first case.
+    a network. A case whose meter line the meter refuses keeps its measured
+    result and carries the refusal in meter_error. The bank-backed builder
+    shares one ToolRetry across the run, so a retried case's duration includes
+    its waits between attempts. When meter_path is set and build is not, the
+    meter file is replaced before the first case.
     """
     retry = ToolRetry()
     if meter_path is not None and build is None:
@@ -187,6 +192,7 @@ def measure_cases(
                 "duration_ms": duration_ms,
                 "contract": result["contract"],
                 "error": result["error"],
+                "meter_error": result.get("meter_error"),
             }
         )
     return measured
@@ -219,6 +225,7 @@ def build_case_reports(
                 "duration_ms": case["duration_ms"],
                 "failed_checks": failed_checks(checks),
                 "error": case["error"],
+                "meter_error": case.get("meter_error"),
             }
         )
     return reports
@@ -369,8 +376,23 @@ def _md_cell(value: Any) -> str:
     return str(value).replace("|", "\\|").replace("\n", " ")
 
 
-def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> str:
-    """Render the human-readable scored-run report."""
+def render_markdown(
+    report: Mapping[str, Any],
+    meters: Sequence[MeterRow],
+    *,
+    meter_path: str = "reports/meters.jsonl",
+) -> str:
+    """Render the human-readable scored-run report.
+
+    Args:
+        report: The assembled report to render.
+        meters: The per-case meter rows, one for each case whose line was written.
+        meter_path: The meter file the run wrote, named as the report should show
+            it. Defaults to the repository's reports/meters.jsonl.
+
+    Returns:
+        The markdown document, ending with a newline.
+    """
     total = report["total_cases"]
     lines = [
         "# Scored run across the twelve dev cases",
@@ -393,11 +415,11 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         f"- Format errors: {len(report['format_errors'])}",
         (
             f"- p50 draft latency: {_fmt_ms(report['p50_latency_ms'])} "
-            "(nearest-rank over the latency_ms values in reports/meters.jsonl)"
+            f"(nearest-rank over the latency_ms values in `{meter_path}`)"
         ),
         (
             f"- p95 draft latency: {_fmt_ms(report['p95_latency_ms'])} "
-            "(nearest-rank over the latency_ms values in reports/meters.jsonl)"
+            f"(nearest-rank over the latency_ms values in `{meter_path}`)"
         ),
         (
             f"- Cost per case: {report['cost_per_case_usd']:.2f} USD "
@@ -417,6 +439,18 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
             f"{_bool(case['passed'])} | {case['duration_ms']:.3f} | "
             f"{_md_cell(checks)} | {_md_cell(case['error'] or '-')} |"
         )
+
+    refused = [case for case in report["cases"] if case.get("meter_error")]
+    if refused:
+        lines += [""]
+        lines += [
+            (
+                f"- {_md_cell(case['case_id'])}: the meter refused this case's "
+                f"line ({_md_cell(case['meter_error'])}), so the meter file has "
+                "no line for it."
+            )
+            for case in refused
+        ]
 
     failing = [case for case in report["cases"] if not case["passed"]]
     lines += [
@@ -484,7 +518,7 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         (
             "Cost comes from `reports/scored-run-meters.json`, one row per case. "
             "The p50 and p95 in the result section are read from "
-            "`reports/meters.jsonl`, the redacted per-case meter file. The path "
+            f"`{meter_path}`, the redacted per-case meter file. The path "
             "is `deterministic_template`, so `model_calls`, `model_tokens_in` "
             "and `model_tokens_out` are 0 and the cost is 0.00 USD by "
             "construction: this run wires no model call, so the meter shows what "
@@ -533,7 +567,7 @@ def render_markdown(report: Mapping[str, Any], meters: Sequence[MeterRow]) -> st
         "```sh",
         (
             "uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 "
-            "--data data/dev --gold feedback/dev_gold.json"
+            f"--data data/dev --gold feedback/dev_gold.json --case-meters {meter_path}"
         ),
         "```",
         "",
@@ -596,6 +630,23 @@ def _write_json(path: Path, value: Any) -> None:
     )
 
 
+def _meter_path_display(path: Path | None) -> str:
+    """Name the meter file in the report.
+
+    Args:
+        path: The meter file this run was told to write, or None for the default.
+
+    Returns:
+        The default file as reports/meters.jsonl so the committed report stays
+        portable, and any other path exactly as the caller gave it so a custom
+        run names its own file.
+    """
+    default = ROOT / "reports" / "meters.jsonl"
+    if path is None or path.resolve() == default.resolve():
+        return "reports/meters.jsonl"
+    return str(path)
+
+
 def run_scored(
     *,
     base_url: str,
@@ -617,7 +668,9 @@ def run_scored(
     numbers. When the case list cannot be read there are no numbers to publish:
     nothing is written, the reason goes to stderr, and the status is 1. When
     the meter file the run wrote holds a restricted value, the run is refused
-    the same way: the reason names the file and the case.
+    the same way: the reason names the file and the case. The markdown names the
+    meter file the run wrote, and names the default file relative to the
+    repository so the committed report stays portable.
     """
     dataset = json.loads((data_dir / "dataset.json").read_text(encoding="utf-8"))
     gold = json.loads(gold_path.read_text(encoding="utf-8"))
@@ -684,7 +737,11 @@ def run_scored(
     _write_json(report_path, report)
     _write_json(meters_path, meters)
     markdown_path.parent.mkdir(parents=True, exist_ok=True)
-    markdown_path.write_text(render_markdown(report, meters), encoding="utf-8")
+    meter_display = _meter_path_display(case_meter_path)
+    markdown_path.write_text(
+        render_markdown(report, meters, meter_path=meter_display),
+        encoding="utf-8",
+    )
 
     print(
         f"{report['pass_count']} / {report['total_cases']} cases passed; "
