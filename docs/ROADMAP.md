@@ -17,7 +17,7 @@ At this head the application can:
 - assemble the supported classifications (unauthorized, duplicate_charge, service_not_received), route conflicting and unsupported accounts to a person, and include missing-evidence drafts routed to request_information with one targeted question per absent field, with exact citations, a per-type deterministic deadline, and the template narrative
 - continue after a case-level failure and report the reason for the case that stopped
 - open a human review for each finished draft, create a record only after a person approves the unchanged draft, return the existing record for a duplicate redelivery, and refuse a changed draft
-- attempt all twelve dev cases and publish a scored run with per-case pass/fail, p50 and p95 read from the meter file, and measured cost: 12 of 12 in the published report from `bb1ac87` (`reports/scored-run.md`), and the report's Reads and retries section carries the per-case tool attempts and retries
+- attempt all twelve dev cases and publish a scored run with per-case pass/fail, p50 and p95 read from the meter file, and measured cost: 12 of 12 in the published report from `8c3ac7f` (`reports/scored-run.md`), and the report's Reads and retries section carries the per-case tool attempts and retries
 - write one redacted meter line per case and refuse a restricted value in any meter field
 - run lint, mypy, Bandit, and pytest with a 100 percent line-coverage gate in CI
 

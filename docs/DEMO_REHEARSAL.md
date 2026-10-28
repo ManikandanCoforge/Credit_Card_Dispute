@@ -4,7 +4,7 @@
 - Status: **ARC REHEARSED TWICE WITH NO FAILED BEAT** (2026-10-28, after the COF-43 fix for CARD-D09). Pass conditions 2 to 4 are still open.
 - Last updated: 2026-10-28
 - Rehearsed: 2026-10-27 from commit 1c1d8ba (1c1d8baa00dafc5e4bbe6f03dfa15bb251187af2), mock on http://127.0.0.1:8793; re-run 2026-10-28 from commit 2030440 (20304404b9a5585dddf0b6e7b2a9b17a60166c85), mock on http://127.0.0.1:8794
-- Current scored run: 12 of 12, 0 format errors (reports/scored-run.md, generated 2026-10-28T00:56:38Z from bb1ac87)
+- Current scored run: 12 of 12, 0 format errors (reports/scored-run.md, generated 2026-10-28T02:10:46Z from 8c3ac7f)
 
 This is the runbook for the final demonstration and the record of its rehearsals. On 2026-10-27 the six-beat arc was run twice end to end at 1c1d8ba. Five beats passed in both runs. Beat 5, CARD-D09, failed in both on the COF-43 limit: the delivery note after the form fields was joined to the customer's account, so the joined statement was not one exact excerpt of the intake. On 2026-10-28 the arc was run twice more at 2030440, which takes the statement from the customer's text before the form fields, and all six beats passed in both runs. In every run the approvals were run by the rehearsal driver acting as reviewer, not by a person at a separate terminal. Do not hardcode a 12 of 12 result: quote the report you regenerate before the demo.
 
@@ -53,14 +53,14 @@ Observed in every rehearsal run: health 200, case list 200, twelve cases CARD-D0
 
 ## Numbers lock
 
-Use one report file for every number in the deck. On this branch that file is reports/scored-run.md, generated 2026-10-28T00:56:38Z from commit bb1ac87a486c0f1f71da3b12ee5fe41a44d80544 against http://127.0.0.1:8792.
+Use one report file for every number in the deck. On this branch that file is reports/scored-run.md, generated 2026-10-28T02:10:46Z from commit 8c3ac7f4859c0ec9c36a51ef26e78451a46c2889 against http://127.0.0.1:8834.
 
 | Number | Source | Value on 2026-10-28 |
 |---|---|---|
 | Cases passed | reports/scored-run.json pass_count | 12 of 12 |
 | Format errors | reports/scored-run.json format_errors | 0 |
-| p50 draft latency | reports/scored-run.json p50_latency_ms | 43.000 ms (published; the 2026-10-28 rehearsal observed 29.000 ms then 27.000 ms) |
-| p95 draft latency | reports/scored-run.json p95_latency_ms | 4111.000 ms (published; the 2026-10-28 rehearsal observed 3579.000 ms then 3576.000 ms, run-specific because D07 sets the maximum) |
+| p50 draft latency | reports/scored-run.json p50_latency_ms | 31.000 ms (published; the 2026-10-28 rehearsal observed 29.000 ms then 27.000 ms) |
+| p95 draft latency | reports/scored-run.json p95_latency_ms | 3670.000 ms (published; the 2026-10-28 rehearsal observed 3579.000 ms then 3576.000 ms, run-specific because D07 sets the maximum) |
 | Cost per case | reports/scored-run.json cost_per_case_usd | 0.00 USD, 0 model calls, 0 tokens |
 | Failing cases | reports/scored-run.md | None |
 
@@ -205,7 +205,7 @@ Boxes are checked only where the artifact exists.
 
 ## Freeze and escalation
 
-- Feature freeze: Tuesday 2026-10-27 17:00. The code for this rehearsal was frozen at 1c1d8ba; the published report now comes from 3a747a5, which differs in tools/scored_run.py, a read-back helper in src/meters.py, the tests, .gitignore, README.md and the republished artifacts, with no change to the contract, retry, review or loader code, so the rehearsal still describes this code's behaviour.
+- Feature freeze: Tuesday 2026-10-27 17:00. The code for this rehearsal was frozen at 1c1d8ba. The published report now comes from `8c3ac7f`, the COF-43 fix rebased onto main after the freeze and carrying main's per-case meters (PR #77), retry and human review gate (PR #78), one-command loop (PR #83) and repository hygiene (PR #84), plus the regenerated artifacts. The six beats below are the same commands, but quote the regenerated report for every number: the arc was rehearsed on the pre-rebase tree.
 - After the freeze: runs 3 and 4 were taken at 2030440, which adds the COF-43 fix for the CARD-D09 blocker on top of that code. It changes how `src/build_records.py` reads the intake statement, and nothing in the contract, retry, review or loader code; the rest is tests, docs and the regenerated reports. It is a blocker fix, not a feature, and it needs the pod's agreement as a change after the freeze. Without it, runs 1 and 2 are the record of the frozen build.
 - Dry run: Thursday 2026-10-29.
 - Defence: Friday 2026-10-30.

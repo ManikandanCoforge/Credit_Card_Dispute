@@ -125,8 +125,11 @@ def test_the_rehearsal_numbers_lock_quotes_the_report():
         case["case_id"] for case in report["cases"] if not case["passed"]
     )
     cases = _lock_row(text, "Failing cases")
-    expected = f"{failing} only"
-    _expect(cases.startswith(expected), REHEARSAL, "failing cases", cases, expected)
+    if failing:
+        expected = f"{failing} only"
+        _expect(cases.startswith(expected), REHEARSAL, "failing cases", cases, expected)
+    else:
+        _expect(cases == "None", REHEARSAL, "failing cases", cases, "None")
 
     cost = _lock_row(text, "Cost per case")
     expected = f"{report['cost_per_case_usd']:.2f} USD, 0 model calls, 0 tokens"

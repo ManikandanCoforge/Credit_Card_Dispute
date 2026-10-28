@@ -49,13 +49,12 @@ uv run --locked python -m src.run_loop --report .loop-check/scored-run.json \
 
 ```text
 Fictional training mock at http://127.0.0.1:61678; Ctrl-C stops it.
-11 / 12 cases passed; 0 format errors; p50 32.000 ms; p95 4108.000 ms; cost per case 0.00 USD
-  CARD-D09: submitted (the intake statement is not an exact excerpt of the intake)
-11 / 12 cases passed; p50 32.000 ms; p95 4108.000 ms; report .loop-check/scored-run.json; meters .loop-check/meters.jsonl
+12 / 12 cases passed; 0 format errors; p50 33.000 ms; p95 3916.000 ms; cost per case 0.00 USD
+12 / 12 cases passed; p50 33.000 ms; p95 3916.000 ms; report .loop-check/scored-run.json; meters .loop-check/meters.jsonl
 ```
 
-- 11 of 12 is the expected result at this commit. CARD-D09 is the proposed COF-43 exception; see the troubleshooting table.
-- p50 and p95 move between runs because the retries wait on the wall clock: the committed report holds 31.000 and 3444.000 ms, this run 32.000 and 4108.000 ms.
+- 12 of 12 is the expected result at this commit: CARD-D09 builds because COF-43 reads the statement from the customer's text before the form fields.
+- p50 and p95 move between runs because the retries wait on the wall clock: the committed report holds 31.000 and 3670.000 ms, this run 33.000 and 3916.000 ms.
 - The last line names both the report and the meter file. With the defaults it ends `report reports/scored-run.json; meters reports/meters.jsonl`.
 - The first line comes from the supplied mock, the next two from the scored run, and the last from the loop.
 
@@ -164,13 +163,13 @@ The optional hybrid model reads `MODEL_PROVIDER` and the related names; see the 
 | PowerShell redirect produces JSON the loader cannot read | PowerShell 5.1 writes UTF-16 with a BOM on `>`; the loader expects UTF-8 | Use Git Bash or cmd, or `| Out-File -Encoding ascii submissions/results.json`. Check with `od -An -tx1 -N3 submissions/results.json`: `3C` is bytes 3C 7B, FF FE is UTF-16 |
 | `uv sync --locked` refuses, or uv does not know Python 3.12.13 | The installed uv predates the pin, or the interpreter is missing | `uv --version`, `uv self update` (or `brew upgrade uv`), then `uv sync --locked`. Never edit the pin in `pyproject.toml` |
 | `git status` shows `reports/meters.jsonl` changed after a pytest run | Tests ran from the wrong directory, or a test used the scored run's default paths instead of a temp directory | Run pytest from the repository root. Tests must pass explicit report and meter paths, as `tests/test_scored_run.py` does. Restore the file with `git checkout -- reports/meters.jsonl` and confirm with `git status` |
-| CARD-D09 is refused with `the intake statement is not an exact excerpt of the intake` | The intake statement is split across two lines, so it is not one exact excerpt. This is the proposed COF-43 exception | None. It is the known gap, and `docs/RED_TEAM.md:52` explains it. Do not present it as passing and do not edit the fixture |
+| A case is refused with `the intake statement is not an exact excerpt of the intake` | The intake statement wraps across lines, so no single line is one exact excerpt. CARD-D09 no longer hits this, because COF-43 reads the customer's text before the form fields | None. It is the known gap, and `docs/RED_TEAM.md:52` explains it. Do not edit the fixture to make such a case build |
 | `make` is not installed on Windows | make is optional | Run the `uv run --locked` command the recipe wraps; every target is one command |
 
 ## Where to look next
 
 - `README.md` for the assessment-facing description and the measured numbers.
 - `docs/DEMO_REHEARSAL.md` for the six demo beats and the numbers lock.
-- `docs/RED_TEAM.md` for the known gaps, including CARD-D09 at line 52.
+- `docs/RED_TEAM.md` for the known gaps, including the intake statement that wraps across lines at line 52.
 - `docs/decisions/ADR-004-one-entry-point-for-the-loop.md` for why the loop is one tested command.
 - `reports/scored-run.md` for the per-case results of the published run.
