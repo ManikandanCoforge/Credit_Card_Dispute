@@ -356,8 +356,9 @@ def _contract_record(
 
     documents is the evidence the case list names for this case. Besides the
     intake and the attachment, a listed customer statement, such as a follow-up
-    email, is read and passed on. Any other listed source is refused rather than
-    ignored, so evidence can never be silently left out of the draft.
+    email, is read and passed on. Any other listed source is cited and named in
+    the narrative for the reviewer, so evidence is never silently left out of the
+    draft.
 
     A transaction service that is still unavailable after its attempts leaves the
     record with no transactions and no tool text; assemble_draft then routes the
@@ -494,8 +495,9 @@ def _read_tool(base_url: str, case_id: str, tool: str, retry: ToolRetry) -> byte
     Every attempt is a separate observed request and counts toward the run's
     tool_attempts; each try after the first counts toward retry_count. Any other
     failure stops the case at once: it is an error, never an empty result.
-    DependencyUnavailable, when every attempt failed or the tool's breaker is open,
-    is left to the caller.
+    A 404 is an answer, not a failed probe, so it is named as answered: a half-open
+    probe that gets one closes the breaker instead of reopening it. DependencyUnavailable,
+    when every attempt failed or the tool's breaker is open, is left to the caller.
     """
     path = f"/v1/cases/{quote(case_id, safe='')}/{tool}"
     attempts = 0
@@ -512,7 +514,9 @@ def _read_tool(base_url: str, case_id: str, tool: str, retry: ToolRetry) -> byte
             raise TransientFailure from error
 
     try:
-        return call_with_backoff(attempt, retry.breakers[tool], sleep=retry.sleep)
+        return call_with_backoff(
+            attempt, retry.breakers[tool], sleep=retry.sleep, answered=(BankNotFound,)
+        )
     except BankNotFound:
         # A tool with no record for the case answered, so it is not retried; it gave no
         # data, which the procedure treats as an unavailable service, never as empty.

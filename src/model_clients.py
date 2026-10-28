@@ -7,9 +7,10 @@ ModelCall. A provider failure never reaches the rules as an exception: no answer
 the rules decide alone.
 
 The provider SDKs (openai and anthropic) are not project dependencies. They are imported
-only when a live client is built, so the default path, CI and uv.lock need neither;
-README.md gives the command that adds them for a live run. Credentials come only from
-the environment, and no error message repeats one.
+only when a live client is built, so the rules-only path, CI and uv.lock need neither;
+a drafting command without the SDK falls back to rules with a printed reason. README.md
+gives the command that adds them for a live run. Credentials come only from the
+environment, and no error message repeats one.
 """
 
 import hashlib
@@ -217,9 +218,10 @@ def model_from_env(
 ) -> ModelClient | None:
     """The model the environment names, or None when MODEL_PROVIDER is unset or "off".
 
-    MODEL_PROVIDER is off (the default), azure_openai, anthropic_foundry or replay.
-    MODEL_ID names the deployment or model. A live model must have a passed record in
-    models.toml for the current SCHEMA_HASH, and its use must be approved there
+    MODEL_PROVIDER is off, azure_openai, anthropic_foundry or replay. Unset means off
+    here; model_or_rules supplies the approved default (azure_openai/gpt-6-luna) for the
+    drafting commands. MODEL_ID names the deployment or model. A live model must have a
+    passed record in models.toml for the current SCHEMA_HASH, and its use must be approved there
     (approved_by), because a live call sends the customer's redacted lines to the
     provider. Only tools/qualify_model.py, which makes those records, builds a client
     without them. AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY, or

@@ -251,6 +251,8 @@ def test_an_unmatched_transaction_leaves_amount_and_currency_null():
         "currency": None,
         "reported_date": "2026-10-01",
     }
+    assert result["routing"] == "manual_review"
+    assert "named transaction is not in its response" in result["narrative"]
 
 
 def test_an_absent_transaction_id_keeps_every_fact_key_and_nulls_the_amount():

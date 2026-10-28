@@ -896,14 +896,15 @@ def _attachment_citation(
 ) -> Citation:
     """The attachment evidence the draft cites.
 
-    A supplied receipt is cited by its Amount line. When the receipt is missing, the
-    attachment's status line is cited instead, so a missing-evidence draft still quotes
-    the attachment exactly. That holds whatever the classification requires: an
-    attachment that declares itself missing ("Attachment status: missing") is cited by
-    that line even for a type that does not request a receipt. An escalated case does
-    not rest on the amount, so there, and for a missing receipt without a single status
-    line, the Source ID line is cited. Any other attachment without a single Amount
-    line is refused, including a supplied one whose status line says "attached".
+    A supplied receipt with one Amount line is cited by that line, even when the case
+    is escalated. When the receipt is missing, the attachment's status line is cited
+    instead, so a missing-evidence draft still quotes the attachment exactly. That holds
+    whatever the classification requires: an attachment that declares itself missing
+    ("Attachment status: missing") is cited by that line even for a type that does not
+    request a receipt. When there is no single Amount line, or the receipt is missing
+    without a status line, the Source ID line is cited, so an escalated case can rest on
+    the source rather than an amount. An attachment with more than one Amount line, and
+    no rule above to pick one, is refused.
     """
     receipt_missing = "purchase_receipt" in missing_information
     amounts = _lines_starting(attachment_text, _AMOUNT_LABEL)

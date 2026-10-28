@@ -26,10 +26,11 @@ from src.contract_records import (
     load_contract_results,
     main,
 )
-from src.load_records import BankReadError, BankUnavailable
+from src.load_records import BankNotFound, BankReadError, BankUnavailable
 from src.meters import MeterLeak
 from src.model_clients import request_key
 from src.model_cue import MULTI_SCHEMA, MULTI_SYSTEM, evidence, statement_lines
+from src.resilience import DependencyUnavailable
 from tools.runtime import create_server
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1318,6 +1319,29 @@ def test_a_permanent_failure_ends_the_retry_without_a_further_read(monkeypatch):
     assert result["contract"] is None
     assert result["error"] == "BankReadError"
     assert seen == ["/v1/cases"]
+
+
+def test_a_404_on_a_half_open_probe_closes_the_breaker(monkeypatch):
+    retry, _waits = _retry()
+    breaker = retry.breakers["transactions"]
+    breaker.state = "open"
+    breaker.opened_at = 0.0
+    breaker.reset_timeout = 0
+    reads = []
+
+    def not_found(base_url, path):
+        reads.append(path)
+        raise BankNotFound
+
+    monkeypatch.setattr("src.contract_records.read_body", not_found)
+
+    with pytest.raises(DependencyUnavailable):
+        contract_records._read_tool("http://bank", "CARD-D01", "transactions", retry)
+
+    # The tool answered with a 404, so the probe worked: the breaker closes and later
+    # cases call the tool again instead of waiting out another reset timeout.
+    assert reads == [TRANSACTIONS]
+    assert breaker.state == "closed"
 
 
 def test_a_transaction_service_that_never_answers_is_read_three_times_and_sent_to_a_person():
