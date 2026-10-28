@@ -20,6 +20,7 @@ from src.model_clients import (
     RecordingClient,
     ReplayClient,
     model_from_env,
+    model_or_rules,
     request_key,
 )
 from src.model_cue import (
@@ -472,9 +473,54 @@ def test_a_qualified_model_whose_use_is_not_approved_is_refused(tmp_path, monkey
 
     assert str(refused.value) == (
         "azure_openai/gpt-6-luna is qualified but its use is not approved; record "
-        "approved_by in models.toml once the bank signs off"
+        "approved_by in models.toml once its use is approved"
     )
 
+
+
+def test_the_hybrid_is_on_by_default_with_the_approved_pair(tmp_path, monkeypatch):
+    # MODEL_PROVIDER unset means the hybrid's approved default pair, not the rules alone.
+    monkeypatch.setitem(sys.modules, "openai", _fake_openai())
+    env = {k: v for k, v in _LUNA_ENV.items() if k not in ("MODEL_PROVIDER", "MODEL_ID")}
+
+    model, unused = model_or_rules(env, _registry(tmp_path))
+
+    assert isinstance(model, AzureOpenAIClient)
+    assert (model.provider, model.model, unused) == ("azure_openai", "gpt-6-luna", None)
+
+
+def test_model_provider_off_keeps_the_rules_alone_and_says_nothing(tmp_path):
+    assert model_or_rules({"MODEL_PROVIDER": "off"}, _registry(tmp_path)) == (None, None)
+
+
+@pytest.mark.parametrize(
+    ("env", "reason"),
+    [
+        ({}, "AZURE_OPENAI_ENDPOINT is not set"),
+        (
+            {"MODEL_PROVIDER": "azure_openai", "MODEL_ID": "gpt-6-luna"},
+            "AZURE_OPENAI_ENDPOINT is not set",
+        ),
+    ],
+    ids=["default, no key", "named, no key"],
+)
+def test_a_model_that_cannot_be_set_up_falls_back_to_the_rules_with_the_reason(
+    env, reason, tmp_path, monkeypatch
+):
+    # An assessor's machine has no provider key: the run falls back, it never stops.
+    monkeypatch.setitem(sys.modules, "openai", _fake_openai())
+
+    assert model_or_rules(env, _registry(tmp_path)) == (None, reason)
+
+
+def test_an_unapproved_default_pair_falls_back_to_the_rules(tmp_path, monkeypatch):
+    monkeypatch.setitem(sys.modules, "openai", _fake_openai())
+    env = {k: v for k, v in _LUNA_ENV.items() if k not in ("MODEL_PROVIDER", "MODEL_ID")}
+
+    model, unused = model_or_rules(env, _registry(tmp_path, approved_by=""))
+
+    assert model is None
+    assert unused is not None and "not approved" in unused
 
 def test_azure_builds_a_client_on_the_v1_endpoint_with_one_retry(tmp_path, monkeypatch):
     openai = _fake_openai()

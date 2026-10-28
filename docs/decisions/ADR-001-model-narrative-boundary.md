@@ -1,6 +1,6 @@
 # ADR-001: Model narrative boundary
 
-- Status: Accepted. Amended by `ADR-003`, which lets a qualified model answer two closed questions on the classification gap. It is off by default, and every field is still computed by code.
+- Status: Accepted. Amended by `ADR-003`, which lets a qualified model answer two closed questions on the classification gap. It is on by default with the team's capstone approval and falls back to the rules alone without the model, and every field is still computed by code.
 - Date: 2026-10-25
 - Ticket: COF-47
 - Owner: Ken (kenmann01)

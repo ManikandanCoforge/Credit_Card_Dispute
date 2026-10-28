@@ -1,6 +1,6 @@
 # ADR-003: Hybrid model questions
 
-- Status: Proposed. Accepted when the pull request that adds it merges. Live use is refused until the bank's approval is recorded in `models.toml`
+- Status: Accepted. On by default since COF-39: GPT-6 Luna's use is approved in `models.toml` as the team's capstone approval (Mani, 2026-10-28). Lumen Bank is fictional, so this is not a bank sign-off; a real bank records its own approval there. Without the model's key, endpoint or SDK, the drafting commands fall back to the rules alone.
 - Date: 2026-10-26
 - Ticket: COF-64
 - Owner: Mani (ManikandanCoforge)
@@ -79,12 +79,12 @@ The prompts and schemas are the copilot's prompt `cue-v2`, copied verbatim. `SCH
 
 Three limits of this evidence matter:
 
-- **The records came from the copilot's own clients.** This repository's clients send the same requests, and the 40 recorded questions were byte-for-byte the prompts Luna was sent, but this repository has not made a live call. Before the bank signs off, rerun `tools/qualify_model.py` with this repository's client, so the record comes from this code.
+- **The records came from the copilot's own clients.** This repository's clients send the same requests, and the 40 recorded questions were byte-for-byte the prompts Luna was sent, but this repository has not made a live call. Before a real bank signs off, rerun `tools/qualify_model.py` with this repository's client, so the record comes from this code.
 - **The two-problem question has no qualification set.** A yes can only send a case to a person, and a wrong no leaves the draft the rules would make without a model. Its effect is measured in the suites below.
-- **`approved_by` is empty in every record,** so live use is refused today.
+- **The approval is the team's, for the capstone.** `approved_by` on GPT-6 Luna's record names Mani (ManikandanCoforge), 2026-10-28. It is not a bank's sign-off on the provider and data location.
 
 **How it runs.**
-- `MODEL_PROVIDER` selects `off` (the default), `azure_openai`, `anthropic_foundry` or `replay`.
+- `MODEL_PROVIDER` selects `off`, `azure_openai`, `anthropic_foundry` or `replay`. Unset, the drafting commands use the approved default pair, GPT-6 Luna on Azure OpenAI (`src/model_clients.py` `model_or_rules`); a model that cannot be set up makes them draft with the rules alone and say why, never stop.
 - Live clients send one structured-output request per question, with a 30-second timeout and one retry. Azure sets `max_completion_tokens=400`. Foundry sets `max_tokens=2000` and `effort` to low.
 - The `openai` and `anthropic` SDKs are imported only when a live client is built, so CI, `uv.lock` and the default path need neither.
 - `replay` answers from a JSONL recording keyed on the exact prompt and schema. A question with no recording gets no answer.
@@ -161,7 +161,8 @@ Positive:
 
 Negative:
 
-- A live run sends redacted customer lines to the provider. The bank must approve the provider and the data location, and record its approval, before any live use.
+- A live run sends redacted customer lines to the provider. For the capstone the team approved that; a real bank must approve the provider and the data location, and record its own approval, before production use.
+- With the hybrid on by default, a machine without the model's key, endpoint or SDK drafts with the rules alone, so its results match the rules-alone column, not the hybrid one.
 - A live run depends on the provider. No answer leaves the rules to decide, and a gap case then goes to a person as `ambiguous`.
 - A model-assisted draft needs the reviewer to check the cited line, which is more work than reviewing a rules draft.
 - The detectors that keep a model away from injected text are patterns, and unrecognised phrasing still reaches the model.

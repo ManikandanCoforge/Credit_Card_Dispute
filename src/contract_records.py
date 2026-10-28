@@ -51,7 +51,7 @@ from src.load_records import (
     records_from_case_list,
 )
 from src.meters import MeterLeak, record_case_meter
-from src.model_clients import ModelSetupError, model_from_env
+from src.model_clients import model_or_rules
 from src.model_cue import ModelCall, ModelClient
 from src.models import (
     Intake,
@@ -287,17 +287,16 @@ def main() -> None:
     status is 1 when any case was not built, so a partial array is never mistaken
     for a complete one. One meter line per case is written to reports/meters.jsonl.
 
-    MODEL_PROVIDER and its settings, when set, add a qualified model's answers
-    (ADR-003; see src/model_clients.py). A model that cannot be used stops the run
-    before any case is read, rather than running without it.
+    The hybrid is on by default (ADR-003; see src/model_clients.py model_or_rules): an
+    approved model answers the two closed questions. A model that cannot be used, such
+    as on a machine without the provider's key or network, never stops the run: the
+    rules draft every case alone, and stderr says why.
     """
     base_url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8765"
     data_dir = sys.argv[2] if len(sys.argv) > 2 else "data/dev"
-    try:
-        model = model_from_env(os.environ)
-    except ModelSetupError as error:
-        sys.stderr.write(f"the model cannot be used: {error}\n")
-        raise SystemExit(1) from None
+    model, unused = model_or_rules(os.environ)
+    if unused is not None:
+        sys.stderr.write(f"the model cannot be used ({unused}); the rules draft every case\n")
     try:
         results = load_contract_results(
             base_url,

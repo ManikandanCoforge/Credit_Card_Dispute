@@ -25,6 +25,10 @@ from src.model_registry import find_qualified, load_registry
 
 REGISTRY = Path(__file__).resolve().parents[1] / "models.toml"
 LIVE_PROVIDERS = ("azure_openai", "anthropic_foundry")
+# The approved pair the hybrid uses when MODEL_PROVIDER is not set (ADR-003). The route is
+# on by default; MODEL_PROVIDER=off turns it off.
+DEFAULT_PROVIDER = "azure_openai"
+DEFAULT_MODEL_ID = "gpt-6-luna"
 _TIMEOUT_S = 30.0
 # GPT-6 Luna is a reasoning deployment: its reasoning counts against this limit.
 _AZURE_MAX_COMPLETION_TOKENS = 400
@@ -245,13 +249,36 @@ def model_from_env(
         if not str(entry.get("approved_by", "")).strip():
             raise ModelSetupError(
                 f"{provider}/{model_id} is qualified but its use is not approved; record "
-                "approved_by in models.toml once the bank signs off"
+                "approved_by in models.toml once its use is approved"
             )
     record = env.get("MODEL_RECORD", "").strip()
     if record and not Path(record).parent.is_dir():
         raise ModelSetupError("MODEL_RECORD names a file in a folder that does not exist")
     live = _live_client(env, provider, model_id)
     return RecordingClient(live, Path(record)) if record else live
+
+
+def model_or_rules(
+    env: Mapping[str, str], registry: Path = REGISTRY
+) -> tuple[ModelClient | None, str | None]:
+    """The model a drafting run uses, or None and the reason the rules decide alone.
+
+    The hybrid is on by default: with MODEL_PROVIDER unset, the approved default pair
+    (DEFAULT_PROVIDER, DEFAULT_MODEL_ID) is used, and MODEL_PROVIDER=off turns it off.
+    A model that cannot be set up, for want of credentials, the provider's SDK or an
+    approval, never stops the run: the rules draft every case alone, and what they
+    cannot type goes to a person. So a machine without the provider's key or network
+    still produces a full submission. A model that is set up but fails on a call gives
+    no answer for that case, and the case is drafted the same way (src/contract.py).
+    """
+    settings = dict(env)
+    if not settings.get("MODEL_PROVIDER", "").strip():
+        settings["MODEL_PROVIDER"] = DEFAULT_PROVIDER
+        settings.setdefault("MODEL_ID", DEFAULT_MODEL_ID)
+    try:
+        return model_from_env(settings, registry), None
+    except ModelSetupError as error:
+        return None, str(error)
 
 
 def _replay(env: Mapping[str, str], registry: Path, require_qualified: bool) -> ReplayClient:

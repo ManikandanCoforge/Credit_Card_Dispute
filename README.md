@@ -56,14 +56,16 @@ Measured on 2026-10-28 UTC across all twelve dev cases from a clean tree at comm
 
 The published run was taken on a scratch mock at `127.0.0.1:8834`, the same mock started from this tree on a fresh state. The Reproduce section keeps the default port and the same commands.
 
-## Hybrid model (optional)
+## Hybrid model (on by default)
 
-By default the application makes no model call. [ADR-003](docs/decisions/ADR-003-hybrid-model-questions.md) lets a qualified model answer two closed questions where the rules leave a gap:
+The hybrid is on by default. [ADR-003](docs/decisions/ADR-003-hybrid-model-questions.md) lets a qualified, approved model answer two closed questions where the rules leave a gap:
 
 - which dispute type a customer line shows, asked only when the rules find none
 - whether the customer describes more than one problem, asked only before a draft is marked ready
 
-Code still computes every field. `models.toml` lists the qualified models. Only GPT-6 Luna is registered. A live run is refused until the bank's approval is recorded as `approved_by` in `models.toml`, because it sends customers' redacted lines to the provider. A replay needs no approval, only recorded answers from a qualified model.
+Code still computes every field. `models.toml` lists the qualified models. Only GPT-6 Luna is registered, and its `approved_by` records the team's capstone approval (Lumen Bank is fictional; a real bank records its own sign-off there), because a live run sends customers' redacted lines to the provider. A replay needs no approval, only recorded answers from a qualified model.
+
+With `MODEL_PROVIDER` unset, `python -m src.contract_records` and `python -m src.review_runner submit` use GPT-6 Luna. On a machine without its key, endpoint or SDK, such as one with no network, they print one line saying why and the rules draft every case alone; the run never stops for want of a model. A call that fails mid-run gives no answer for that case, and the case is drafted for manual review. `MODEL_PROVIDER=off` turns the hybrid off. The published scored run (`tools/scored_run.py`) stays the rules-only baseline.
 
 To compare the hybrid with the rules alone on every suite, replay GPT-6 Luna's recorded answers. This needs no network and no credentials. `PYTHONUTF8=1` matters on Windows, where the bank's evaluator would otherwise read a non-ASCII merchant name in the locale encoding.
 

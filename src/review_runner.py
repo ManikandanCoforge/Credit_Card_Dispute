@@ -20,6 +20,7 @@ check stops when the wait runs out, leaving undecided reviews pending in the jou
 
 import argparse
 import json
+import os
 import sys
 import time
 from collections.abc import Callable, Sequence
@@ -34,6 +35,8 @@ from src.contract_records import (
 )
 from src.idempotency import CreateRejected, MissingRecord
 from src.load_records import CaseListError
+from src.model_clients import model_or_rules
+from src.model_cue import ModelClient
 from src.review_gate import ReviewRefused, review_alert, submit_review
 
 _DEFAULT_BASE_URL = "http://127.0.0.1:8765"
@@ -74,16 +77,18 @@ def submit_drafts(
     data_dir: str | Path,
     cases: Sequence[str] = (),
     retry: ToolRetry | None = None,
+    model: ModelClient | None = None,
 ) -> tuple[list[JournalEntry], list[ContractResult]]:
     """Open one review for each built draft, and return the entries and the unbuilt cases.
 
     cases, when given, limits the run to those case ids; no other case's tools are
     read. Every built draft is submitted, whatever its routing: the reviewer decides
-    whether a case is created.
+    whether a case is created. model, when given, answers the hybrid's two closed
+    questions (ADR-003).
     """
     shared = ToolRetry() if retry is None else retry
     results = [
-        build_contract_result(plan, base_url, data_dir, retry=shared)
+        build_contract_result(plan, base_url, data_dir, retry=shared, model=model)
         for plan in contract_case_plans(base_url, data_dir)
         if not cases or plan["record"]["case_id"] in cases
     ]
@@ -215,8 +220,12 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _submit(args: argparse.Namespace) -> None:
+    # The hybrid is on by default; without a usable model the rules draft every case.
+    model, unused = model_or_rules(os.environ)
+    if unused is not None:
+        sys.stderr.write(f"the model cannot be used ({unused}); the rules draft every case\n")
     try:
-        entries, unbuilt = submit_drafts(args.base_url, args.data, args.case)
+        entries, unbuilt = submit_drafts(args.base_url, args.data, args.case, model=model)
     except CaseListError:
         sys.stderr.write("the bank case list could not be read\n")
         raise SystemExit(1) from None

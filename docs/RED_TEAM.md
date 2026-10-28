@@ -27,7 +27,7 @@ From the human boundary in `BRIEF.md` and CARD-PROCEDURE-01, an attack succeeds 
 | Attachment | Only its `Amount:` or `Attachment status:` line, plus the instruction check |
 | Merchant record (tool output) | Only its id and name, plus the instruction check on its note. The note is never quoted |
 | Transactions record (tool output) | Only the five contract fields of a row. A row carrying any other field is refused |
-| Model prompt (ADR-003, off by default) | Only the customer's lines, redacted, and only when no detector fires |
+| Model prompt (ADR-003, on by default) | Only the customer's lines, redacted, and only when no detector fires |
 
 ## Results
 

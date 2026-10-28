@@ -607,24 +607,33 @@ def test_main_reports_an_unreadable_case_list(capsys, monkeypatch):
     assert printed.err == "the bank case list could not be read\n"
 
 
-def test_main_stops_before_any_bank_read_when_the_named_model_cannot_be_used(
-    capsys, monkeypatch
+@pytest.mark.parametrize(
+    ("provider", "reason"),
+    [
+        ("openai", "MODEL_PROVIDER must be off, azure_openai, anthropic_foundry or replay"),
+        # The default: the approved pair, on a machine with no key and no SDK.
+        (None, "the openai package is not installed; see README.md for the live-model command"),
+    ],
+    ids=["named model unusable", "default with no key"],
+)
+def test_main_falls_back_to_the_rules_when_the_model_cannot_be_used(
+    tmp_path, capsys, monkeypatch, provider, reason
 ):
-    monkeypatch.setenv("MODEL_PROVIDER", "openai")
+    # An assessor's machine has no provider key: the run must still draft every case.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(sys.modules, "openai", None)
+    if provider is None:
+        monkeypatch.delenv("MODEL_PROVIDER")
+    else:
+        monkeypatch.setenv("MODEL_PROVIDER", provider)
 
-    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, seen):
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
         monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
-        with pytest.raises(SystemExit) as stopped:
-            main()
+        main()
 
     printed = capsys.readouterr()
-    assert stopped.value.code == 1
-    assert printed.out == ""
-    assert printed.err == (
-        "the model cannot be used: MODEL_PROVIDER must be off, azure_openai, "
-        "anthropic_foundry or replay\n"
-    )
-    assert seen == []
+    assert [contract["case_id"] for contract in json.loads(printed.out)] == ["CARD-D01"]
+    assert printed.err == f"the model cannot be used ({reason}); the rules draft every case\n"
 
 
 def test_main_uses_the_model_the_environment_names(tmp_path, capsys, monkeypatch):

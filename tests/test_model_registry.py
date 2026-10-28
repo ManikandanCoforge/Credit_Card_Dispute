@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from src.model_clients import DEFAULT_MODEL_ID, DEFAULT_PROVIDER
 from src.model_cue import SCHEMA_HASH
 from src.model_registry import find_qualified, load_registry, score, summarize
 
@@ -49,11 +50,29 @@ def test_every_registered_model_passed_for_the_current_schema():
 
 
 def test_every_registry_entry_is_the_record_its_qualification_report_holds():
+    # The approval is recorded after qualification, so it is the one field the report
+    # cannot hold; every other field must be exactly what the qualification measured.
     for entry in load_registry(ROOT / "models.toml"):
         report = REPORTS / f"{entry['provider']}__{entry['model_id']}__cue_suite.json"
         recorded = json.loads(report.read_text(encoding="utf-8"))["entry"]
 
-        assert entry == {key: value for key, value in recorded.items() if value is not None}
+        qualified = {key: value for key, value in entry.items() if key != "approved_by"}
+        assert qualified == {
+            key: value
+            for key, value in recorded.items()
+            if value is not None and key != "approved_by"
+        }
+
+
+def test_the_default_hybrid_pair_is_qualified_and_approved():
+    [entry] = [
+        entry
+        for entry in load_registry(ROOT / "models.toml")
+        if (entry["provider"], entry["model_id"]) == (DEFAULT_PROVIDER, DEFAULT_MODEL_ID)
+    ]
+
+    assert entry["passed"] is True
+    assert entry["approved_by"].strip()
 
 
 @pytest.mark.parametrize("report", sorted(REPORTS.glob("*.json")), ids=lambda path: path.stem)

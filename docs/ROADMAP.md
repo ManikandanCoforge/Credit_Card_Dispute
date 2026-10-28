@@ -41,7 +41,7 @@ These items are not delivered on this head.
 
 - decide which of two contradictory accounts is true; the application routes the case to `manual_review` instead
 - authenticate a reviewer or run batch intake
-- turn on the optional model route: `ADR-003` lets a qualified model answer two closed questions on the classification gap, and it is off by default with no approved live run
+- run the model route live and measure it: `ADR-003` lets a qualified model answer two closed questions on the classification gap; it is on by default with the team's capstone approval, but no live run from this repository's client has been measured, and a real bank's sign-off is still needed
 - update or close an existing record; this is blocked by Gate U
 - provide a UI or a production deployment
 - quote a customer statement that wraps across lines: such a case is not built rather than drafted (`docs/RED_TEAM.md` row 17)
