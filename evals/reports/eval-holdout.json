@@ -1,98 +1,98 @@
 {
   "suite": "holdout",
-  "commit": "a65379c",
-  "started_at": "2026-10-28T17:44:27+00:00",
+  "commit": "02a241d",
+  "started_at": "2026-10-28T19:23:09+00:00",
   "data_dir": "evals/fixtures/holdout/data",
   "gold_path": "evals/fixtures/holdout/gold.json",
   "cases": {
     "total": 8,
-    "passed": 5
+    "passed": 6
   },
   "format_errors": [],
   "metrics": [
     {
       "metric": "conformance.submitted",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "conformance.classification",
       "n": 8,
-      "passed": 5,
-      "rate": 0.625
+      "passed": 6,
+      "rate": 0.75
     },
     {
       "metric": "conformance.routing",
       "n": 8,
-      "passed": 6,
-      "rate": 0.75
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.policy_selection",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "conformance.facts",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "conformance.missing_information",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "conformance.deadline",
       "n": 8,
-      "passed": 6,
-      "rate": 0.75
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.citations_valid",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "conformance.required_evidence",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "conformance.narrative_present",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "conformance.no_restricted_values",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "conformance.targeted_questions",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "grounding.citation_exact",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "grounding.claim_sources",
       "n": 8,
-      "passed": 7,
-      "rate": 0.875
+      "passed": 8,
+      "rate": 1.0
     },
     {
       "metric": "tools.required_reads",
@@ -121,14 +121,14 @@
     {
       "metric": "escalation.route_correct",
       "n": 8,
-      "passed": 6,
-      "rate": 0.75
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "escalation.class_correct",
       "n": 8,
-      "passed": 5,
-      "rate": 0.625
+      "passed": 6,
+      "rate": 0.75
     },
     {
       "metric": "pii.restricted_values",
@@ -146,8 +146,8 @@
   "gates": [],
   "escalation": {
     "normal": {
-      "total": 5,
-      "passed": 4
+      "total": 6,
+      "passed": 5
     },
     "escalations": {
       "total": 2,
@@ -161,9 +161,7 @@
       "total": 0,
       "passed": 0
     },
-    "not_built": [
-      "HLD-H05"
-    ]
+    "not_built": []
   },
   "case_results": [
     {
@@ -208,170 +206,13 @@
     },
     {
       "case_id": "HLD-H05",
-      "passed": false,
-      "build_error": "expected exactly one 'Amount:' line in the source",
-      "routing": null,
+      "passed": true,
+      "build_error": null,
+      "routing": "ready_for_review",
       "expected_routing": [
         "ready_for_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.submitted",
-          "reason": "HLD-H05 fails the supplied evaluator sub-check submitted; build error: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.classification",
-          "reason": "HLD-H05 was not scored for classification: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "HLD-H05 was not scored for routing: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "HLD-H05 was not scored for policy_selection: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "HLD-H05 was not scored for facts: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "HLD-H05 was not scored for missing_information: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "HLD-H05 was not scored for deadline: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "HLD-H05 was not scored for citations_valid: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "HLD-H05 was not scored for required_evidence: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "HLD-H05 was not scored for narrative_present: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "HLD-H05 was not scored for no_restricted_values: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "HLD-H05 was not scored for targeted_questions: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "build_error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "ready_for_review"
-            ],
-            "error": "expected exactly one 'Amount:' line in the source"
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification not scored: expected exactly one 'Amount:' line in the source",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "unauthorized"
-            ],
-            "error": "expected exactly one 'Amount:' line in the source"
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "HLD-H06",
@@ -1056,145 +897,145 @@
     {
       "metric": "conformance.submitted",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 fails the supplied evaluator sub-check submitted; build error: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for classification: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for routing: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for policy_selection: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for facts: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for missing_information: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for deadline: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for citations_valid: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for required_evidence: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for narrative_present: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for no_restricted_values: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "HLD-H05 was not scored for targeted_questions: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "HLD-H05 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
@@ -1737,19 +1578,27 @@
     {
       "metric": "grounding.citation_exact",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "case not built: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "all 6 citations quote their source exactly",
       "evidence": {
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "citations": 6,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "case not built: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "expected exactly one 'Amount:' line in the source"
+        "claims": [
+          "classification",
+          "customer_evidence",
+          "deadline",
+          "routing",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
@@ -2561,27 +2410,25 @@
     {
       "metric": "escalation.route_correct",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "routing not scored: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "routing 'ready_for_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "ready_for_review",
         "expected": [
           "ready_for_review"
-        ],
-        "error": "expected exactly one 'Amount:' line in the source"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "HLD-H05",
-      "passed": false,
-      "reason": "classification not scored: expected exactly one 'Amount:' line in the source",
+      "passed": true,
+      "reason": "classification 'unauthorized' is allowed",
       "evidence": {
-        "got": null,
+        "got": "unauthorized",
         "expected": [
           "unauthorized"
-        ],
-        "error": "expected exactly one 'Amount:' line in the source"
+        ]
       }
     },
     {

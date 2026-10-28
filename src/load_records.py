@@ -24,6 +24,10 @@ class BankUnavailable(BankReadError):
     """A read that a later attempt may answer: a dropped connection, or a 503 marked retryable."""
 
 
+class BankNotFound(BankReadError):
+    """A 404: the bank has nothing at that path. Retrying would not change the answer."""
+
+
 # A bank that accepts the connection and never answers must not hold one attempt
 # open. The wait is bounded per read, so a retry is possible rather than a stall.
 _SOCKET_TIMEOUT_SECONDS = 5.0
@@ -60,6 +64,8 @@ def read_body(
         connection.close()
     if status == 503 and _retryable(body):
         raise BankUnavailable
+    if status == 404:
+        raise BankNotFound
     if status != 200:
         raise BankReadError
     return body

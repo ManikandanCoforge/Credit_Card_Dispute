@@ -26,10 +26,11 @@ from src.contract_records import (
     load_contract_results,
     main,
 )
-from src.load_records import BankReadError, BankUnavailable
+from src.load_records import BankNotFound, BankReadError, BankUnavailable
 from src.meters import MeterLeak
 from src.model_clients import request_key
 from src.model_cue import MULTI_SCHEMA, MULTI_SYSTEM, evidence, statement_lines
+from src.resilience import DependencyUnavailable
 from tools.runtime import create_server
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -316,15 +317,33 @@ def test_a_failed_transaction_read_stops_the_case():
     assert seen == ["/v1/cases", TRANSACTIONS]
 
 
-def test_a_failed_merchant_read_stops_the_case():
+def test_a_merchant_tool_with_no_record_is_read_once_and_the_case_is_still_drafted():
+    # EDG-E14: a 404 is an answer, so it is not retried, and it gives no data, which the
+    # procedure treats as an unavailable service; the merchant record is never cited.
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES, statuses={MERCHANT: 404}) as (
         base_url,
         seen,
     ):
-        with pytest.raises(ContractRecordError):
-            load_contract_records(base_url, DEV)
+        [result] = load_contract_results(base_url, DEV)
 
+    contract = result["contract"]
     assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT]
+    assert (contract["classification"], contract["routing"]) == ("unauthorized", "ready_for_review")
+    assert "merchant record was not read" in contract["narrative"]
+
+
+def test_a_transactions_tool_with_no_record_routes_the_case_to_a_person():
+    # EDG-E06: no data from the transaction service is never an empty history.
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES, statuses={TRANSACTIONS: 404}) as (
+        base_url,
+        seen,
+    ):
+        [result] = load_contract_results(base_url, DEV)
+
+    contract = result["contract"]
+    assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT]
+    assert (contract["routing"], contract["deadline"]) == ("manual_review", "2026-10-31")
+    assert (contract["facts"]["amount"], contract["facts"]["currency"]) == (None, None)
 
 
 def test_a_transaction_body_without_an_amount_is_rejected():
@@ -421,11 +440,11 @@ def test_a_missing_attachment_file_stops_before_the_tools(tmp_path):
     assert seen == ["/v1/cases"]
 
 
-def test_an_attachment_without_an_amount_line_stops_after_the_tool_reads(tmp_path):
+def test_an_attachment_with_two_amount_lines_stops_after_the_tool_reads(tmp_path):
     dataset = tmp_path / "data"
     shutil.copytree(DEV, dataset)
     (dataset / "documents" / "CARD-D01-ATTACHMENT.md").write_text(
-        "Source ID: CARD-D01-ATTACHMENT\nMerchant: Morrow Supplies\n"
+        "Source ID: CARD-D01-ATTACHMENT\nAmount: 117 XCR\nAmount: 118 XCR\n"
     )
 
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, seen):
@@ -462,7 +481,7 @@ def test_the_reason_is_the_applications_own_message_when_there_is_one(tmp_path):
     dataset = tmp_path / "data"
     shutil.copytree(DEV, dataset)
     (dataset / "documents" / "CARD-D01-ATTACHMENT.md").write_text(
-        "Source ID: CARD-D01-ATTACHMENT\nMerchant: Morrow Supplies\n"
+        "Source ID: CARD-D01-ATTACHMENT\nAmount: 117 XCR\nAmount: 118 XCR\n"
     )
 
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
@@ -589,24 +608,33 @@ def test_main_reports_an_unreadable_case_list(capsys, monkeypatch):
     assert printed.err == "the bank case list could not be read\n"
 
 
-def test_main_stops_before_any_bank_read_when_the_named_model_cannot_be_used(
-    capsys, monkeypatch
+@pytest.mark.parametrize(
+    ("provider", "reason"),
+    [
+        ("openai", "MODEL_PROVIDER must be off, azure_openai, anthropic_foundry or replay"),
+        # The default: the approved pair, on a machine with no key and no SDK.
+        (None, "the openai package is not installed; see README.md for the live-model command"),
+    ],
+    ids=["named model unusable", "default with no key"],
+)
+def test_main_falls_back_to_the_rules_when_the_model_cannot_be_used(
+    tmp_path, capsys, monkeypatch, provider, reason
 ):
-    monkeypatch.setenv("MODEL_PROVIDER", "openai")
+    # An assessor's machine has no provider key: the run must still draft every case.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(sys.modules, "openai", None)
+    if provider is None:
+        monkeypatch.delenv("MODEL_PROVIDER")
+    else:
+        monkeypatch.setenv("MODEL_PROVIDER", provider)
 
-    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, seen):
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
         monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
-        with pytest.raises(SystemExit) as stopped:
-            main()
+        main()
 
     printed = capsys.readouterr()
-    assert stopped.value.code == 1
-    assert printed.out == ""
-    assert printed.err == (
-        "the model cannot be used: MODEL_PROVIDER must be off, azure_openai, "
-        "anthropic_foundry or replay\n"
-    )
-    assert seen == []
+    assert [contract["case_id"] for contract in json.loads(printed.out)] == ["CARD-D01"]
+    assert printed.err == f"the model cannot be used ({reason}); the rules draft every case\n"
 
 
 def test_main_uses_the_model_the_environment_names(tmp_path, capsys, monkeypatch):
@@ -698,7 +726,7 @@ def test_model_calls_are_kept_for_a_case_no_answer_could_type(tmp_path):
         .replace(
             "I found a card purchase at Morrow Supplies for 117 crowns. "
             "I do not recognize it and need help checking it.",
-            "The shop took my money two times for one order.",
+            "The shop took my money a second time for one order.",
         )
         .replace("Authorization: denied", "Authorization: confirmed")
     )
@@ -827,19 +855,29 @@ def test_a_listed_document_that_is_not_customer_correspondence_cannot_escalate(t
     )
     case = {**CARD_D01, "documents": [*CARD_D01["documents"], "CARD-D01-NOTE"]}
 
-    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, seen):
-        results = load_contract_results(base_url, dataset)
+    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, _seen):
+        [result] = load_contract_results(base_url, dataset)
 
-    assert results == [
-        {
-            "case_id": "CARD-D01",
-            "contract": None,
-            "error": "the case names evidence this step cannot read: CARD-D01-NOTE",
-            "narrative_meter": None,
-            "model_calls": [],
-            "meter_error": None,
-        }
-    ]
+    # The note is not customer correspondence, so its "Authorization: confirmed" is never
+    # read as the customer's account and cannot make a conflict. It is cited and named.
+    contract = result["contract"]
+    assert (contract["classification"], contract["routing"]) == ("unauthorized", "ready_for_review")
+    assert {
+        "claim": "customer_evidence",
+        "source_id": "CARD-D01-NOTE",
+        "quote": "Source ID: CARD-D01-NOTE",
+    } in contract["citations"]
+    assert "not read for the dispute: CARD-D01-NOTE" in contract["narrative"]
+
+
+def test_a_listed_document_that_is_missing_still_stops_the_case(tmp_path):
+    case = {**CARD_D01, "documents": [*CARD_D01["documents"], "CARD-D01-GONE"]}
+
+    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, seen):
+        [result] = load_contract_results(base_url, DEV)
+
+    assert result["contract"] is None
+    assert result["error"] == "the case names evidence this step cannot read: CARD-D01-GONE"
     assert seen == ["/v1/cases"]
 
 
@@ -1281,6 +1319,29 @@ def test_a_permanent_failure_ends_the_retry_without_a_further_read(monkeypatch):
     assert result["contract"] is None
     assert result["error"] == "BankReadError"
     assert seen == ["/v1/cases"]
+
+
+def test_a_404_on_a_half_open_probe_closes_the_breaker(monkeypatch):
+    retry, _waits = _retry()
+    breaker = retry.breakers["transactions"]
+    breaker.state = "open"
+    breaker.opened_at = 0.0
+    breaker.reset_timeout = 0
+    reads = []
+
+    def not_found(base_url, path):
+        reads.append(path)
+        raise BankNotFound
+
+    monkeypatch.setattr("src.contract_records.read_body", not_found)
+
+    with pytest.raises(DependencyUnavailable):
+        contract_records._read_tool("http://bank", "CARD-D01", "transactions", retry)
+
+    # The tool answered with a 404, so the probe worked: the breaker closes and later
+    # cases call the tool again instead of waiting out another reset timeout.
+    assert reads == [TRANSACTIONS]
+    assert breaker.state == "closed"
 
 
 def test_a_transaction_service_that_never_answers_is_read_three_times_and_sent_to_a_person():

@@ -141,6 +141,27 @@ def test_a_failed_probe_stops_the_rest_of_the_attempts():
     assert breaker.opened_at == 60.1
 
 
+def test_a_probe_that_answers_not_found_closes_the_breaker():
+    now = {"t": 0.0}
+    breaker = CircuitBreaker(failure_threshold=1, reset_timeout=60, clock=lambda: now["t"])
+    with pytest.raises(AttemptsExhausted):
+        call_with_backoff(_timeout, breaker, sleep=lambda _seconds: None, jitter=lambda: 0)
+    now["t"] = 60.1
+
+    class NotFound(Exception):
+        pass
+
+    def answer():
+        raise NotFound("404")
+
+    with pytest.raises(NotFound):
+        breaker.call(answer, answered=(NotFound,))
+
+    assert breaker.state == "closed"
+    assert breaker.failure_count == 0
+    assert breaker.call(lambda: "recovered") == "recovered"
+
+
 def test_a_permanent_error_on_a_probe_reopens_the_breaker():
     now = {"t": 0.0}
     breaker = CircuitBreaker(failure_threshold=1, reset_timeout=60, clock=lambda: now["t"])

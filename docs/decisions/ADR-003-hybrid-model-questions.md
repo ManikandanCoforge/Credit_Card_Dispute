@@ -1,6 +1,6 @@
 # ADR-003: Hybrid model questions
 
-- Status: Proposed. Accepted when the pull request that adds it merges. Live use is refused until the bank's approval is recorded in `models.toml`
+- Status: Accepted. On by default since COF-39: GPT-6 Luna's use is approved in `models.toml` as the team's capstone approval (Mani, 2026-10-28). Lumen Bank is fictional, so this is not a bank sign-off; a real bank records its own approval there. Without the model's key, endpoint or SDK, the drafting commands fall back to the rules alone.
 - Date: 2026-10-26
 - Ticket: COF-64
 - Owner: Mani (ManikandanCoforge)
@@ -79,12 +79,12 @@ The prompts and schemas are the copilot's prompt `cue-v2`, copied verbatim. `SCH
 
 Three limits of this evidence matter:
 
-- **The records came from the copilot's own clients.** This repository's clients send the same requests, and the 40 recorded questions were byte-for-byte the prompts Luna was sent, but this repository has not made a live call. Before the bank signs off, rerun `tools/qualify_model.py` with this repository's client, so the record comes from this code.
+- **The records came from the copilot's own clients.** This repository's clients send the same requests, and the 40 recorded questions were byte-for-byte the prompts Luna was sent, but this repository has not made a live call. Before a real bank signs off, rerun `tools/qualify_model.py` with this repository's client, so the record comes from this code.
 - **The two-problem question has no qualification set.** A yes can only send a case to a person, and a wrong no leaves the draft the rules would make without a model. Its effect is measured in the suites below.
-- **`approved_by` is empty in every record,** so live use is refused today.
+- **The approval is the team's, for the capstone.** `approved_by` on GPT-6 Luna's record names Mani (ManikandanCoforge), 2026-10-28. It is not a bank's sign-off on the provider and data location.
 
 **How it runs.**
-- `MODEL_PROVIDER` selects `off` (the default), `azure_openai`, `anthropic_foundry` or `replay`.
+- `MODEL_PROVIDER` selects `off`, `azure_openai`, `anthropic_foundry` or `replay`. Unset, the drafting commands use the approved default pair, GPT-6 Luna on Azure OpenAI (`src/model_clients.py` `model_or_rules`); a model that cannot be set up makes them draft with the rules alone and say why, never stop.
 - Live clients send one structured-output request per question, with a 30-second timeout and one retry. Azure sets `max_completion_tokens=400`. Foundry sets `max_tokens=2000` and `effort` to low.
 - The `openai` and `anthropic` SDKs are imported only when a live client is built, so CI, `uv.lock` and the default path need neither.
 - `replay` answers from a JSONL recording keyed on the exact prompt and schema. A question with no recording gets no answer.
@@ -108,42 +108,34 @@ Three limits of this evidence matter:
 
 ## Measured result
 
-Run on 2026-10-28 UTC with `tools/hybrid_eval.py`, this repository's code with the tool reads retried (COF-40), CARD-D09's statement read from before the form fields (COF-43), a withdrawn complaint or a taken-back denial read as the customer meant it (COF-39), and a complaint no rule can type or a merchant outage drafted instead of dropped (COF-39), and the unmodified mock and bank evaluator. GPT-6 Luna's recorded answers were replayed from `evals/recordings/gpt-6-luna.jsonl`.
+Run on 2026-10-28 UTC with `tools/hybrid_eval.py`, this repository's code with the tool reads retried (COF-40), CARD-D09's statement read from before the form fields (COF-43), a withdrawn complaint or a taken-back denial read as the customer meant it (COF-39), a complaint no rule can type, a merchant outage, a tool 404, a missing named transaction or a date no policy version covers drafted instead of dropped (COF-39), and the unmodified mock and bank evaluator. COF-39 adds no phrase rule. GPT-6 Luna's recorded answers were replayed from `evals/recordings/gpt-6-luna.jsonl`.
 
-Eleven of the 52 questions had no recording, because the copilot's run never asked them, and each counted as no answer:
+Ten of the 51 questions had no recording, because the copilot's run never asked them, and each counted as no answer.
 
-- 3 dispute-type questions: `SYN-S03`, `HLD-H07` and `HLD-H08`
-- 8 two-problem questions: `CARD-D08`, `CARD-D10`, `SYN-S14`, `SYN-S17`, `SYN-S18`, `SYN-S24`, `SYN-S25` and `HLD-H01`
-
-`CARD-D10` and `SYN-S14` are asked now because the tool reads retry: in the recorded runs a tool fault stopped both cases before any question. `CARD-D09` is asked now because it is built, and its question had a recording. `HLD-H01` is asked now because its taken-back denial no longer escalates; `SYN-S20` is no longer asked because its withdrawal escalates first. `SYN-S18` is asked now because a merchant outage no longer stops the case.
+`CARD-D10` and `SYN-S14` are asked because the tool reads retry: in the recorded runs a tool fault stopped both cases before any question. Cases COF-39 now drafts instead of dropping, or sends to a person before a draft would be ready, change which questions are asked. The replay report gives the calls and answers per suite.
 
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
 | dev (12) | 12 | 12 | 0 → 0 | 7 | 705 / 174 |
-| synth (31) | 21 | 25 | 2 → 2 | 23 | 3,528 / 572 |
+| synth (31) | 25 | 29 | 0 → 0 | 21 | 3,528 / 572 |
 | stress (16) | 7 | 16 | 1 → 0 | 16 | 5,585 / 647 |
-| holdout (8) | 5 | 6 | 0 → 0 | 6 | 747 / 133 |
-| Total (67) | 45 | 59 | 3 → 2 | 52 | 10,565 / 1,526 |
+| holdout (8) | 6 | 7 | 0 → 0 | 7 | 747 / 133 |
+| Total (67) | 50 | 64 | 1 → 0 | 51 | 10,565 / 1,526 |
 
-The two wrong ready drafts left in synth need rule changes outside this record:
+The rules leave one wrong ready draft, `STR-P15`: "charged me twice, and the film was never shown" reads as a duplicate because "never shown" is not a service phrase. The model's two-problem answer sends it to a person, so the hybrid has none. Every case is built.
 
-- `SYN-S17`: the named transaction is missing from the tool response.
-- `SYN-S24`: a service complaint whose form denies authorization.
+Three cases fail in the hybrid:
 
-None of their two-problem questions had a recording, so this run does not show how the model would have answered them.
+- `SYN-S03` and `HLD-H08`: gap cases whose dispute-type question has no recording, so they are drafted for manual review as `ambiguous`, as with no model.
+- `SYN-S26`: an instruction in the complaint text that names a type. The case goes to a person where the gold expects the denied form to decide it, which is the team's choice for instruction text.
 
-The hybrid does not build 3 cases, all for reasons outside this record:
-
-- 2 have no policy version for their reported date (`SYN-S11`, `SYN-S13`).
-- 1 has an attachment without exactly one Amount line (`HLD-H05`).
-
-The gap cases with no recorded answer (`SYN-S03`, `HLD-H07` and `HLD-H08`) are drafted for manual review as `ambiguous`, as they are with no model, and `HLD-H07` passes that way. A merchant outage (`SYN-S18`) is drafted with its usual routing and a note that the merchant record was not read (COF-39).
+The gap between the two columns is wording the rules do not read. That is the part this ADR gives to the model, rather than to more phrase rules.
 
 ## Rejected alternatives
 
 ### Add more phrasings to the rules
 
-Every new paraphrase needs a code change, and hidden cases change the wording by design. The rules alone pass 45 of 67, and each pattern added for one case risks a false match on another, such as "I called twice".
+Every new paraphrase needs a code change, and hidden cases change the wording by design. The rules alone pass 50 of 67, and each pattern added for one case risks a false match on another, such as "I called twice".
 
 ### Let the model classify every case and route it
 
@@ -169,7 +161,8 @@ Positive:
 
 Negative:
 
-- A live run sends redacted customer lines to the provider. The bank must approve the provider and the data location, and record its approval, before any live use.
+- A live run sends redacted customer lines to the provider. For the capstone the team approved that; a real bank must approve the provider and the data location, and record its own approval, before production use.
+- With the hybrid on by default, a machine without the model's key, endpoint or SDK drafts with the rules alone, so its results match the rules-alone column, not the hybrid one.
 - A live run depends on the provider. No answer leaves the rules to decide, and a gap case then goes to a person as `ambiguous`.
 - A model-assisted draft needs the reviewer to check the cited line, which is more work than reviewing a rules draft.
 - The detectors that keep a model away from injected text are patterns, and unrecognised phrasing still reaches the model.

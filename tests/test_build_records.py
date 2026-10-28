@@ -348,7 +348,10 @@ def test_reported_date_inside_two_windows_leaves_policy_empty(tmp_path):
 
     result = build_complaint_records(cases, tmp_path)
 
-    assert result == [_unresolved("OVERLAP", "2026-10-01")]
+    # The two covering versions name different procedures, so neither is chosen.
+    expected = _unresolved("OVERLAP", "2026-10-01")
+    expected["policy"]["procedure_id"] = None
+    assert result == [expected]
 
 
 def test_intake_without_one_reported_date_leaves_policy_empty(tmp_path):
@@ -882,9 +885,9 @@ def _dataset_with_intakes(tmp_path, intakes):
 
 
 def _unresolved(case_id, reported_date):
-    record = _matched(case_id, reported_date, None)
-    record["policy"] = {"version_id": None, "procedure_id": None}
-    return record
+    # No version covers the date, but every version names the same procedure, so the
+    # procedure is kept and the case can still be drafted for a person under it.
+    return _matched(case_id, reported_date, None)
 
 
 def _matched(case_id, reported_date, version_id):

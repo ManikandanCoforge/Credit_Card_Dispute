@@ -20,3 +20,6 @@ _MODEL_SETTINGS = (
 def _no_model_settings_from_the_shell(monkeypatch):
     for name in _MODEL_SETTINGS:
         monkeypatch.delenv(name, raising=False)
+    # The hybrid is on by default when MODEL_PROVIDER is unset, so the suite turns it off;
+    # a test of the default deletes this setting itself.
+    monkeypatch.setenv("MODEL_PROVIDER", "off")

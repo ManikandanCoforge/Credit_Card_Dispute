@@ -42,6 +42,7 @@ from src.api_models import MerchantToolPayload, TransactionToolPayload
 from src.build_records import build_merchant, build_transaction
 from src.contract import Contract, ContractError, assemble_draft
 from src.load_records import (
+    BankNotFound,
     BankReadError,
     BankUnavailable,
     CaseListError,
@@ -50,7 +51,7 @@ from src.load_records import (
     records_from_case_list,
 )
 from src.meters import MeterLeak, record_case_meter
-from src.model_clients import ModelSetupError, model_from_env
+from src.model_clients import model_or_rules
 from src.model_cue import ModelCall, ModelClient
 from src.models import (
     Intake,
@@ -286,17 +287,16 @@ def main() -> None:
     status is 1 when any case was not built, so a partial array is never mistaken
     for a complete one. One meter line per case is written to reports/meters.jsonl.
 
-    MODEL_PROVIDER and its settings, when set, add a qualified model's answers
-    (ADR-003; see src/model_clients.py). A model that cannot be used stops the run
-    before any case is read, rather than running without it.
+    The hybrid is on by default (ADR-003; see src/model_clients.py model_or_rules): an
+    approved model answers the two closed questions. A model that cannot be used, such
+    as on a machine without the provider's key or network, never stops the run: the
+    rules draft every case alone, and stderr says why.
     """
     base_url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8765"
     data_dir = sys.argv[2] if len(sys.argv) > 2 else "data/dev"
-    try:
-        model = model_from_env(os.environ)
-    except ModelSetupError as error:
-        sys.stderr.write(f"the model cannot be used: {error}\n")
-        raise SystemExit(1) from None
+    model, unused = model_or_rules(os.environ)
+    if unused is not None:
+        sys.stderr.write(f"the model cannot be used ({unused}); the rules draft every case\n")
     try:
         results = load_contract_results(
             base_url,
@@ -356,8 +356,9 @@ def _contract_record(
 
     documents is the evidence the case list names for this case. Besides the
     intake and the attachment, a listed customer statement, such as a follow-up
-    email, is read and passed on. Any other listed source is refused rather than
-    ignored, so evidence can never be silently left out of the draft.
+    email, is read and passed on. Any other listed source is cited and named in
+    the narrative for the reviewer, so evidence is never silently left out of the
+    draft.
 
     A transaction service that is still unavailable after its attempts leaves the
     record with no transactions and no tool text; assemble_draft then routes the
@@ -368,17 +369,19 @@ def _contract_record(
     intake = cast(Intake, record["intake"])
     version_id = record["policy"]["version_id"]
     procedure_id = record["policy"]["procedure_id"]
-    if version_id is None or procedure_id is None:
+    if procedure_id is None:
         raise ContractRecordError("the reported date selected no policy version")
     attachment_source = _attachment_source(intake["source_id"])
     consumed = {intake["source_id"], attachment_source}
-    customer_texts = _customer_statements(
+    customer_texts, other_documents = _customer_statements(
         data_dir, [source_id for source_id in documents if source_id not in consumed]
     )
     intake_text = _document(data_dir, "documents", intake["source_id"])
     attachment_text = _document(data_dir, "documents", attachment_source)
     procedure_text = _document(data_dir, "policies", procedure_id)
-    policy_text = _document(data_dir, "policies", version_id)
+    # No version covers the reported date: the case is drafted for a person under the
+    # procedure alone, with no deadline (see assemble_draft).
+    policy_text = None if version_id is None else _document(data_dir, "policies", version_id)
     transactions = _transactions(base_url, record["case_id"], retry)
     if transactions is None:
         enriched: WorkingRecord = {**record, "transactions": []}
@@ -408,6 +411,7 @@ def _contract_record(
             model_calls=calls,
             known_values=known,
             merchant_unavailable=merchant is None,
+            other_documents=other_documents,
         )
     except ContractError as error:
         raise ContractRecordError from error
@@ -491,8 +495,9 @@ def _read_tool(base_url: str, case_id: str, tool: str, retry: ToolRetry) -> byte
     Every attempt is a separate observed request and counts toward the run's
     tool_attempts; each try after the first counts toward retry_count. Any other
     failure stops the case at once: it is an error, never an empty result.
-    DependencyUnavailable, when every attempt failed or the tool's breaker is open,
-    is left to the caller.
+    A 404 is an answer, not a failed probe, so it is named as answered: a half-open
+    probe that gets one closes the breaker instead of reopening it. DependencyUnavailable,
+    when every attempt failed or the tool's breaker is open, is left to the caller.
     """
     path = f"/v1/cases/{quote(case_id, safe='')}/{tool}"
     attempts = 0
@@ -509,7 +514,13 @@ def _read_tool(base_url: str, case_id: str, tool: str, retry: ToolRetry) -> byte
             raise TransientFailure from error
 
     try:
-        return call_with_backoff(attempt, retry.breakers[tool], sleep=retry.sleep)
+        return call_with_backoff(
+            attempt, retry.breakers[tool], sleep=retry.sleep, answered=(BankNotFound,)
+        )
+    except BankNotFound:
+        # A tool with no record for the case answered, so it is not retried; it gave no
+        # data, which the procedure treats as an unavailable service, never as empty.
+        raise DependencyUnavailable from None
     except BankReadError as error:
         raise ContractRecordError from error
 
@@ -525,14 +536,16 @@ def _document(data_dir: Path, folder: str, source_id: str) -> str:
         raise ContractRecordError from error
 
 
-def _customer_statements(data_dir: Path, source_ids: list[str]) -> list[str]:
-    """The further listed documents, each of which must be a customer statement.
+def _customer_statements(data_dir: Path, source_ids: list[str]) -> tuple[list[str], list[str]]:
+    """The further listed documents: the customer statements, and the texts of the others.
 
-    A listed document that is missing, or whose heading does not mark it as
-    customer correspondence, is evidence this step cannot read, so the case is
-    refused instead of being drafted without it.
+    A listed document that is missing is evidence this step cannot read, so the case is
+    refused instead of being drafted without it. One that is present but whose heading
+    does not mark it as customer correspondence, such as a second receipt, is never read
+    as the customer's account; the draft names it so the reviewer checks it.
     """
     statements: list[str] = []
+    others: list[str] = []
     unread: list[str] = []
     for source_id in source_ids:
         try:
@@ -543,12 +556,12 @@ def _customer_statements(data_dir: Path, source_ids: list[str]) -> list[str]:
         if text.lstrip().lower().startswith(_CUSTOMER_HEADING):
             statements.append(text)
         else:
-            unread.append(source_id)
+            others.append(text)
     if unread:
         raise ContractRecordError(
             "the case names evidence this step cannot read: " + ", ".join(sorted(unread))
         )
-    return statements
+    return statements, others
 
 
 def _path(data_dir: Path, folder: str, source_id: str) -> Path:

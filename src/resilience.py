@@ -63,8 +63,10 @@ class CircuitBreaker:
     retry loop owns the three attempts, and the breaker counts how many
     callers used all of them. Open rejects calls until the reset timeout
     passes. Half-open allows one probe. A probe that returns closes the
-    breaker. A probe that raises anything opens it again. A call admitted
-    before the breaker opened does not close it or clear that probe.
+    breaker. A probe that raises opens it again, unless the caller names the
+    exception as an answer, such as a 404 that means the tool has no record.
+    A call admitted before the breaker opened does not close it or clear that
+    probe.
     """
 
     def __init__(
@@ -87,19 +89,28 @@ class CircuitBreaker:
         self._generation = 0
         self._lock = Lock()
 
-    def call[T](self, func: Callable[[], T]) -> T:
+    def call[T](
+        self,
+        func: Callable[[], T],
+        *,
+        answered: tuple[type[BaseException], ...] = (),
+    ) -> T:
         """Call func once, unless the breaker is open or a probe is in flight.
 
         A TransientFailure is handed back to the retry loop and does not, by
         itself, open the breaker. Anything the probe raises opens the breaker
-        and starts the reset timeout over. A success counts only when the
-        breaker has not opened since this call was admitted.
+        and starts the reset timeout over, except an exception in answered:
+        that is a result, so the probe closes the breaker. A success counts
+        only when the breaker has not opened since this call was admitted.
         """
         probing, generation = self._admit()
         try:
             result = func()
         except BaseException as error:
-            self._on_error(probing, error)
+            if probing and isinstance(error, answered):
+                self._on_success(generation)
+            else:
+                self._on_error(probing, error)
             raise
         self._on_success(generation)
         return result
@@ -158,6 +169,7 @@ def call_with_backoff[T](
     max_attempts: int = MAX_ATTEMPTS,
     sleep: Callable[[float], None] | None = None,
     jitter: Callable[[], float] | None = None,
+    answered: tuple[type[BaseException], ...] = (),
 ) -> T:
     """Call func until it returns or the dependency is unavailable.
 
@@ -167,6 +179,8 @@ def call_with_backoff[T](
     not wait. The caller that uses the whole budget counts once toward
     opening the breaker, and only while the breaker is closed. Any error
     other than TransientFailure propagates on the attempt that raised it.
+    Exceptions in answered also propagate, but a half-open probe treats them
+    as an answer and closes the breaker.
     """
     if max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
@@ -175,7 +189,7 @@ def call_with_backoff[T](
     error = TransientFailure("no attempt was made")
     for attempt in range(max_attempts):
         try:
-            return breaker.call(func)
+            return breaker.call(func, answered=answered)
         except TransientFailure as caught:
             error = caught
             if attempt + 1 == max_attempts:

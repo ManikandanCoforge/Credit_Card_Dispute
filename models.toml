@@ -1,14 +1,16 @@
 # Qualified model and provider pairs for the hybrid's two closed questions (ADR-003).
 # src/model_clients.py refuses a live pair without a passed entry for the current schema hash
 # (src/model_cue.py SCHEMA_HASH), or whose approved_by is empty: a live call sends customers'
-# redacted lines to the provider, so the bank approves each pair first. A replay needs only the
+# redacted lines to the provider, so each pair is approved first. A replay needs only the
 # passed entry. tools/qualify_model.py --register appends entries here; review every change to
 # this file in a pull request.
 #
 # The entry below was made by the Card Disputes Copilot assessment with prompt cue-v2, whose
 # prompts and schemas src/model_cue.py copies verbatim (same schema hash). Its per-case
-# results are in evals/qualification/reports/. approved_by stays empty until the bank signs off;
-# rerun tools/qualify_model.py with this repository's client before then (ADR-003).
+# results are in evals/qualification/reports/. approved_by records the team's capstone approval
+# of this pair, so the hybrid is on by default (src/model_clients.py model_or_rules). Lumen Bank
+# is fictional: a real bank would record its own sign-off here, after rerunning
+# tools/qualify_model.py with this repository's client (ADR-003).
 
 [[model]]
 provider = "azure_openai"
@@ -24,5 +26,5 @@ gap_cases = 19
 gap_correct = 19
 median_latency_s = 0.75
 data_location = "East US"
-approved_by = ""
+approved_by = "Mani (ManikandanCoforge), team capstone approval, 2026-10-28"
 passed = true

@@ -35,7 +35,7 @@
     {
       "suite": "synth",
       "rules": {
-        "passed": 21,
+        "passed": 25,
         "total": 31,
         "failed": {
           "SYN-S03": [
@@ -56,20 +56,6 @@
           "SYN-S07": [
             "classification"
           ],
-          "SYN-S11": [
-            "submitted"
-          ],
-          "SYN-S13": [
-            "submitted"
-          ],
-          "SYN-S17": [
-            "routing"
-          ],
-          "SYN-S24": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
           "SYN-S26": [
             "classification",
             "deadline",
@@ -79,19 +65,10 @@
             "classification"
           ]
         },
-        "not_built_reasons": {
-          "SYN-S11": "the reported date selected no policy version",
-          "SYN-S13": "the reported date selected no policy version"
-        },
-        "wrong_ready": [
-          "SYN-S17",
-          "SYN-S24"
-        ],
-        "manual_review": 11,
-        "not_built": [
-          "SYN-S11",
-          "SYN-S13"
-        ],
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 15,
+        "not_built": [],
         "format_errors": [],
         "model_calls": 0,
         "model_answers": 0,
@@ -99,24 +76,10 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 25,
+        "passed": 29,
         "total": 31,
         "failed": {
           "SYN-S03": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "SYN-S11": [
-            "submitted"
-          ],
-          "SYN-S13": [
-            "submitted"
-          ],
-          "SYN-S17": [
-            "routing"
-          ],
-          "SYN-S24": [
             "classification",
             "deadline",
             "routing"
@@ -127,21 +90,12 @@
             "routing"
           ]
         },
-        "not_built_reasons": {
-          "SYN-S11": "the reported date selected no policy version",
-          "SYN-S13": "the reported date selected no policy version"
-        },
-        "wrong_ready": [
-          "SYN-S17",
-          "SYN-S24"
-        ],
-        "manual_review": 9,
-        "not_built": [
-          "SYN-S11",
-          "SYN-S13"
-        ],
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 13,
+        "not_built": [],
         "format_errors": [],
-        "model_calls": 23,
+        "model_calls": 21,
         "model_answers": 17,
         "input_tokens": 3528,
         "output_tokens": 572
@@ -221,12 +175,9 @@
     {
       "suite": "holdout",
       "rules": {
-        "passed": 5,
+        "passed": 6,
         "total": 8,
         "failed": {
-          "HLD-H05": [
-            "submitted"
-          ],
           "HLD-H06": [
             "classification"
           ],
@@ -236,14 +187,10 @@
             "routing"
           ]
         },
-        "not_built_reasons": {
-          "HLD-H05": "expected exactly one 'Amount:' line in the source"
-        },
+        "not_built_reasons": {},
         "wrong_ready": [],
         "manual_review": 3,
-        "not_built": [
-          "HLD-H05"
-        ],
+        "not_built": [],
         "format_errors": [],
         "model_calls": 0,
         "model_answers": 0,
@@ -251,28 +198,21 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 6,
+        "passed": 7,
         "total": 8,
         "failed": {
-          "HLD-H05": [
-            "submitted"
-          ],
           "HLD-H08": [
             "classification",
             "deadline",
             "routing"
           ]
         },
-        "not_built_reasons": {
-          "HLD-H05": "expected exactly one 'Amount:' line in the source"
-        },
+        "not_built_reasons": {},
         "wrong_ready": [],
         "manual_review": 3,
-        "not_built": [
-          "HLD-H05"
-        ],
+        "not_built": [],
         "format_errors": [],
-        "model_calls": 6,
+        "model_calls": 7,
         "model_answers": 3,
         "input_tokens": 747,
         "output_tokens": 133

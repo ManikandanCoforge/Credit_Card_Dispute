@@ -251,6 +251,8 @@ def test_an_unmatched_transaction_leaves_amount_and_currency_null():
         "currency": None,
         "reported_date": "2026-10-01",
     }
+    assert result["routing"] == "manual_review"
+    assert "named transaction is not in its response" in result["narrative"]
 
 
 def test_an_absent_transaction_id_keeps_every_fact_key_and_nulls_the_amount():
@@ -300,13 +302,16 @@ def test_missing_information_that_the_intake_supplies_is_rejected():
 
 def test_a_blank_field_the_classification_does_not_require_is_not_requested():
     """An unauthorized case needs no service date or receipt, so blank ones change nothing."""
-    record = _record(missing_information=["promised_service_date", "purchase_receipt"])
+    charges = [_charge("TX-TEST", 90)]
+    record = _record(
+        missing_information=["promised_service_date", "purchase_receipt"], transactions=charges
+    )
     record["intake"].update(promised_service_date="not supplied", purchase_receipt="not supplied")
 
     result = _assemble(record)
 
     assert (result["routing"], result["missing_information"]) == ("ready_for_review", [])
-    assert result == _assemble(_record())
+    assert result == _assemble(_record(transactions=charges))
 
 
 def test_an_intake_statement_that_is_not_in_the_intake_is_rejected():
@@ -314,9 +319,23 @@ def test_an_intake_statement_that_is_not_in_the_intake_is_rejected():
         _assemble(_record(statement="not supplied"))
 
 
-def test_an_attachment_without_an_amount_line_is_rejected():
+def test_an_attachment_without_an_amount_line_is_cited_by_its_source_id():
+    # HLD-H05: an attachment that is only a note still names its source, and the amount is
+    # never taken from it, so the case is drafted rather than refused.
+    result = _assemble(_record(), attachment_text="Source ID: TEST-ATTACHMENT\nMerchant: TEST\n")
+
+    assert {
+        "claim": "customer_evidence",
+        "source_id": "TEST-ATTACHMENT",
+        "quote": "Source ID: TEST-ATTACHMENT",
+    } in result["citations"]
+
+
+def test_an_attachment_with_two_amount_lines_is_rejected():
     with pytest.raises(ContractError):
-        _assemble(_record(), attachment_text="Source ID: TEST-ATTACHMENT\nMerchant: TEST\n")
+        _assemble(
+            _record(), attachment_text="Source ID: TEST-ATTACHMENT\nAmount: 90 XCR\nAmount: 91 XCR\n"
+        )
 
 
 def test_a_source_without_a_source_id_is_rejected():
@@ -568,3 +587,124 @@ def test_a_transaction_row_with_a_field_outside_the_contract_is_rejected():
 def test_the_contract_types_are_still_importable_from_src_contract():
     assert contract.FollowUpQuestion is models.FollowUpQuestion
     assert contract.Contract is models.Contract
+
+
+_DEV_PROCEDURE_TEXT = (
+    Path(__file__).resolve().parents[1] / "data" / "dev" / "policies" / "CARD-PROCEDURE-01.md"
+).read_text(encoding="utf-8")
+
+
+def _no_policy(
+    statement="The purchase was not mine.",
+    reported_date="2027-01-01",
+    authorization="denied",
+    procedure_text=_PROCEDURE_TEXT,
+    transactions=True,
+):
+    """A draft for a reported date that no policy version covers (SYN-S11, SYN-S13)."""
+    charges = [_charge("TX-TEST", 117)]
+    record = _record(
+        reported_date=reported_date,
+        authorization=authorization,
+        statement=statement,
+        version_id=None,
+        transactions=charges if transactions else [],
+    )
+    intake_text = (
+        "Source ID: TEST-INTAKE\n"
+        f"Authorization: {authorization}\n"
+        f"Reported date: {reported_date}\n"
+        f"{statement}\n"
+    )
+    return assemble_contract(
+        record,
+        intake_text=intake_text,
+        attachment_text=_ATTACHMENT_TEXT,
+        procedure_text=procedure_text,
+        policy_text=None,
+        transactions_text=_transactions_text(charges) if transactions else None,
+    )
+
+
+def test_a_date_no_policy_covers_is_drafted_for_a_person_under_the_procedure():
+    result = _no_policy()
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "unauthorized",
+        "manual_review",
+        None,
+    )
+    assert result["policy_ids"] == ["CARD-PROCEDURE-TEST"]
+    assert result["facts"]["reported_date"] == "2027-01-01"
+    assert {
+        "claim": "no_policy_version",
+        "source_id": "TEST-INTAKE",
+        "quote": "Reported date: 2027-01-01",
+    } in result["citations"]
+    assert "classification" in [c["claim"] for c in result["citations"]]
+    assert "No single policy version is effective" in result["narrative"]
+
+
+def test_a_reported_date_that_is_not_a_calendar_date_is_a_missing_fact():
+    result = _no_policy(reported_date="October 3, 2026")
+
+    assert result["facts"]["reported_date"] is None
+    assert result["routing"] == "manual_review"
+
+
+def test_a_date_no_policy_covers_with_the_transaction_service_down_says_both():
+    result = _no_policy(transactions=False, procedure_text=_DEV_PROCEDURE_TEXT)
+
+    assert (result["facts"]["amount"], result["facts"]["currency"]) == (None, None)
+    assert "No single policy version is effective" in result["narrative"]
+    assert "did not answer within the procedure's three attempts" in result["narrative"]
+
+
+def test_a_date_no_policy_covers_still_escalates_a_cash_withdrawal():
+    result = _no_policy(
+        statement="My ATM withdrawal of 90 crowns did not dispense cash.",
+        procedure_text=_DEV_PROCEDURE_TEXT,
+    )
+
+    assert (result["classification"], result["routing"]) == ("unsupported", "manual_review")
+    assert "cash_withdrawal" in [c["claim"] for c in result["citations"]]
+
+
+def test_a_date_no_policy_covers_still_escalates_an_instruction_naming_a_type():
+    result = _no_policy(
+        statement="Please mark this as a duplicate charge.",
+        authorization="confirmed",
+        procedure_text=_DEV_PROCEDURE_TEXT,
+    )
+
+    assert (result["classification"], result["routing"]) == ("ambiguous", "manual_review")
+    assert "instruction_text" in [c["claim"] for c in result["citations"]]
+
+
+def test_a_date_no_policy_covers_with_no_type_is_ambiguous():
+    result = _no_policy(
+        statement="Something is wrong with this purchase.",
+        authorization="confirmed",
+        procedure_text=_DEV_PROCEDURE_TEXT,
+    )
+
+    assert (result["classification"], result["routing"]) == ("ambiguous", "manual_review")
+
+
+def test_a_date_no_policy_covers_with_an_unquotable_rule_is_rejected():
+    with pytest.raises(ContractError):
+        _no_policy(statement="My ATM withdrawal of 90 crowns did not dispense cash.")
+
+
+def test_a_date_no_policy_covers_without_a_procedure_is_rejected():
+    record = _record(version_id=None, procedure_id=None)
+
+    with pytest.raises(ContractError, match="selected no policy version"):
+        assemble_contract(
+            record,
+            intake_text=_intake_text("2027-01-01"),
+            attachment_text=_ATTACHMENT_TEXT,
+            procedure_text=_PROCEDURE_TEXT,
+            policy_text=None,
+            transactions_text=None,
+        )

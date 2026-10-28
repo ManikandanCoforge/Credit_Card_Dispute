@@ -1,10 +1,10 @@
 # Evaluation report - stress
 
-- Commit: `a65379c`
+- Commit: `02a241d`
 - Data: `evals/fixtures/stress/data`
 - Gold: `evals/fixtures/stress/gold.json`
-- Generated: 2026-10-28T17:44:29+00:00
-- Cases fully passed: **6/16**
+- Generated: 2026-10-28T19:23:11+00:00
+- Cases fully passed: **7/16**
 - Format errors: 0
 
 ## Metrics
@@ -24,7 +24,7 @@
 | `conformance.no_restricted_values` | 16 | 16 | 100.0% |
 | `conformance.targeted_questions` | 16 | 16 | 100.0% |
 | `grounding.citation_exact` | 16 | 16 | 100.0% |
-| `grounding.claim_sources` | 15 | 16 | 93.8% |
+| `grounding.claim_sources` | 16 | 16 | 100.0% |
 | `tools.required_reads` | 16 | 16 | 100.0% |
 | `tools.no_forbidden_writes` | 16 | 16 | 100.0% |
 | `tools.retry_bound` | 16 | 16 | 100.0% |
@@ -88,10 +88,6 @@
 
 - `conformance.classification` - STR-P10 fails the supplied evaluator sub-check classification
 - `escalation.class_correct` - classification 'ambiguous' is not one of ['unsupported']
-
-### STR-P13
-
-- `grounding.claim_sources` - missing claim citations: manual_review_rule
 
 ### STR-P14
 

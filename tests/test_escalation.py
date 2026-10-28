@@ -534,10 +534,32 @@ def test_a_complaint_with_a_duplicate_and_an_undelivered_service_goes_to_a_perso
     assert "reports both a duplicate charge and a service" in result["narrative"]
 
 
-def test_two_problems_on_a_denied_form_are_still_unauthorized():
-    statement = "Rio Gym charged me twice and the classes were never delivered."
-
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "I paid Nova Tutors 150 crowns for lessons that were not delivered.",
+        "Rio Gym charged me twice and the classes were never delivered.",
+    ],
+)
+def test_a_paid_undelivered_purchase_on_a_denied_form_is_a_conflict(statement):
+    # SYN-S24: a customer who paid for a service that never came has authorized the
+    # purchase, so a form that denies authorization conflicts with their own account.
     result = _assemble(_record(authorization="denied"), statement, authorization="denied")
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
+    assert "If customer accounts conflict about authorization" in " ".join(
+        c["quote"] for c in result["citations"] if c["claim"] == "ambiguous_rule"
+    )
+
+
+def test_a_denial_with_no_purchase_described_on_a_denied_form_is_unauthorized():
+    result = _assemble(
+        _record(authorization="denied"), "Rio Gym charged me twice.", authorization="denied"
+    )
 
     assert result["classification"] == "unauthorized"
 

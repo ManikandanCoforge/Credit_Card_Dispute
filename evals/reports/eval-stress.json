@@ -1,12 +1,12 @@
 {
   "suite": "stress",
-  "commit": "a65379c",
-  "started_at": "2026-10-28T17:44:29+00:00",
+  "commit": "02a241d",
+  "started_at": "2026-10-28T19:23:11+00:00",
   "data_dir": "evals/fixtures/stress/data",
   "gold_path": "evals/fixtures/stress/gold.json",
   "cases": {
     "total": 16,
-    "passed": 6
+    "passed": 7
   },
   "format_errors": [],
   "metrics": [
@@ -91,8 +91,8 @@
     {
       "metric": "grounding.claim_sources",
       "n": 16,
-      "passed": 15,
-      "rate": 0.9375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "tools.required_reads",
@@ -538,30 +538,13 @@
     },
     {
       "case_id": "STR-P13",
-      "passed": false,
+      "passed": true,
       "build_error": null,
       "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "missing claim citations: manual_review_rule",
-          "evidence": {
-            "claims": [
-              "customer_evidence",
-              "instruction_text",
-              "policy_selection",
-              "routing",
-              "transaction_record"
-            ],
-            "missing": [
-              "manual_review_rule"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P14",
@@ -3334,28 +3317,27 @@
       "metric": "grounding.citation_exact",
       "case_id": "STR-P13",
       "passed": true,
-      "reason": "all 7 citations quote their source exactly",
+      "reason": "all 8 citations quote their source exactly",
       "evidence": {
-        "citations": 7,
+        "citations": 8,
         "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P13",
-      "passed": false,
-      "reason": "missing claim citations: manual_review_rule",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
         "claims": [
           "customer_evidence",
           "instruction_text",
           "policy_selection",
           "routing",
+          "supported_classifications",
           "transaction_record"
         ],
-        "missing": [
-          "manual_review_rule"
-        ]
+        "missing": []
       }
     },
     {

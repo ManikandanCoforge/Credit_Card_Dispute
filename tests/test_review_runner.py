@@ -507,3 +507,24 @@ def test_the_launch_exemption_for_run_loop_does_not_hide_an_approval_marker(tmp_
         target.write_text(source + f"\nOPERATOR = {marker}\n", encoding="utf-8")
         violations = _operator_command_violations(package)
         assert violations == [f"run_loop.py:{len(source.splitlines()) + 2}: {marker}"], marker
+
+
+def test_submit_without_a_usable_model_falls_back_to_the_rules_and_still_submits(
+    tmp_path, capsys, monkeypatch
+):
+    # The hybrid is on by default; with no provider key or SDK, as on an assessor's machine,
+    # the rules draft the case and its review is still opened.
+    monkeypatch.delenv("MODEL_PROVIDER")
+    monkeypatch.setitem(sys.modules, "openai", None)
+
+    with _mock(tmp_path) as (base_url, _state):
+        main(["submit", "--base-url", base_url, "--data", str(DEV),
+              "--journal", str(tmp_path / "j.json"), "--case", "CARD-D01"])
+
+    printed = capsys.readouterr()
+    assert printed.err == (
+        "the model cannot be used (the openai package is not installed; see README.md for "
+        "the live-model command); the rules draft every case\n"
+    )
+    assert "CARD-D01: review" in printed.out
+    assert [entry["case_id"] for entry in read_journal(tmp_path / "j.json")] == ["CARD-D01"]
