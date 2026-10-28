@@ -161,11 +161,11 @@ def test_code_owners_names_only_logins_the_lane_table_names():
     assert named <= logins, sorted(named - logins)
 
 
-def test_code_owners_says_that_the_checks_ruleset_enforces_review():
+def test_code_owners_says_that_review_is_asked_and_not_enforced():
     preamble = "\n".join(line for line in _lines(CODEOWNERS) if line.startswith("#"))
-    assert "checks ruleset" in preamble
-    assert "code-owner review" in preamble
-    assert "403" not in preamble
+    assert "asks for review" in preamble
+    assert "does not enforce" in preamble
+    assert "403" in preamble
 
 
 def test_every_code_owners_rule_names_a_second_owner():

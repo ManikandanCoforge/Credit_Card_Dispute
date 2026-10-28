@@ -333,7 +333,7 @@ function s11_roadmap(pres) {
     ["02", "Approve the model route with measured cost.", "ADR-003 is merged and off. Needs a volume run before anyone quotes latency or price.", "AFTER"],
     ["03", "Start a real intake pilot with two analysts.", "Thirty days, real complaints, the same contract and the same gate.", "PILOT"],
     ["04", "Name the next two complaint types.", "The contract generalises only as far as the policy set does.", "THEN"],
-    ["05", "Quote a statement that wraps across lines.", "Today such a case stops with a named reason and is never drafted. RED_TEAM row 17.", "ANY TIME"],
+    ["05", "Enforce the rulesets, or drop them.", "The GitHub plan returns 403, so the review rules stay unenforced.", "BLOCKED"],
   ];
   rows.forEach((r, i) => {
     const y = 2.36 + i * 0.78;
@@ -346,7 +346,7 @@ function s11_roadmap(pres) {
   rule(s, M, 6.38, 12.09, COLORS.line, 0.75);
   mono(s, "LATER: PRODUCTION DEPLOYMENT, THEN ADJUDICATION OF A CUT-OFF.", M, 6.48, 12.09,
     { fs: 10, color: COLORS.muted, charSpacing: 1.2 });
-  notes(s, "Five moves, in dependency order. Reviewer identity comes first because the gate binds a hash, not a person. The model route needs a measured volume run before anyone quotes a number. Then the pilot with two analysts, then the next complaint types, which the contract can only absorb as far as the policy set goes. Statements that wrap across lines can be fixed alongside any of them; today such a case stops with a named reason. Review on main is already enforced: the checks ruleset requires a pull request, an owner's approval and five green checks.");
+  notes(s, "Five moves, in dependency order. Reviewer identity comes first because the gate binds a hash, not a person. The model route needs a measured volume run before anyone quotes a number. Then the pilot with two analysts, then the next complaint types, which the contract can only absorb as far as the policy set goes. Rulesets stay unenforced until the GitHub plan allows them.");
 }
 
 function s12_pod(pres) {

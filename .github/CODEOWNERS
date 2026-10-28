@@ -1,8 +1,10 @@
-# CODEOWNERS names who reviews each module, and the checks ruleset on main enforces it:
-# with code-owner review on, a pull request needs an approval from an owner of every
-# path it touches. The first login on a line owns the module and reviews the change; the
-# second reviews only when the owner wrote it, because GitHub never counts an author's
-# approval of their own pull request. So every line names at least two logins.
+# CODEOWNERS asks for review from the person who owns the module. It does not enforce
+# anything: this repository's plan refuses rulesets (the API answers 403), so required
+# reviews and owners cannot be turned on here.
+# The first login on a line owns the module and reviews the change; the second reviews
+# only when the owner wrote it, because GitHub never counts an author's approval of their
+# own pull request. Every line names two, so code-owner review can be switched on later
+# without locking an owner out of their own lane.
 # Read this file next to docs/CONTRIBUTION.md, which names the lanes and says who
 # demos which module.
 

@@ -59,11 +59,11 @@ Fill `.github/PULL_REQUEST_TEMPLATE.md`. It has the four sections the merged pul
 use: `## What`, `## Why`, `## What to look hardest at`, `## How it was verified`, plus a
 checklist. "How it was verified" takes commands and measured numbers, not adjectives.
 
-`.github/CODEOWNERS` names the owner of each module, and the `checks` ruleset on `main`
-enforces review: a pull request needs one approval, an approval from an owner of every
-path it touches, and the five checks green. Direct pushes and force pushes to `main` are
-refused. Each line also names a second owner, who reviews only when the owner wrote the
-change, since GitHub never counts an author's approval of their own pull request.
+`.github/CODEOWNERS` names the owner of each module. It asks for review; it does not
+enforce it, because this repository's plan refuses rulesets (the API answers 403).
+Review is still expected: a pull request waits for the owner of the modules it touches.
+Each line also names a second owner, who reviews only when the owner wrote the change,
+so code-owner review can be switched on later without locking an owner out of their lane.
 
 ## Review
 
