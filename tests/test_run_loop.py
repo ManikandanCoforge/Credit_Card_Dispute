@@ -549,7 +549,7 @@ def test_the_loop_runs_the_supplied_runtime_and_scores_twelve_cases(tmp_path):
 
     report = json.loads(result.report_path.read_text(encoding="utf-8"))
     assert result.port == port
-    assert (result.passed, result.total) == (11, 12)
+    assert (result.passed, result.total) == (12, 12)
     assert report["total_cases"] == 12
     assert len(report["cases"]) == 12
     assert result.p50_ms is not None
