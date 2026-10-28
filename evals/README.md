@@ -30,7 +30,7 @@ The scored run also applies `pii.artifact_checks` to `reports/meters.jsonl`, the
 uv run --locked python -m evals --suite evals/suites/dev.json
 ```
 
-Writes `reports/eval-dev.json` and `reports/eval-dev.md`, prints the case count, each metric rate, and every failing check by case.
+Writes `reports/eval-dev.json` and `reports/eval-dev.md`, prints the case count, each metric rate, and every failing check by case. The committed `reports/eval-dev.md` cites `8553bb3` and 12 of 12, with every metric at 100%.
 
 ## Run an injected hidden set
 
@@ -48,6 +48,8 @@ uv run --locked python -m evals --data path/to/data --gold path/to/gold.json --n
 
 Nothing under `evals/` names a development case. The runner takes the case list from the injected dataset and the gold from the injected file; a test enforces that.
 
+Our own fixtures are not that set. The assessor dataset and gold are absent before the defence, so this repository publishes no hidden-set score. The closest published estimate is the fixture results below and `reports/hybrid-eval.json`; `docs/LIMITATIONS.md` says what the panel should read from them.
+
 ## Exit codes
 
 - `0`: every check passed, no format errors, every gate met.
@@ -63,7 +65,7 @@ The JSON artifact carries every check with its evidence, the metric aggregates w
 ## Limits
 
 - Deterministic checks only. No judge, so semantic support is not scored.
-- The hidden set is scored only when its data and gold are injected. A report never claims a hidden result it did not run.
+- The hidden set is scored only when its data and gold are injected. A report never claims a hidden result it did not run. The fixture runs above are our proxy, not the assessor set; `docs/LIMITATIONS.md` states the estimate they support.
 - A passing report does not award rubric points by itself.
 
 ## Evaluation assets for the hybrid
@@ -77,6 +79,26 @@ Everything in this folder supports [ADR-003](../docs/decisions/ADR-003-hybrid-mo
 | `synth` | 31 | Paraphrases of each type, policy-window edges, tool faults, conflicts, missing evidence, injection, a restricted token, a duplicate redelivery and a non-ASCII merchant |
 | `stress` | 16 | Wording the rules miss for each type, cash without "ATM", a fee, an overcharge, vague complaints that should get no type, injection and negation traps, and two problems in one |
 | `holdout` | 8 | New wording and traps: negations, injection addressed to a model or hidden in an attachment, cash without a keyword, and two problems in one |
+
+### Latest deterministic results
+
+Offline suite, five primary evals, branch HEAD `8553bb3`, 2026-10-28 UTC. Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
+
+| Suite | Cases | Fully passed | Failing cases | Artifact |
+|---|---|---|---|---|
+| `holdout` | 8 | 3 | `HLD-H01`, `HLD-H05`, `HLD-H06`, `HLD-H07`, `HLD-H08` | [`eval-holdout.md`](reports/eval-holdout.md) |
+| `stress` | 16 | 4 | `STR-P03`, `STR-P05` to `STR-P12`, `STR-P13`, `STR-P14`, `STR-P15` | [`eval-stress.md`](reports/eval-stress.md) |
+
+The supplied bank evaluator scores the same cases higher with recorded model answers: 4 of 8 holdout and 16 of 16 stress in `reports/hybrid-eval.json`. Its rules-alone row uses that evaluator too (3 of 8 and 5 of 16), not these five evals, so the two tables are not one progression: the offline suite also requires a manual-review-rule citation, which is why `STR-P13` fails here and not there. `synth` is not rerun here; its rows are in the hybrid report.
+
+The failures are those numbers, not the counts alone. HLD-H01 is routed `manual_review` where the gold expects `service_not_received`. HLD-H05 stops at intake with `expected exactly one 'Amount:' line in the source`, and HLD-H06 to HLD-H08 stop because the intake supports no supported classification. On stress, STR-P03 and STR-P05 to STR-P12 and STR-P14 stop for the same reason, STR-P13 misses the manual-review-rule citation, and STR-P15 is typed as a duplicate where the gold expects an ambiguous escalation. The artifacts carry every failing check with its evidence.
+
+Reproduce both runs from the repository root:
+
+```sh
+uv run --locked python -m evals --suite evals/suites/dev.json --data evals/fixtures/holdout/data --gold evals/fixtures/holdout/gold.json --name holdout --out evals/reports/eval-holdout
+uv run --locked python -m evals --suite evals/suites/dev.json --data evals/fixtures/stress/data --gold evals/fixtures/stress/gold.json --name stress --out evals/reports/eval-stress
+```
 
 Each suite's `data/` is in the package's own format: `dataset.json`, `documents/` and `policies/`. The unmodified mock serves it. `gold.json` follows the bank evaluator's format, and `CASES.md` lists what each case tests and the assumption its expected answer rests on.
 
@@ -150,4 +172,4 @@ Results on 2026-10-28 UTC:
 | holdout (8) | 3 | 4 | 0 → 0 | 5 | 747 / 133 |
 | Total (67) | 39 | 55 | 4 → 3 | 51 | 10,565 / 1,526 |
 
-ADR-003 explains the cases that still fail. The token counts are Luna's own counts for these exact prompts, recorded on 25 October.
+Rerunning the replay command above on this tree reproduces the table exactly, and the checked-in report is that output. ADR-003 explains the cases that still fail. The token counts are Luna's own counts for these exact prompts, recorded on 25 October.
