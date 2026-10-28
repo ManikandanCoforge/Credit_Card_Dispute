@@ -15,6 +15,12 @@ A form-style line ("Transaction type: ATM withdrawal", "Note: I did not
 authorize this") is read for its value, so a complaint written as a form keeps
 its cue. Headings are not read.
 
+A later customer statement that withdraws the complaint ("Please withdraw my
+complaint") is a conflicting account under the second rule: the case goes to a
+person, who decides whether the complaint stands. A denial of recognition that the
+customer takes back ("I didn't recognize the store at first, but I now remember
+buying there") is not a denial, so it does not conflict with a confirmed form.
+
 unsupported is checked first. Both routes are manual_review with a null
 deadline, so the order only decides which class is reported.
 """
@@ -57,6 +63,23 @@ _DENIES = re.compile(
 )
 _CONFIRMS = re.compile(
     r"\bI (?:did |do )?authori[sz]ed?\b|\bI made (?:this|the) purchase\b",
+    re.IGNORECASE,
+)
+# A denial of recognition, which the customer can take back later in the same sentence
+# or the next one. A denial of authorization is never taken back this way: "I did not
+# authorize it, but it turns out my son used my card" still denies.
+_RECOGNITION_DENIAL = re.compile(r"(?:do not|don't|did not|didn't) recogni[sz]e", re.IGNORECASE)
+_TAKEN_BACK = re.compile(
+    r"\b(?:now|later|then)\b[^.!?]{0,20}\b(?:remember|recogni[sz]e|realis|realiz)"
+    r"|\bturns? out\b|\bafter all\b|\b(?:it|this|that) (?:was|is) mine\b"
+    r"|\bI did (?:buy|make|order|purchase|book|pay)\b",
+    re.IGNORECASE,
+)
+# A later statement that withdraws the complaint. "Cancel my subscription" is not one:
+# the thing withdrawn has to be the complaint, the dispute or the claim.
+_WITHDRAWS = re.compile(
+    r"\b(?:withdraw|cancel|drop)\s+(?:my|the|this)\s+(?:complaint|dispute|claim)\b"
+    r"|\bno longer (?:want to )?dispute\b",
     re.IGNORECASE,
 )
 # A leading form label such as "Transaction type:" or "Note:". Its value is still read.
@@ -130,6 +153,32 @@ def find_escalation(
                     "quote": _quotable(confirmed, text, known),
                 }
             )
+    withdrawals: list[Quote] = []
+    for text in customer_texts:
+        withdrawal = _withdrawal_sentence(text)
+        if withdrawal is not None:
+            withdrawals.append(
+                {
+                    "claim": "complaint_withdrawn",
+                    "source_id": _source_id(text),
+                    "quote": _quotable(withdrawal, text, known),
+                }
+            )
+    if withdrawals:
+        return {
+            "classification": "ambiguous",
+            "reason": (
+                "A later customer statement withdraws the complaint, so the customer's "
+                f"accounts conflict. Withdrawn in {_joined(withdrawals)}. The withdrawal is "
+                "cited, and this draft does not decide whether the complaint stands."
+            ),
+            "citations": [
+                *denials,
+                *confirmations,
+                *withdrawals,
+                _rule(procedure_text, _AMBIGUOUS_RULE_ANCHOR, "ambiguous_rule"),
+            ],
+        }
     if not denials or not confirmations:
         return None
     deny_ids = _joined(denials)
@@ -157,6 +206,14 @@ def _cash_sentence(text: str) -> str | None:
     return None
 
 
+def _withdrawal_sentence(text: str) -> str | None:
+    """The first sentence of a later customer statement that withdraws the complaint."""
+    for sentence in _prose_sentences(text):
+        if _WITHDRAWS.search(sentence):
+            return sentence
+    return None
+
+
 def _stances(text: str) -> tuple[str | None, str | None]:
     """The first quote that denies and the first that confirms authorization, if any.
 
@@ -174,12 +231,27 @@ def _stances(text: str) -> tuple[str | None, str | None]:
             if value == "confirmed" and confirmed is None:
                 confirmed = line
             continue
-        for sentence in _sentences(line):
-            if _DENIES.search(sentence) and denied is None:
+        sentences = _sentences(line)
+        for index, sentence in enumerate(sentences):
+            later = " ".join(sentences[index + 1 : index + 2])
+            if denied is None and _denies(sentence, later):
                 denied = sentence
             if _CONFIRMS.search(sentence) and confirmed is None:
                 confirmed = sentence
     return denied, confirmed
+
+
+def _denies(sentence: str, later: str) -> bool:
+    """True when the sentence holds a denial the customer does not take back.
+
+    A denial of recognition is taken back when the rest of its sentence, or the next
+    sentence on the line, says the customer recognizes the charge after all.
+    """
+    for denial in _DENIES.finditer(sentence):
+        rest = f"{sentence[denial.end() :]} {later}"
+        if not (_RECOGNITION_DENIAL.match(denial.group(0)) and _TAKEN_BACK.search(rest)):
+            return True
+    return False
 
 
 def _prose_sentences(text: str) -> list[str]:

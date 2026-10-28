@@ -326,6 +326,105 @@ def test_a_follow_up_that_reveals_a_cash_withdrawal_escalates():
     assert escalation["citations"][0]["source_id"] == "TEST-FOLLOWUP"
 
 
+@pytest.mark.parametrize(
+    "followup_text",
+    [
+        "Please withdraw my complaint. I found the receipt in my email.",
+        "I no longer want to dispute this charge; my partner made it.",
+        "Please cancel this dispute, the shop has sorted it out.",
+    ],
+)
+def test_a_follow_up_that_withdraws_the_complaint_is_ambiguous(followup_text):
+    followup = f"# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\n{followup_text}\n"
+
+    escalation = find_escalation(
+        _intake("I do not recognize this charge.", authorization="denied"), [followup], PROCEDURE_TEXT
+    )
+
+    assert escalation is not None and escalation["classification"] == "ambiguous"
+    withdrawn = [c for c in escalation["citations"] if c["claim"] == "complaint_withdrawn"]
+    assert [c["source_id"] for c in withdrawn] == ["TEST-FOLLOWUP"]
+    assert withdrawn[0]["quote"] in followup
+    assert escalation["citations"][-1]["claim"] == "ambiguous_rule"
+
+
+def test_a_withdrawn_complaint_goes_to_a_person_without_a_deadline():
+    followup = "# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\nPlease withdraw my complaint.\n"
+
+    result = _assemble(_record(), statement="I do not recognize this charge.", customer_texts=[followup])
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
+    assert "Please withdraw my complaint." in [c["quote"] for c in result["citations"]]
+
+
+def test_cancelling_something_other_than_the_complaint_is_not_a_withdrawal():
+    followup = (
+        "# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\n"
+        "I also want to cancel my subscription.\n"
+    )
+
+    escalation = find_escalation(
+        _intake("I do not recognize this charge.", authorization="denied"), [followup], PROCEDURE_TEXT
+    )
+
+    assert escalation is None
+
+
+def test_a_withdrawal_is_read_only_from_a_later_statement():
+    intake = _intake(
+        "I may withdraw my complaint if the shop refunds me. I do not recognize it.",
+        authorization="denied",
+    )
+
+    assert find_escalation(intake, [], PROCEDURE_TEXT) is None
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "I didn't recognize the store at first, but I now remember buying from Tide Shop.",
+        "I thought I didn't recognize this payment, but it turns out it was my order.",
+        "I didn't recognise Nova Tech until I checked my email. I did buy the headphones.",
+    ],
+)
+def test_a_denial_of_recognition_the_customer_takes_back_does_not_conflict(statement):
+    assert find_escalation(_intake(statement, authorization="confirmed"), [], PROCEDURE_TEXT) is None
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "I do not recognize this charge, and I still don't after checking my receipts.",
+        "I didn't recognize the merchant name at first, and I still don't think I made it.",
+        "I did not authorize it, but it turns out my son used my card.",
+    ],
+)
+def test_a_denial_that_is_not_taken_back_still_conflicts_with_a_confirmed_form(statement):
+    escalation = find_escalation(_intake(statement, authorization="confirmed"), [], PROCEDURE_TEXT)
+
+    assert escalation is not None and escalation["classification"] == "ambiguous"
+    assert escalation["citations"][0]["quote"] == statement
+
+
+def test_a_taken_back_denial_with_an_undelivered_order_is_drafted_as_service():
+    record = _record(authorization="confirmed")
+
+    result = _assemble(
+        record,
+        statement=(
+            "I didn't recognize the store at first, but I now remember buying from Tide Shop. "
+            "The problem is the order never arrived."
+        ),
+        authorization="confirmed",
+    )
+
+    assert (result["classification"], result["routing"]) == ("service_not_received", "ready_for_review")
+
+
 def test_an_escalated_case_with_no_single_amount_line_is_still_drafted():
     attachment = "# Purchase supporting material\n\nSource ID: TEST-ATTACHMENT\n"
 
