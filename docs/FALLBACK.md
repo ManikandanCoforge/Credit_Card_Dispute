@@ -11,9 +11,9 @@ This is the fallback when the live demo fails. It is not a second demo. Switch o
 
 | Artifact | Path | State |
 |---|---|---|
-| Deck | docs/deck/out/lumen-dispute-copilot-2026-10-29.pdf | Exists on the demo machine; untracked, so not in a fresh clone. Dated 2026-10-27, cites f50c1f4 and 7 of 12. Do not quote its numbers. |
-| Deck source | docs/deck/out/lumen-dispute-copilot-2026-10-29.pptx | Exists on the demo machine; untracked. Same dated numbers. |
-| Leave-behind | docs/deck/out/lumen-dispute-copilot-leave-behind.pdf | Exists on the demo machine; untracked. Same dated numbers. |
+| Deck | docs/deck/out/lumen-dispute-copilot-2026-10-29.pdf | Tracked at docs/deck. Rebuilt 2026-10-28 from reports/scored-run.json: 12 of 12, p50 31.000 ms, p95 3670.000 ms. docs/deck/FACTS.md names the source commit (8553bb3) and published run (8c3ac7f). |
+| Deck source | docs/deck/out/lumen-dispute-copilot-2026-10-29.pptx | Tracked, built from the same sources as the PDF. |
+| Leave-behind | docs/deck/out/lumen-dispute-copilot-leave-behind.pdf | Tracked, same numbers. |
 | Current report | reports/scored-run.md | Exists. 12 of 12, 0 format errors. This is the number to quote. |
 | Rehearsal record | docs/DEMO_REHEARSAL.md | Exists. Six beats, four arc runs (two before and two after COF-43), 2026-10-28 supplementary checks. |
 | Terminal transcript | docs/rehearsal-transcript-2026-10-28.txt | Exists. CARD-D09 duplicate refusal and the policy live-change drill with revert proof. |
@@ -34,7 +34,7 @@ If the recording is still missing at the dry run, say so. Use the captioned term
 |---|---|
 | 0:00 to 2:00 | Say what failed and switch. Example: "The mock is not answering on 8765, so I am switching to the recorded run." Name the failing beat once. Do not debug or reset state in front of the assessor. If the recording is missing, say that and switch to the terminal transcript. |
 | 2:00 to 6:00 | Play the recorded walkthrough. The intended segments are: CARD-D01 normal draft and approval (about 1:30), CARD-D05 ambiguous and manual_review (about 1:00), CARD-D08 injection not followed or quoted (about 1:00), CARD-D10 503 and retry (about 1:00), CARD-D09 duplicate refusal with 409 duplicate_case (about 1:00), audit view (about 0:30). |
-| 6:00 to 8:00 | Questions. Point to reports/scored-run.md for numbers, docs/DEMO_REHEARSAL.md for the rehearsal record, and docs/rehearsal-transcript-2026-10-28.txt for exact output. Name the open gaps: the deck numbers are dated, no sound-tested recording, p95 is 3.67 s against the sheet's 2.5 s line, and R2 grounding, R5 deployment transcript and G-03 fresh setup remain open. |
+| 6:00 to 8:00 | Questions. Point to reports/scored-run.md for numbers, docs/DEMO_REHEARSAL.md for the rehearsal record, and docs/rehearsal-transcript-2026-10-28.txt for exact output. Name the open gaps: no sound-tested recording, p95 is 3.67 s against the sheet's 2.5 s line, and R2 grounding, R5 deployment transcript and G-03 fresh setup remain open. |
 
 ## Live failure ladder
 
@@ -55,6 +55,6 @@ The transcript is exact output from 2026-10-28 on port 8855: health 200, twelve 
 ## Do not
 
 - Do not play the poster animation as the demo.
-- Do not read numbers from the deck. The deck says 7 of 12 and f50c1f4; the current report says 12 of 12 and 8c3ac7f.
+- Quote numbers from the regenerated reports/scored-run.md, not from the deck or the handout: docs/deck is a tracked 2026-10-28 snapshot (12 of 12 at 8c3ac7f) and may be older than the run you just made.
 - Do not claim a recording exists, plays with sound, or was tested on the backup machine until it does.
 - Do not edit the audit or the report to make a failed beat look passed.

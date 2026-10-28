@@ -16,7 +16,7 @@ On 2026-10-28 the CARD-D09 path and the live-change drills were run once more at
 | # | Acceptance criterion | Current status | Blocker |
 |---|---|---|---|
 | 1 | The full six-beat arc runs twice without manual repair | **Met on 2030440** | Runs 3 and 4 (2026-10-28, 2030440) passed six of six beats with no repair between them. Runs 1 and 2 (2026-10-27, on the frozen build 1c1d8ba) failed beat 5 on CARD-D09 (COF-43); the fix came after the freeze, so this holds only if the pod takes it (see Freeze and escalation). Beat 5 was re-run at 8553bb3 on 2026-10-28 and passed; the other five beats were not re-run at 8553bb3. |
-| 2 | Every number in the deck matches the published report | **Not met** | The deck is a local dated 2026-10-27 artefact that cites f50c1f4 and 7 of 12; it is not tracked in the repository and was not rebuilt. reports/scored-run.md is the current number, and no repository file changed. |
+| 2 | Every number in the deck matches the published report | **Met at 8553bb3** | docs/deck is tracked and was rebuilt from reports/scored-run.json on 2026-10-28: 12 of 12, 0 format errors, p50 31.000 ms, p95 3670.000 ms, 27 attempts, 3 retries, 0 model calls, 0.00 USD, 1014 tests over 3404 statements. docs/deck/FACTS.md records the source commit (8553bb3) and the published run (8c3ac7f), and tests/test_docs_numbers.py guards the deck's headline numbers against the report. The numbers move when the report is regenerated, so re-run the guard before the demo. |
 | 3 | Each person explains one case and makes one live change | **Not met** | The three person drills were run by the rehearsal driver on scratch copies on 2026-10-28, and the policy drill was run with a checksum-matched revert (table below). The named people have not yet done their own drill live. A copy run proves the mechanics, not the person. |
 | 4 | A recorded fallback exists if the live run fails | **Not met** | No recording exists. Owner: Ken (Lead). Deadline: the 2026-10-29 dry run. See Recorded fallback. |
 | 5 | The audit trail is shown, including no forbidden write attempts | **Met** | Shown in all four arc runs and in the 2026-10-28 duplicate and identity runs; no unapproved_write_attempt, forbidden_write_attempt or unsupported_write_attempt. |
@@ -259,7 +259,7 @@ If the audit contains a forbidden write attempt, the demo fails. Do not edit the
 Boxes are checked only where the artifact exists.
 
 - [x] The arc ran twice on the frozen build and both logs are filled in.
-- [ ] Every deck number matches the report file used at the demo.
+- [x] Every deck number in docs/deck/FACTS.md matches reports/scored-run.json at 8553bb3, and the PDF and handout were rebuilt from those numbers (2026-10-28). The box is per demo: regenerate the report and re-run tests/test_docs_numbers.py before the dry run.
 - [ ] Each person explained one case without notes.
 - [x] One live change was made on a scratch policy copy, reverted with a checksum match, and re-run to the original deadline on 2026-10-28. Evidence: docs/rehearsal-transcript-2026-10-28.txt.
 - [ ] Each person made their own live change and reverted it.
@@ -267,7 +267,7 @@ Boxes are checked only where the artifact exists.
 - [x] The audit trail was shown, including the absence of forbidden writes.
 - [x] Blocked beats were named as blocked, not shown as passing.
 
-The 2026-10-28 supplementary checks are recorded above. The deck, the each-person boxes and the recording box stay unchecked: the deck is still dated, no named person has done a drill live, and no recording exists.
+The 2026-10-28 supplementary checks are recorded above. The deck box is now checked: docs/deck is tracked and carries the published numbers. The each-person boxes and the recording box stay unchecked: no named person has done a drill live, and no recording exists.
 
 ## Freeze and escalation
 
