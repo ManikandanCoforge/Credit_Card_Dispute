@@ -1,10 +1,10 @@
 # Evaluation report - holdout
 
-- Commit: `cb51c79`
+- Commit: `02a241d`
 - Data: `evals/fixtures/holdout/data`
 - Gold: `evals/fixtures/holdout/gold.json`
-- Generated: 2026-10-28T18:46:50+00:00
-- Cases fully passed: **8/8**
+- Generated: 2026-10-28T19:23:09+00:00
+- Cases fully passed: **6/8**
 - Format errors: 0
 
 ## Metrics
@@ -12,12 +12,12 @@
 | Metric | Passed | n | Rate |
 | --- | ---: | ---: | ---: |
 | `conformance.submitted` | 8 | 8 | 100.0% |
-| `conformance.classification` | 8 | 8 | 100.0% |
-| `conformance.routing` | 8 | 8 | 100.0% |
+| `conformance.classification` | 6 | 8 | 75.0% |
+| `conformance.routing` | 7 | 8 | 87.5% |
 | `conformance.policy_selection` | 8 | 8 | 100.0% |
 | `conformance.facts` | 8 | 8 | 100.0% |
 | `conformance.missing_information` | 8 | 8 | 100.0% |
-| `conformance.deadline` | 8 | 8 | 100.0% |
+| `conformance.deadline` | 7 | 8 | 87.5% |
 | `conformance.citations_valid` | 8 | 8 | 100.0% |
 | `conformance.required_evidence` | 8 | 8 | 100.0% |
 | `conformance.narrative_present` | 8 | 8 | 100.0% |
@@ -29,23 +29,35 @@
 | `tools.no_forbidden_writes` | 8 | 8 | 100.0% |
 | `tools.retry_bound` | 8 | 8 | 100.0% |
 | `tools.no_extra_reads` | 8 | 8 | 100.0% |
-| `escalation.route_correct` | 8 | 8 | 100.0% |
-| `escalation.class_correct` | 8 | 8 | 100.0% |
+| `escalation.route_correct` | 7 | 8 | 87.5% |
+| `escalation.class_correct` | 6 | 8 | 75.0% |
 | `pii.restricted_values` | 8 | 8 | 100.0% |
 | `pii.synthetic_patterns` | 8 | 8 | 100.0% |
 
 ## Escalation
 
-- Normal cases routed normally: 6/6
+- Normal cases routed normally: 5/6
 - Correct escalations: 2/2
 - Missed escalations: none
-- False escalations: none
+- False escalations: HLD-H08
 - Request-information routes: 0/0
 - Not built: none
 
 ## Failures
 
-No failing cases in this run.
+### HLD-H06
+
+- `conformance.classification` - HLD-H06 fails the supplied evaluator sub-check classification
+- `escalation.class_correct` - classification 'ambiguous' is not one of ['unsupported']
+
+### HLD-H08
+
+- `conformance.classification` - HLD-H08 fails the supplied evaluator sub-check classification
+- `conformance.routing` - HLD-H08 fails the supplied evaluator sub-check routing
+- `conformance.deadline` - HLD-H08 fails the supplied evaluator sub-check deadline
+- `escalation.route_correct` - routing 'manual_review' is not one of ['ready_for_review']
+- `escalation.class_correct` - classification 'ambiguous' is not one of ['service_not_received']
+
 ## Limits
 
 - Deterministic checks only. Semantic grounding, prose safety and the observed demo remain human review.

@@ -82,16 +82,16 @@ Everything in this folder supports [ADR-003](../docs/decisions/ADR-003-hybrid-mo
 
 ### Latest deterministic results
 
-Offline suite, five primary evals, 2026-10-28 UTC: holdout and stress at commit `cb51c79`, after COF-39 reads more wording as its type, sends what no rule can type to a person, and drafts every case instead of dropping it. Both runs exit `0` and report no format error; each artifact lists every check with its evidence.
+Offline suite, five primary evals, 2026-10-28 UTC: holdout and stress at commit `02a241d`, after COF-39 drafts every case instead of dropping it and sends the unsafe ones to a person. No phrase rule was added: reading new wording is the model's job (ADR-003). Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
 
 | Suite | Cases | Fully passed | Failing cases | Artifact |
 |---|---|---|---|---|
-| `holdout` | 8 | 8 | none | [`eval-holdout.md`](reports/eval-holdout.md) |
-| `stress` | 16 | 16 | none | [`eval-stress.md`](reports/eval-stress.md) |
+| `holdout` | 8 | 6 | `HLD-H06`, `HLD-H08` | [`eval-holdout.md`](reports/eval-holdout.md) |
+| `stress` | 16 | 7 | `STR-P03`, `STR-P05` to `STR-P10`, `STR-P14`, `STR-P15` | [`eval-stress.md`](reports/eval-stress.md) |
 
-The supplied bank evaluator agrees: its rules-alone row in `reports/hybrid-eval.json` is also 8 of 8 holdout and 16 of 16 stress, and so is the hybrid row. `synth` is not rerun here; its rows are in the hybrid report.
+The supplied bank evaluator scores the same cases higher with recorded model answers: 7 of 8 holdout and 16 of 16 stress in `reports/hybrid-eval.json`. Its rules-alone row uses that evaluator too (6 of 8 and 7 of 16). `synth` is not rerun here; its rows are in the hybrid report.
 
-Read these as a regression score, not an unseen estimate. The wording rules added in COF-39 were written as general phrasings, never case ids, but they were written after studying the failures in these suites, holdout included, so holdout is no longer untouched. Only the assessor's hidden set measures unseen wording.
+The failures are wording the rules do not read, which is the gap the model route covers. HLD-H06 (cash without a machine keyword), HLD-H08 and STR-P03, STR-P05, STR-P06 and STR-P14 (paraphrases of a supported type) and STR-P07 to STR-P10 (cash, fee and overcharge complaints the gold calls `unsupported`) are drafted for manual review as `ambiguous`, because no rule names their type. STR-P15 is typed as a duplicate because "never shown" is not a service phrase the rules know. No case is left out of the submission.
 
 Reproduce both runs from the repository root:
 
@@ -123,9 +123,9 @@ These are the sets a model must pass before `models.toml` may list it. The READM
 
 They come from the copilot's registered Week 10 runs of 25 October, one trace per suite. Each answer was replayed through this repository's pipeline against the unmodified mock. It was kept only when the prompt this code sends is byte-for-byte the prompt Luna was sent, matched by prompt hash.
 
-In the current evaluation this code asks 36 questions, because the rules now type most complaints before a model is asked. Nine of them were not asked in the recorded run, so they have no recording and replay as no answer.
+In the current evaluation this code asks 51 questions. Ten of them were not asked in the recorded run, so they have no recording and replay as no answer.
 
-Which questions are asked moves with the rules: CARD-D10 and SYN-S14 are asked because the tool reads retry (COF-40), and fewer gap cases reach a model since COF-39 reads more wording itself. The replay report lists every call.
+Which questions are asked moves with the rules: CARD-D10 and SYN-S14 are asked because the tool reads retry (COF-40), and cases COF-39 now drafts instead of dropping, or sends to a person before a draft would be ready, change which questions reach the model. The replay report gives the calls and answers per suite.
 
 Each line holds three things:
 
@@ -164,9 +164,9 @@ Results on 2026-10-28 UTC:
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
 | dev (12) | 12 | 12 | 0 → 0 | 7 | 705 / 174 |
-| synth (31) | 30 | 30 | 0 → 0 | 17 | 1,604 / 433 |
-| stress (16) | 16 | 16 | 0 → 0 | 7 | 1,600 / 336 |
-| holdout (8) | 8 | 8 | 0 → 0 | 5 | 264 / 95 |
-| Total (67) | 66 | 66 | 0 → 0 | 36 | 4,173 / 1,038 |
+| synth (31) | 25 | 29 | 0 → 0 | 21 | 3,528 / 572 |
+| stress (16) | 7 | 16 | 1 → 0 | 16 | 5,585 / 647 |
+| holdout (8) | 6 | 7 | 0 → 0 | 7 | 747 / 133 |
+| Total (67) | 50 | 64 | 1 → 0 | 51 | 10,565 / 1,526 |
 
 Rerunning the replay command above on this tree reproduces the table exactly, and the checked-in report is that output. ADR-003 explains the cases that still fail. The token counts are Luna's own counts for these exact prompts, recorded on 25 October.

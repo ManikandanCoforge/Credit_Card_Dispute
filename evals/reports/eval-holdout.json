@@ -1,12 +1,12 @@
 {
   "suite": "holdout",
-  "commit": "cb51c79",
-  "started_at": "2026-10-28T18:46:50+00:00",
+  "commit": "02a241d",
+  "started_at": "2026-10-28T19:23:09+00:00",
   "data_dir": "evals/fixtures/holdout/data",
   "gold_path": "evals/fixtures/holdout/gold.json",
   "cases": {
     "total": 8,
-    "passed": 8
+    "passed": 6
   },
   "format_errors": [],
   "metrics": [
@@ -19,14 +19,14 @@
     {
       "metric": "conformance.classification",
       "n": 8,
-      "passed": 8,
-      "rate": 1.0
+      "passed": 6,
+      "rate": 0.75
     },
     {
       "metric": "conformance.routing",
       "n": 8,
-      "passed": 8,
-      "rate": 1.0
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.policy_selection",
@@ -49,8 +49,8 @@
     {
       "metric": "conformance.deadline",
       "n": 8,
-      "passed": 8,
-      "rate": 1.0
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.citations_valid",
@@ -121,14 +121,14 @@
     {
       "metric": "escalation.route_correct",
       "n": 8,
-      "passed": 8,
-      "rate": 1.0
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "escalation.class_correct",
       "n": 8,
-      "passed": 8,
-      "rate": 1.0
+      "passed": 6,
+      "rate": 0.75
     },
     {
       "metric": "pii.restricted_values",
@@ -147,13 +147,15 @@
   "escalation": {
     "normal": {
       "total": 6,
-      "passed": 6
+      "passed": 5
     },
     "escalations": {
       "total": 2,
       "passed": 2,
       "missed": [],
-      "false": []
+      "false": [
+        "HLD-H08"
+      ]
     },
     "request_information": {
       "total": 0,
@@ -214,13 +216,34 @@
     },
     {
       "case_id": "HLD-H06",
-      "passed": true,
+      "passed": false,
       "build_error": null,
       "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": []
+      "failures": [
+        {
+          "metric": "conformance.classification",
+          "reason": "HLD-H06 fails the supplied evaluator sub-check classification",
+          "evidence": {
+            "subcheck": "classification",
+            "value": false,
+            "reported": true,
+            "build_error": null
+          }
+        },
+        {
+          "metric": "escalation.class_correct",
+          "reason": "classification 'ambiguous' is not one of ['unsupported']",
+          "evidence": {
+            "got": "ambiguous",
+            "expected": [
+              "unsupported"
+            ]
+          }
+        }
+      ]
     },
     {
       "case_id": "HLD-H07",
@@ -234,13 +257,64 @@
     },
     {
       "case_id": "HLD-H08",
-      "passed": true,
+      "passed": false,
       "build_error": null,
-      "routing": "ready_for_review",
+      "routing": "manual_review",
       "expected_routing": [
         "ready_for_review"
       ],
-      "failures": []
+      "failures": [
+        {
+          "metric": "conformance.classification",
+          "reason": "HLD-H08 fails the supplied evaluator sub-check classification",
+          "evidence": {
+            "subcheck": "classification",
+            "value": false,
+            "reported": true,
+            "build_error": null
+          }
+        },
+        {
+          "metric": "conformance.routing",
+          "reason": "HLD-H08 fails the supplied evaluator sub-check routing",
+          "evidence": {
+            "subcheck": "routing",
+            "value": false,
+            "reported": true,
+            "build_error": null
+          }
+        },
+        {
+          "metric": "conformance.deadline",
+          "reason": "HLD-H08 fails the supplied evaluator sub-check deadline",
+          "evidence": {
+            "subcheck": "deadline",
+            "value": false,
+            "reported": true,
+            "build_error": null
+          }
+        },
+        {
+          "metric": "escalation.route_correct",
+          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
+          "evidence": {
+            "got": "manual_review",
+            "expected": [
+              "ready_for_review"
+            ]
+          }
+        },
+        {
+          "metric": "escalation.class_correct",
+          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
+          "evidence": {
+            "got": "ambiguous",
+            "expected": [
+              "service_not_received"
+            ]
+          }
+        }
+      ]
     }
   ],
   "checks": [
@@ -979,11 +1053,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "HLD-H06",
-      "passed": true,
-      "reason": "HLD-H06 passes the supplied evaluator sub-check classification",
+      "passed": false,
+      "reason": "HLD-H06 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": true,
+        "value": false,
         "reported": true,
         "build_error": null
       }
@@ -1267,11 +1341,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "HLD-H08",
-      "passed": true,
-      "reason": "HLD-H08 passes the supplied evaluator sub-check classification",
+      "passed": false,
+      "reason": "HLD-H08 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": true,
+        "value": false,
         "reported": true,
         "build_error": null
       }
@@ -1279,11 +1353,11 @@
     {
       "metric": "conformance.routing",
       "case_id": "HLD-H08",
-      "passed": true,
-      "reason": "HLD-H08 passes the supplied evaluator sub-check routing",
+      "passed": false,
+      "reason": "HLD-H08 fails the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": true,
+        "value": false,
         "reported": true,
         "build_error": null
       }
@@ -1327,11 +1401,11 @@
     {
       "metric": "conformance.deadline",
       "case_id": "HLD-H08",
-      "passed": true,
-      "reason": "HLD-H08 passes the supplied evaluator sub-check deadline",
+      "passed": false,
+      "reason": "HLD-H08 fails the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": true,
+        "value": false,
         "reported": true,
         "build_error": null
       }
@@ -1531,9 +1605,9 @@
       "metric": "grounding.citation_exact",
       "case_id": "HLD-H06",
       "passed": true,
-      "reason": "all 8 citations quote their source exactly",
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "citations": 8,
+        "citations": 7,
         "invalid": []
       }
     },
@@ -1544,12 +1618,11 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
-          "cash_withdrawal",
           "customer_evidence",
           "policy_selection",
           "routing",
-          "transaction_record",
-          "unsupported_rule"
+          "supported_classifications",
+          "transaction_record"
         ],
         "missing": []
       }
@@ -1558,9 +1631,9 @@
       "metric": "grounding.citation_exact",
       "case_id": "HLD-H07",
       "passed": true,
-      "reason": "all 8 citations quote their source exactly",
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "citations": 8,
+        "citations": 7,
         "invalid": []
       }
     },
@@ -1571,10 +1644,10 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
-          "competing_classification",
           "customer_evidence",
           "policy_selection",
           "routing",
+          "supported_classifications",
           "transaction_record"
         ],
         "missing": []
@@ -1584,9 +1657,9 @@
       "metric": "grounding.citation_exact",
       "case_id": "HLD-H08",
       "passed": true,
-      "reason": "all 6 citations quote their source exactly",
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "citations": 6,
+        "citations": 7,
         "invalid": []
       }
     },
@@ -1597,10 +1670,10 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
-          "classification",
           "customer_evidence",
-          "deadline",
+          "policy_selection",
           "routing",
+          "supported_classifications",
           "transaction_record"
         ],
         "missing": []
@@ -2373,10 +2446,10 @@
     {
       "metric": "escalation.class_correct",
       "case_id": "HLD-H06",
-      "passed": true,
-      "reason": "classification 'unsupported' is allowed",
+      "passed": false,
+      "reason": "classification 'ambiguous' is not one of ['unsupported']",
       "evidence": {
-        "got": "unsupported",
+        "got": "ambiguous",
         "expected": [
           "unsupported"
         ]
@@ -2409,10 +2482,10 @@
     {
       "metric": "escalation.route_correct",
       "case_id": "HLD-H08",
-      "passed": true,
-      "reason": "routing 'ready_for_review' is allowed",
+      "passed": false,
+      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
       "evidence": {
-        "got": "ready_for_review",
+        "got": "manual_review",
         "expected": [
           "ready_for_review"
         ]
@@ -2421,10 +2494,10 @@
     {
       "metric": "escalation.class_correct",
       "case_id": "HLD-H08",
-      "passed": true,
-      "reason": "classification 'service_not_received' is allowed",
+      "passed": false,
+      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
       "evidence": {
-        "got": "service_not_received",
+        "got": "ambiguous",
         "expected": [
           "service_not_received"
         ]
