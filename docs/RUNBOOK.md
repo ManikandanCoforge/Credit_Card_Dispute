@@ -2,6 +2,8 @@
 
 This is the operator and developer runbook for the loop. It covers the one command, the step-by-step path, the ports and state files, the environment variables and the failures we have actually hit.
 
+Last verified: 2026-10-28 at 8553bb3, mock on port 8855. The published numbers are in `reports/scored-run.md`.
+
 ## What the loop is
 
 Four actors take part.
@@ -112,7 +114,7 @@ Then, back in terminal 2, record the approved drafts:
 uv run --locked python -m src.review_runner check --wait 120
 ```
 
-The agent must never run the approval command. The mock's CLI simulates a human boundary; during assessment the assessor controls approval and state.
+The agent must not run the approval command in the live demo. The mock's CLI simulates a human boundary; during assessment the assessor controls approval and state. In rehearsal a driver may run it only as a stand-in, and the record must name that.
 
 The acceptance eval suite runs separately from the loop:
 
@@ -154,6 +156,36 @@ uv run --locked python -m src.run_loop
 
 The optional hybrid model reads `MODEL_PROVIDER` and the related names; see the README section. The default run needs none of them.
 
+## Severity-1 incident path
+
+Three failures stop the demo. For each: detect, stop, preserve, notify, restore. The state file is `.state/mock.sqlite`; its tables are `reviews`, `records`, `keys`, `calls` and `audit`. The audit is append-only by convention, not by hash chain. Never run `reset --confirm` during an incident: it deletes all five tables, including the audit.
+
+### Suspected restricted-value leak
+
+- Detect: `grep -n 'SYNTHETIC-PRIVATE-CARD-' reports/meters.jsonl reports/scored-run.json`. A case whose meter line was refused has no line in `reports/meters.jsonl` and `"meter_error": "MeterLeak"` in `reports/scored-run.json`; `src/meters.py:108-121` raises `MeterLeak` and `src/contract_records.py:219-220` catches it; after the run, `tools/scored_run.py:758-774` checks the written file and refuses the run with "found a restricted value. The run is refused and no report was written" if one is still there.
+- Stop: stop the scored run and the mock. Do not open the meter file in a browser or paste it into chat.
+- Preserve: copy `.state/mock.sqlite`, `reports/meters.jsonl`, `reports/scored-run.json` and `reports/scored-run.md` to `.state/incident-<utc>/`; record the case id and the refusal text.
+- Notify: Ken (Lead) and the security owner. Name the file and the case, not the value.
+- Restore: fix the redaction in `src/untrusted.py` or the leaking field, regenerate from a clean tree, then confirm `grep` finds no token and `wc -l reports/meters.jsonl` is 12.
+
+### Unapproved or post-approval-modified write
+
+- Detect: `uv run --locked python tools/runtime.py audit --state .state/mock.sqlite` shows `unapproved_write_attempt`; `POST /v1/records` returns 403 `approval_missing_or_draft_changed`; `src/review_gate.py:93-94` compares the draft hash and raises `ReviewRefused(403, "changed")`; `tools/runtime.py:154-155` audits the refusal.
+- Stop: stop the beat. Do not retry with a new idempotency key; that hides the mismatch.
+- Preserve: copy the state file, then save the review id and draft hash, the HTTP status and body, and the audit JSON. `GET /v1/reviews/<id>` shows the stored hash; `GET /v1/records/<case_id>` shows an existing record.
+- Notify: Ken and the operator who approved the draft. The approval is invalid for this draft.
+- Restore: reset only after preserving, submit the draft again, approve the exact hash, and confirm one `record_created`. Never edit the database to force an approval.
+
+### Audit-trail loss or corruption
+
+- Detect: the audit command fails, `PRAGMA integrity_check` is not `ok`, `seq` has gaps, or a record exists with no `record_created`. Run:
+    uv run --locked python tools/runtime.py audit --state .state/mock.sqlite > .state/incident/audit.json
+    uv run --locked python -c "import sqlite3; db=sqlite3.connect('.state/mock.sqlite'); print(db.execute('PRAGMA integrity_check').fetchone()[0])"
+- Stop: stop the demo. Do not reset and do not run another beat on this state.
+- Preserve: copy the whole `.state/mock.sqlite`, plus any `-wal` and `-shm` files, and keep the audit JSON and report files.
+- Notify: Ken. State that the audit table is not tamper-evident and has no hash chain.
+- Restore: restore a known-good state copy, or rebuild and disclose the lost interval. Do not claim the lost rows.
+
 ## Troubleshooting
 
 | Symptom | Why | Fix |
@@ -163,13 +195,27 @@ The optional hybrid model reads `MODEL_PROVIDER` and the related names; see the 
 | PowerShell redirect produces JSON the loader cannot read | PowerShell 5.1 writes UTF-16 with a BOM on `>`; the loader expects UTF-8 | Use Git Bash or cmd, or `| Out-File -Encoding ascii submissions/results.json`. Check with `od -An -tx1 -N3 submissions/results.json`: `3C` is bytes 3C 7B, FF FE is UTF-16 |
 | `uv sync --locked` refuses, or uv does not know Python 3.12.13 | The installed uv predates the pin, or the interpreter is missing | `uv --version`, `uv self update` (or `brew upgrade uv`), then `uv sync --locked`. Never edit the pin in `pyproject.toml` |
 | `git status` shows `reports/meters.jsonl` changed after a pytest run | Tests ran from the wrong directory, or a test used the scored run's default paths instead of a temp directory | Run pytest from the repository root. Tests must pass explicit report and meter paths, as `tests/test_scored_run.py` does. Restore the file with `git checkout -- reports/meters.jsonl` and confirm with `git status` |
-| A case is refused with `the intake statement is not an exact excerpt of the intake` | The intake statement wraps across lines, so no single line is one exact excerpt. CARD-D09 no longer hits this, because COF-43 reads the customer's text before the form fields | None. It is the known gap, and `docs/RED_TEAM.md:52` explains it. Do not edit the fixture to make such a case build |
+| A case is refused with `the intake statement is not an exact excerpt of the intake` | The intake statement wraps across lines, so no single line is one exact excerpt. CARD-D09 no longer hits this, because COF-43 reads the customer's text before the form fields | No code fix. If another case hits it, do not edit the fixture; `docs/RED_TEAM.md:52` explains the limit |
 | `make` is not installed on Windows | make is optional | Run the `uv run --locked` command the recipe wraps; every target is one command |
+
+## Demo stop points
+
+The full list is in `docs/DEMO_REHEARSAL.md`. Stop or use the recorded fallback when any of these is true:
+
+- `/health` is not 200, or `/v1/cases` does not list twelve cases.
+- The scored run is not 12 of 12, or has a format error.
+- The report commit is not the build being demonstrated, or `git_dirty` is true.
+- `pending` shows a review you did not create, or a record already exists for the case being demonstrated.
+- A draft's decision fields differ from the numbers lock, or a second `record_created` or any forbidden write appears.
+- A live change does not alter the draft, or breaks a test outside its own module.
+- p95 is above 2500 ms: quote the report value and the sheet's 2.5 s line, and say it is a known gap.
 
 ## Where to look next
 
 - `README.md` for the assessment-facing description and the measured numbers.
 - `docs/DEMO_REHEARSAL.md` for the six demo beats and the numbers lock.
+- `docs/FALLBACK.md` for the 6 to 8 minute fallback, the missing recording, and the artifact list.
+- `docs/rehearsal-transcript-2026-10-28.txt` for exact CARD-D09 refusal and live-change output.
 - `docs/RED_TEAM.md` for the known gaps, including the intake statement that wraps across lines at line 52.
 - `docs/decisions/ADR-004-one-entry-point-for-the-loop.md` for why the loop is one tested command.
 - `reports/scored-run.md` for the per-case results of the published run.
