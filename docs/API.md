@@ -23,7 +23,7 @@ POST /v1/records body:
 ```
 
 Add the `Idempotency-Key` header. Exact replay returns the original record (200); first creation returns 201. Reusing a key for different content returns 409. An already-created underlying complaint/loss returns 409 `duplicate_case` even with a new key or duplicate intake ID. Treat this as an existing record, never fabricate another case.
-Approval is bound to the full draft hash. Missing, rejected, wrong-case, or changed-draft approval returns 403. An agent cannot approve through HTTP. Human operator commands are documented in README.
+Approval is bound to the full draft hash. A changed draft is refused with 403 before any record is posted; a missing review, a rejected submission or a wrong-case approval stops the run without creating a record. An agent cannot approve through HTTP. Human operator commands are documented in README.
 KYC is read-only: every record-creation attempt is forbidden, even if a review was approved.
 
 A configured upstream timeout returns 503 `upstream_timeout` promptly rather than sleeping. This tests the team's error path; it does not test actual network timeout duration. Transient faults fail once; persistent faults fail on every request until reset. Use at most three total attempts, then escalate. Counter state survives service restart. Reset it between independent assessment runs.
