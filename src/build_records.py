@@ -177,16 +177,9 @@ def _policy_versions(policies_dir: Path) -> list[_PolicyVersion]:
 
 def _intake(text: str) -> tuple[Intake, date | None]:
     reported_date = _field(text, "Reported date")
-    statement = [
-        line.strip()
-        for line in text.splitlines()
-        if line.strip()
-        and not line.strip().startswith("#")
-        and not any(line.strip().startswith(f"{label}:") for label in _LABELS)
-    ]
     return {
         "source_id": _field(text, "Source ID"),
-        "statement": " ".join(statement) or _NOT_SUPPLIED,
+        "statement": _statement(text),
         "reported_date": reported_date,
         "transaction_id": _field(text, "Transaction ID"),
         "authorization": _field(text, "Authorization"),
@@ -194,6 +187,27 @@ def _intake(text: str) -> tuple[Intake, date | None]:
         "purchase_receipt": _field(text, "Purchase receipt"),
         "submission_reference": _field(text, "Submission reference"),
     }, _day(reported_date)
+
+
+def _statement(text: str) -> str:
+    """The customer's free text before the form fields.
+
+    Text after the form fields, such as the delivery note on a redelivered complaint, is
+    not the customer's account. Joined on, it made a statement the intake never says in
+    one place, so the draft could not quote it. It stays in the intake, which every
+    detector still reads, and is the statement only when nothing precedes the form.
+    """
+    before: list[str] = []
+    after: list[str] = []
+    in_form = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        label = next((label for label in _LABELS if stripped.startswith(f"{label}:")), None)
+        if label is not None:
+            in_form = in_form or label != "Source ID"
+        elif stripped and not stripped.startswith("#"):
+            (after if in_form else before).append(stripped)
+    return " ".join(before or after) or _NOT_SUPPLIED
 
 
 def _procedure(text: str) -> str | None:
