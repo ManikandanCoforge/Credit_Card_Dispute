@@ -2,7 +2,7 @@
 
 Owner: Kanit (lead). Every number below was read from this worktree at origin/main `8553bb3` on 2026-10-28 unless marked otherwise. If a number here disagrees with another doc, README.md wins on the published run and this file is corrected. Do not put a number on a slide that is not here.
 
-## Repo state
+## Repo state (a snapshot of `8553bb3` on 2026-10-28; main and the test count have moved since)
 - origin/main = `8553bb36a05ba3b0b6c96b5dffb82aa96c6d7283`, "Merge pull request #87 from ManikandanCoforge/kenmann01/cof-34-refresh-requirements-trace", 2026-10-27 23:03 ET.
 - CI on `8553bb3`: workflow "checks" succeeded. Jobs: lint, bandit, pytest, env-files, pytest-windows (`.github/workflows/checks.yml`).
 - Published run: `reports/scored-run.json` records `git_commit 8c3ac7f4859c0ec9c36a51ef26e78451a46c2889`, `git_dirty false`, generated 2026-10-28T02:10:46Z.
