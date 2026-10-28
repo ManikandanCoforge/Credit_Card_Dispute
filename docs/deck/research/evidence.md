@@ -128,4 +128,3 @@ with its own fault counters, so the loop gives each run a fresh state file at
 - Update and close actions, blocked by Gate U (L1).
 - UI and production deployment (L2/L4).
 - Wrapped customer statement line limit (`docs/RED_TEAM.md:52`).
-- Ruleset enforcement, blocked by the GitHub plan (403).

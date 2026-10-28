@@ -5,6 +5,7 @@ Owner: Kanit (lead). Every number below was read from this worktree at origin/ma
 ## Repo state
 - origin/main = `8553bb36a05ba3b0b6c96b5dffb82aa96c6d7283`, "Merge pull request #87 from ManikandanCoforge/kenmann01/cof-34-refresh-requirements-trace", 2026-10-27 23:03 ET.
 - CI on `8553bb3`: workflow "checks" succeeded. Jobs: lint, bandit, pytest, env-files, pytest-windows (`.github/workflows/checks.yml`).
+- `main` is enforced since 2026-10-28 (issue #6): the `checks` ruleset requires a pull request with one approval, an approval from a code owner of every touched path, and all five jobs green, and refuses force pushes and deletion. The repository is public, which is what lets the ruleset apply.
 - Published run: `reports/scored-run.json` records `git_commit 8c3ac7f4859c0ec9c36a51ef26e78451a46c2889`, `git_dirty false`, generated 2026-10-28T02:10:46Z.
 - `8c3ac7f..8553bb3` touches only README, docs, reports and tests (no `src/` or `tools/`), so the published run describes main's code.
 - Open pull requests: **0**. Recently delivered: #52 escalation and untrusted evidence (merged 2026-10-27T14:17:55Z, `32d7820`), #63 review gate (merged 2026-10-27T14:06:02Z, `ef47e16`), #65 hybrid model path, ADR-003 (merged 2026-10-27T20:58:57Z, `186c8e9`). #66 (meters) was closed; meters landed through COF-43.
@@ -91,4 +92,3 @@ All twelve build. Classes and routing:
 - Update and close actions, blocked by Gate U (L1).
 - UI and production deployment (L2/L4).
 - Wrapped customer statement line limit (docs/RED_TEAM.md:52).
-- Ruleset enforcement, blocked by the GitHub plan (403).

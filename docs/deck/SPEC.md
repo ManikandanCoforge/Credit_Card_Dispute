@@ -137,7 +137,7 @@ Rules: no shadows, no gradients, no rounded rainbow cards. Hairlines, tinted ban
 ### 11 Roadmap (paper)
 - section: 10 · ROADMAP
 - headline: The next 30 days, in order.
-- five numbered rows with effort: reviewer identity (M1); approve the model route with measured cost and latency; real intake pilot with two analysts; the next two complaint types; ruleset enforcement, blocked by the GitHub plan.
+- five numbered rows with effort: reviewer identity (M1); approve the model route with measured cost and latency; real intake pilot with two analysts; the next two complaint types; quoting a statement that wraps across lines (RED_TEAM row 17).
 - right rail, mute: 60 and 90 day items in one line each.
 
 ### 12 Pod (paper)
