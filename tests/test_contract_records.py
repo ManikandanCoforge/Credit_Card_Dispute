@@ -6,6 +6,7 @@ supplied gold answer, not from the runner's own arithmetic.
 """
 
 import json
+import re
 import runpy
 import shutil
 import sys
@@ -16,12 +17,14 @@ from pathlib import Path
 
 import pytest
 
+from src import contract_records
 from src.contract_records import (
     ContractRecordError,
     load_contract_records,
     load_contract_results,
     main,
 )
+from src.meters import MeterLeak
 from src.model_clients import request_key
 from src.model_cue import MULTI_SCHEMA, MULTI_SYSTEM, evidence, statement_lines
 
@@ -156,6 +159,90 @@ CARD_D01_CONTRACT = {
         "confirm an outcome yet."
     ),
 }
+
+
+def test_a_built_case_writes_one_meter_line_with_every_field(tmp_path):
+    path = tmp_path / "reports" / "meters.jsonl"
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        load_contract_results(base_url, DEV, meter_path=path)
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    meter = json.loads(lines[0])
+    assert meter == {
+        "case_id": "CARD-D01",
+        "route": "ready_for_review",
+        "started_at": meter["started_at"],
+        "latency_ms": meter["latency_ms"],
+        "model_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "tool_attempts": 2,
+        "retry_count": 0,
+    }
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z", meter["started_at"])
+    assert isinstance(meter["latency_ms"], int) and meter["latency_ms"] >= 0
+    written = path.read_text(encoding="utf-8")
+    assert "SYNTHETIC-PRIVATE-CARD-D01" not in written
+    assert "I found a card purchase" not in written
+
+
+def test_a_stopped_case_still_writes_one_meter_line(tmp_path):
+    path = tmp_path / "meters.jsonl"
+    case_list = {"cases": [CARD_D01, CARD_D11]}
+
+    with _bank(case_list, _d01_and_d11_bodies(), statuses={TRANSACTIONS: 503}) as (
+        base_url,
+        _seen,
+    ):
+        load_contract_results(base_url, DEV, meter_path=path)
+
+    lines = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    assert [(line["case_id"], line["route"], line["tool_attempts"]) for line in lines] == [
+        ("CARD-D01", "not_built", 1),
+        ("CARD-D11", "ready_for_review", 2),
+    ]
+    assert all(
+        line["model_calls"] == line["input_tokens"] == line["output_tokens"] == line["retry_count"] == 0
+        for line in lines
+    )
+    assert "SYNTHETIC-PRIVATE" not in path.read_text(encoding="utf-8")
+
+
+
+
+def test_a_refused_meter_line_is_typed_and_the_other_cases_still_run(tmp_path, monkeypatch):
+    path = tmp_path / "meters.jsonl"
+    real = contract_records.record_case_meter
+
+    def refuse_one(meter_path, **line):
+        if line["case_id"] == "CARD-D01":
+            raise MeterLeak
+        real(meter_path, **line)
+
+    monkeypatch.setattr(contract_records, "record_case_meter", refuse_one)
+    case_list = {"cases": [CARD_D01, CARD_D11]}
+
+    with _bank(case_list, _d01_and_d11_bodies()) as (base_url, _seen):
+        results = load_contract_results(base_url, DEV, meter_path=path)
+
+    assert [result["meter_error"] for result in results] == ["MeterLeak", None]
+    assert all(result["contract"] is not None for result in results)
+    assert [json.loads(line)["case_id"] for line in path.read_text(encoding="utf-8").splitlines()] == [
+        "CARD-D11"
+    ]
+
+def test_a_second_run_replaces_the_meter_file(tmp_path):
+    path = tmp_path / "meters.jsonl"
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        load_contract_results(base_url, DEV, meter_path=path)
+        load_contract_results(base_url, DEV, meter_path=path)
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0])["case_id"] == "CARD-D01"
 
 
 def test_card_d01_contract_is_emitted_from_the_bank_and_the_dataset():
@@ -384,6 +471,7 @@ def test_the_reason_is_the_applications_own_message_when_there_is_one(tmp_path):
             "error": "expected exactly one 'Amount:' line in the source",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
 
@@ -417,7 +505,47 @@ def test_load_contract_records_names_the_case_that_could_not_be_built():
             load_contract_records(base_url, DEV)
 
 
-def test_main_prints_every_built_contract_and_names_the_rest(capsys, monkeypatch):
+def test_the_scored_run_writes_one_meter_line_per_case(tmp_path):
+    from tools.scored_run import run_scored
+
+    meter = tmp_path / "meters.jsonl"
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        run_scored(
+            base_url=base_url,
+            data_dir=DEV,
+            gold_path=ROOT / "feedback" / "dev_gold.json",
+            submission_path=tmp_path / "submission.json",
+            report_path=tmp_path / "report.json",
+            meters_path=tmp_path / "scored-meters.json",
+            markdown_path=tmp_path / "report.md",
+            generated_at="2026-10-26T00:00:00Z",
+            git_commit="abc",
+            git_dirty=False,
+            case_meter_path=meter,
+        )
+
+    lines = meter.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0])["case_id"] == "CARD-D01"
+    assert json.loads(lines[0])["model_calls"] == 0
+
+
+def test_main_writes_one_meter_line_per_case(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
+        monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
+        main()
+
+    lines = (tmp_path / "reports" / "meters.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    assert json.loads(lines[0])["case_id"] == "CARD-D01"
+    assert json.loads(lines[0])["route"] == "ready_for_review"
+    assert capsys.readouterr().err == ""
+
+
+def test_main_prints_every_built_contract_and_names_the_rest(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     case_list = {"cases": [CARD_D01, CARD_D11]}
 
     with _bank(case_list, _d01_and_d11_bodies(), statuses={TRANSACTIONS: 503}) as (
@@ -434,7 +562,8 @@ def test_main_prints_every_built_contract_and_names_the_rest(capsys, monkeypatch
     assert printed.err == "CARD-D01: not built: BankReadError\n"
 
 
-def test_main_exits_normally_when_every_case_is_built(capsys, monkeypatch):
+def test_main_exits_normally_when_every_case_is_built(tmp_path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
         monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
         main()
@@ -479,6 +608,7 @@ def test_main_stops_before_any_bank_read_when_the_named_model_cannot_be_used(
 def test_main_uses_the_model_the_environment_names(tmp_path, capsys, monkeypatch):
     # A recorded "two problems" answer for CARD-D01 changes the printed draft, so the
     # draft shows that main() asked the model the environment names.
+    monkeypatch.chdir(tmp_path)
     intake = (DEV / "documents" / "CARD-D01-INTAKE.md").read_text(encoding="utf-8")
     lines = statement_lines([("CARD-D01-INTAKE", intake)])
     recording = tmp_path / "gpt-6-luna.jsonl"
@@ -701,6 +831,7 @@ def test_a_listed_document_that_is_not_customer_correspondence_cannot_escalate(t
             "error": "the case names evidence this step cannot read: CARD-D01-NOTE",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
     assert seen == ["/v1/cases"]
@@ -719,12 +850,18 @@ def test_a_listed_document_id_that_is_not_a_plain_id_is_never_opened():
             "error": "a source id is not a plain document id",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
     assert seen == ["/v1/cases"]
 
 
-def test_card_d08_injected_merchant_note_is_not_obeyed_and_nothing_is_written(capsys, monkeypatch):
+def test_card_d08_injected_merchant_note_is_not_obeyed_and_nothing_is_written(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    repo_meters = ROOT / "reports" / "meters.jsonl"
+    before = repo_meters.read_bytes() if repo_meters.exists() else None
     case_list = {
         "cases": [
             {
@@ -767,6 +904,10 @@ def test_card_d08_injected_merchant_note_is_not_obeyed_and_nothing_is_written(ca
         monkeypatch.setattr(sys, "argv", ["contract_records", base_url, str(DEV)])
         main()
 
+    after = repo_meters.read_bytes() if repo_meters.exists() else None
+    assert after == before
+    written = (tmp_path / "reports" / "meters.jsonl").read_text(encoding="utf-8")
+    assert [json.loads(line)["case_id"] for line in written.splitlines()] == ["CARD-D08"]
     printed = capsys.readouterr()
     [contract] = json.loads(printed.out)
     assert contract["classification"] == "duplicate_charge"
@@ -796,6 +937,7 @@ def test_a_contract_that_would_carry_a_restricted_value_is_not_emitted():
             "error": "a restricted value was about to be emitted",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
 
@@ -1053,6 +1195,7 @@ def test_a_case_that_names_evidence_this_step_cannot_read_is_not_built():
             "error": "the case names evidence this step cannot read: CARD-D01-FOLLOWUP",
             "narrative_meter": None,
             "model_calls": [],
+            "meter_error": None,
         }
     ]
     assert seen == ["/v1/cases"]

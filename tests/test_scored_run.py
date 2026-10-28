@@ -1,12 +1,13 @@
 """The scored run: its pure helpers, and whole runs against the supplied mock.
 
-The helper tests cover the nearest-rank p95, failed-check extraction, exception
-mapping, meter row shape and report assembly, including a not-built case that
-must be reported with its reason and submitted=false. The run tests start the
-supplied mock in process on a free port with a temporary state, so they never
-touch a developer's mock or the committed reports. They cover a full dev run,
-a failing case, a run where every case passes, an unreadable case list, the
-command-line defaults and the script entry point.
+The helper tests cover failed-check extraction, exception mapping, meter row
+shape and report assembly, including a not-built case that must be reported
+with its reason and submitted=false. The run tests start the supplied mock in
+process on a free port with a temporary state, so they never touch a
+developer's mock or the committed reports. They cover a full dev run, a failing
+case, a run where every case passes, a zero-case run, an unreadable case list,
+the command-line defaults and the script entry point. The full dev run reads
+its p50 and p95 back out of the meter file the run wrote.
 """
 
 import json
@@ -20,6 +21,7 @@ from pathlib import Path
 import pytest
 
 from src.load_records import CaseListError
+from src.meters import latency_percentiles
 from tools.runtime import create_server
 from tools.scored_run import (
     DETERMINISTIC_PATH,
@@ -31,7 +33,6 @@ from tools.scored_run import (
     main,
     measure_cases,
     meter_rows,
-    p95_nearest_rank,
     proposed_exception,
     render_markdown,
     run_scored,
@@ -44,27 +45,6 @@ _FAILING = {5, 6, 7, 9, 10}
 ROOT = Path(__file__).resolve().parents[1]
 DEV = ROOT / "data" / "dev"
 GOLD = ROOT / "feedback" / "dev_gold.json"
-
-
-@pytest.mark.parametrize(
-    ("durations", "expected"),
-    [
-        ([], None),
-        ([7.5], 7.5),
-        ([1.0, 5.0], 5.0),
-        ([5.0, 1.0], 5.0),
-        ([3.0, 1.0, 2.0], 3.0),
-        ([float(value) for value in range(1, 13)], 12.0),
-        ([float(value) for value in range(1, 21)], 19.0),
-        ([2.0, 2.0, 2.0], 2.0),
-    ],
-)
-def test_p95_is_nearest_rank_over_the_measured_durations(durations, expected):
-    assert p95_nearest_rank(durations) == expected
-
-
-def test_p95_over_twelve_cases_is_the_slowest_case():
-    assert p95_nearest_rank([10.0] * 11 + [99.0]) == 99.0
 
 
 def test_failed_checks_are_the_sorted_false_names():
@@ -189,6 +169,7 @@ def test_a_not_built_case_is_reported_with_its_reason_and_submitted_false():
             "error": (
                 "the case names evidence this step cannot read: CARD-D05-FOLLOWUP"
             ),
+            "meter_error": None,
         }
     ]
 
@@ -238,7 +219,7 @@ def test_a_case_the_evaluator_never_mentions_is_not_a_pass():
     assert report["failed_checks"] == ["missing_from_evaluation"]
 
 
-def test_assemble_report_carries_counts_p95_and_measured_zero_cost():
+def test_assemble_report_carries_counts_and_the_supplied_percentiles():
     reports = [
         _case("CARD-D01", passed=True, duration=1.0),
         _case(
@@ -259,12 +240,14 @@ def test_assemble_report_carries_counts_p95_and_measured_zero_cost():
         git_dirty=True,
         base_url="http://127.0.0.1:8899",
         dataset_name="card-disputes-dev",
+        latencies={"p50": 2, "p95": 5},
     )
 
     assert report["pass_count"] == 1
     assert report["total_cases"] == 2
     assert report["format_errors"] == []
-    assert report["p95_latency_ms"] == 3.0
+    assert report["p50_latency_ms"] == 2
+    assert report["p95_latency_ms"] == 5
     assert report["cost_per_case_usd"] == 0.0
     assert report["total_cost_usd"] == 0.0
     assert report["cases"] == reports
@@ -316,9 +299,11 @@ def test_markdown_marks_the_exceptions_as_proposed_not_agreed():
     assert "not agreed scope" in lowered
 
 
-def test_markdown_reports_p95_and_cost_from_the_meter_file():
+def test_markdown_reports_both_percentiles_from_the_meter_file():
     markdown = render_markdown(_twelve_case_report(), meter_rows(_twelve_cases()))
-    assert "p95 draft latency" in markdown
+    assert "- p50 draft latency: 6.000 ms" in markdown
+    assert "- p95 draft latency: 12.000 ms" in markdown
+    assert "reports/meters.jsonl" in markdown
     assert "Cost per case: 0.00 USD" in markdown
     assert "reports/scored-run-meters.json" in markdown
 
@@ -335,7 +320,8 @@ def test_markdown_contains_the_exact_reproduction_commands():
     ) in markdown
     assert (
         "uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765 "
-        "--data data/dev --gold feedback/dev_gold.json\n"
+        "--data data/dev --gold feedback/dev_gold.json "
+        "--case-meters reports/meters.jsonl\n"
     ) in markdown
 
 
@@ -344,6 +330,45 @@ def test_the_reproduction_commands_run_the_same_on_any_operating_system():
     commands = markdown.split("## Reproduce", 1)[1]
     for unportable in ("Scripts", ".exe", "../", "rm -f", " &\n", "\\\n"):
         assert unportable not in commands
+
+
+def test_the_markdown_names_the_meter_file_the_run_actually_wrote(tmp_path, monkeypatch):
+    paths = _outputs(tmp_path)
+    elsewhere = tmp_path / "case-meters" / "elsewhere.jsonl"
+    paths["case_meter_path"] = elsewhere
+    monkeypatch.setattr("tools.scored_run.contract_case_plans", lambda base, data: [])
+
+    status = run_scored(
+        base_url="http://127.0.0.1:8765", data_dir=DEV, gold_path=GOLD, **_run(paths)
+    )
+
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert status == 1
+    assert f"--case-meters {elsewhere}" in markdown
+    assert str(elsewhere) in markdown
+    assert "reports/meters.jsonl" not in markdown
+
+
+@pytest.mark.parametrize("pass_meter_path", [True, False])
+def test_the_default_meter_file_is_named_relative_to_the_repository(
+    tmp_path, monkeypatch, pass_meter_path
+):
+    paths = _outputs(tmp_path)
+    out = tmp_path / "out"
+    monkeypatch.setattr("tools.scored_run.ROOT", out)
+    monkeypatch.setattr("tools.scored_run.contract_case_plans", lambda base, data: [])
+    kwargs = _run(paths)
+    if not pass_meter_path:
+        del kwargs["case_meter_path"]
+
+    status = run_scored(
+        base_url="http://127.0.0.1:8765", data_dir=DEV, gold_path=GOLD, **kwargs
+    )
+
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert status == 1
+    assert "--case-meters reports/meters.jsonl" in markdown
+    assert str(out / "reports" / "meters.jsonl") not in markdown
 
 
 def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
@@ -358,6 +383,7 @@ def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
         "report_path": tmp_path / "reports" / "scored-run.json",
         "meters_path": tmp_path / "reports" / "scored-run-meters.json",
         "markdown_path": tmp_path / "reports" / "scored-run.md",
+        "case_meter_path": tmp_path / "reports" / "meters.jsonl",
     }
     paths["report_path"].parent.mkdir()
     for name in ("report_path", "meters_path", "markdown_path"):
@@ -383,6 +409,36 @@ def test_an_unreadable_case_list_writes_nothing_and_keeps_the_last_report(
     assert "Nothing was written" in captured.err
 
 
+def test_a_restricted_value_in_the_meter_file_fails_the_run_and_names_it(
+    tmp_path, monkeypatch, capsys
+):
+    paths = _outputs(tmp_path)
+    paths["case_meter_path"].parent.mkdir(parents=True)
+    paths["case_meter_path"].write_text(
+        json.dumps(
+            {"case_id": "CARD-D01", "route": "4111-1111-1111-1111", "latency_ms": 5}
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("tools.scored_run.contract_case_plans", lambda base, data: [])
+    monkeypatch.setattr(
+        "tools.scored_run.measure_cases",
+        lambda plans, base, data, *, build=None, meter_path=None: [],
+    )
+
+    status = run_scored(
+        base_url="http://127.0.0.1:8765", data_dir=DEV, gold_path=GOLD, **_run(paths)
+    )
+
+    assert status == 1
+    assert not paths["report_path"].exists()
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert str(paths["case_meter_path"]) in captured.err
+    assert "CARD-D01" in captured.err
+
+
 def test_a_full_dev_run_against_the_mock_writes_four_artifacts_that_agree(
     tmp_path, capsys
 ):
@@ -392,6 +448,10 @@ def test_a_full_dev_run_against_the_mock_writes_four_artifacts_that_agree(
         status = run_scored(base_url=base_url, data_dir=DEV, gold_path=GOLD, **_run(paths))
 
     report, meters, submission = _written(paths)
+    latencies = latency_percentiles(paths["case_meter_path"])
+    assert len(paths["case_meter_path"].read_text(encoding="utf-8").splitlines()) == 12
+    assert report["p50_latency_ms"] == latencies["p50"]
+    assert report["p95_latency_ms"] == latencies["p95"]
     assert status == (0 if run_succeeded(report) else 1)
     assert report["total_cases"] == len(meters) == 12
     assert report["format_errors"] == []
@@ -401,12 +461,13 @@ def test_a_full_dev_run_against_the_mock_writes_four_artifacts_that_agree(
         case["case_id"] for case in report["cases"] if case["submitted"]
     ]
     assert paths["markdown_path"].read_text(encoding="utf-8") == render_markdown(
-        report, meters
+        report, meters, meter_path=str(paths["case_meter_path"])
     )
     printed = capsys.readouterr().out.splitlines()
     assert printed[0].startswith(
-        f"{report['pass_count']} / 12 cases passed; 0 format errors; p95 "
+        f"{report['pass_count']} / 12 cases passed; 0 format errors; p50 "
     )
+    assert f"p95 {report['p95_latency_ms']:.3f} ms" in printed[0]
     failing = [case["case_id"] for case in report["cases"] if not case["passed"]]
     assert [line.split(":")[0].strip() for line in printed[1:]] == failing
 
@@ -457,6 +518,30 @@ def test_a_run_where_every_case_passes_exits_0(tmp_path, capsys):
     assert capsys.readouterr().out.splitlines()[1:] == []
 
 
+def test_a_zero_case_run_reports_no_latency_and_exits_1(tmp_path, capsys):
+    data_dir, gold_path = _case_set(tmp_path, [])
+    paths = _outputs(tmp_path)
+
+    with _mock(data_dir, tmp_path) as base_url:
+        status = run_scored(
+            base_url=base_url, data_dir=data_dir, gold_path=gold_path, **_run(paths)
+        )
+
+    report, _meters, submission = _written(paths)
+    assert status == 1
+    assert report["total_cases"] == 0
+    assert report["p50_latency_ms"] is None
+    assert report["p95_latency_ms"] is None
+    assert submission == []
+    assert paths["case_meter_path"].read_text(encoding="utf-8") == ""
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert "- p50 draft latency: -" in markdown
+    assert "- p95 draft latency: -" in markdown
+    assert capsys.readouterr().out.splitlines()[0] == (
+        "0 / 0 cases passed; 0 format errors; p50 -; p95 -; cost per case 0.00 USD"
+    )
+
+
 def test_the_script_runs_from_another_directory_without_the_repository_on_sys_path(
     tmp_path, monkeypatch
 ):
@@ -476,6 +561,7 @@ def test_the_script_runs_from_another_directory_without_the_repository_on_sys_pa
                 *("--report", str(paths["report_path"])),
                 *("--meters", str(paths["meters_path"])),
                 *("--markdown", str(paths["markdown_path"])),
+                *("--case-meters", str(paths["case_meter_path"])),
             ],
         )
         with pytest.raises(SystemExit) as exited:
@@ -539,6 +625,7 @@ def _outputs(tmp_path):
         "report_path": tmp_path / "out" / "reports" / "scored-run.json",
         "meters_path": tmp_path / "out" / "reports" / "scored-run-meters.json",
         "markdown_path": tmp_path / "out" / "reports" / "scored-run.md",
+        "case_meter_path": tmp_path / "out" / "reports" / "meters.jsonl",
     }
 
 
@@ -607,6 +694,10 @@ def _twelve_cases():
     return cases
 
 
+def _twelve_latencies():
+    return {"p50": 6, "p95": 12}
+
+
 def _twelve_case_report():
     return assemble_report(
         _twelve_cases(),
@@ -616,6 +707,7 @@ def _twelve_case_report():
         git_dirty=True,
         base_url="http://127.0.0.1:8899",
         dataset_name="card-disputes-dev",
+        latencies=_twelve_latencies(),
     )
 
 
@@ -653,6 +745,7 @@ def test_report_cost_is_read_from_the_supplied_meter_rows():
         git_dirty=False,
         base_url="http://127.0.0.1:8899",
         dataset_name="card-disputes-dev",
+        latencies={"p50": 1, "p95": 2},
         meters=meters,
     )
 
@@ -667,6 +760,7 @@ def test_the_git_commit_note_tracks_the_dirty_flag():
         "git_commit": "abc123",
         "base_url": "http://127.0.0.1:8899",
         "dataset_name": "card-disputes-dev",
+        "latencies": {"p50": 1, "p95": 2},
     }
 
     clean = assemble_report([_case("CARD-D01")], git_dirty=False, **common)
@@ -693,9 +787,46 @@ def test_measure_cases_times_the_injected_builder(tmp_path):
             "duration_ms": measured[0]["duration_ms"],
             "contract": None,
             "error": "stop",
+            "meter_error": None,
         }
     ]
     assert measured[0]["duration_ms"] >= 0.0
+
+
+def test_a_refused_meter_line_is_named_in_the_report(tmp_path):
+    plans = [{"record": {"case_id": "CARD-D01"}, "documents": []}]
+
+    def build(plan):
+        return {
+            "case_id": "CARD-D01",
+            "contract": None,
+            "error": None,
+            "meter_error": "MeterLeak",
+        }
+
+    measured = measure_cases(plans, "http://127.0.0.1:8899", tmp_path, build=build)
+    reports = build_case_reports(
+        measured,
+        _evaluation(
+            [{"case_id": "CARD-D01", "passed": False, "checks": {"submitted": False}}]
+        ),
+    )
+    report = assemble_report(
+        reports,
+        _evaluation([]),
+        generated_at="2026-10-27T00:00:00Z",
+        git_commit="abc123",
+        git_dirty=False,
+        base_url="http://127.0.0.1:8899",
+        dataset_name="card-disputes-dev",
+        latencies={"p50": None, "p95": None},
+        meters=meter_rows(reports),
+    )
+
+    assert report["cases"][0]["meter_error"] == "MeterLeak"
+    markdown = render_markdown(report, meter_rows(reports))
+    assert "CARD-D01" in markdown
+    assert "MeterLeak" in markdown
 
 
 def test_the_committed_report_matches_its_meters_and_markdown():
@@ -705,9 +836,13 @@ def test_the_committed_report_matches_its_meters_and_markdown():
 
     assert report["total_cases"] == len(meters) == 12
     assert report["pass_count"] == sum(1 for case in report["cases"] if case["passed"])
-    assert report["p95_latency_ms"] == p95_nearest_rank(
-        [row["duration_ms"] for row in meters]
-    )
+    committed_meters = ROOT / "reports" / "meters.jsonl"
+    latencies = latency_percentiles(committed_meters)
+    assert isinstance(latencies["p50"], int)
+    assert isinstance(latencies["p95"], int)
+    assert report["p50_latency_ms"] == latencies["p50"]
+    assert report["p95_latency_ms"] == latencies["p95"]
+    assert report["p50_latency_ms"] <= report["p95_latency_ms"]
     assert report["total_cost_usd"] == round(
         sum(row["cost_usd"] for row in meters), 6
     )
