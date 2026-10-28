@@ -1,12 +1,12 @@
 {
   "suite": "stress",
-  "commit": "a65379c",
-  "started_at": "2026-10-28T17:44:29+00:00",
+  "commit": "cb51c79",
+  "started_at": "2026-10-28T18:46:52+00:00",
   "data_dir": "evals/fixtures/stress/data",
   "gold_path": "evals/fixtures/stress/gold.json",
   "cases": {
     "total": 16,
-    "passed": 6
+    "passed": 16
   },
   "format_errors": [],
   "metrics": [
@@ -19,14 +19,14 @@
     {
       "metric": "conformance.classification",
       "n": 16,
-      "passed": 7,
-      "rate": 0.4375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.routing",
       "n": 16,
-      "passed": 11,
-      "rate": 0.6875
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.policy_selection",
@@ -49,8 +49,8 @@
     {
       "metric": "conformance.deadline",
       "n": 16,
-      "passed": 11,
-      "rate": 0.6875
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.citations_valid",
@@ -91,8 +91,8 @@
     {
       "metric": "grounding.claim_sources",
       "n": 16,
-      "passed": 15,
-      "rate": 0.9375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "tools.required_reads",
@@ -121,14 +121,14 @@
     {
       "metric": "escalation.route_correct",
       "n": 16,
-      "passed": 11,
-      "rate": 0.6875
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "escalation.class_correct",
       "n": 16,
-      "passed": 7,
-      "rate": 0.4375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "pii.restricted_values",
@@ -147,20 +147,13 @@
   "escalation": {
     "normal": {
       "total": 5,
-      "passed": 1
+      "passed": 5
     },
     "escalations": {
       "total": 8,
-      "passed": 7,
-      "missed": [
-        "STR-P15"
-      ],
-      "false": [
-        "STR-P03",
-        "STR-P05",
-        "STR-P06",
-        "STR-P14"
-      ]
+      "passed": 8,
+      "missed": [],
+      "false": []
     },
     "request_information": {
       "total": 3,
@@ -201,64 +194,13 @@
     },
     {
       "case_id": "STR-P03",
-      "passed": false,
+      "passed": true,
       "build_error": null,
-      "routing": "manual_review",
+      "routing": "ready_for_review",
       "expected_routing": [
         "ready_for_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P03 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P03 fails the supplied evaluator sub-check routing",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P03 fails the supplied evaluator sub-check deadline",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
-          "evidence": {
-            "got": "manual_review",
-            "expected": [
-              "ready_for_review"
-            ]
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'ambiguous' is not one of ['duplicate_charge']",
-          "evidence": {
-            "got": "ambiguous",
-            "expected": [
-              "duplicate_charge"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P04",
@@ -272,249 +214,63 @@
     },
     {
       "case_id": "STR-P05",
-      "passed": false,
+      "passed": true,
       "build_error": null,
-      "routing": "manual_review",
+      "routing": "ready_for_review",
       "expected_routing": [
         "ready_for_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P05 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P05 fails the supplied evaluator sub-check routing",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P05 fails the supplied evaluator sub-check deadline",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
-          "evidence": {
-            "got": "manual_review",
-            "expected": [
-              "ready_for_review"
-            ]
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
-          "evidence": {
-            "got": "ambiguous",
-            "expected": [
-              "service_not_received"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P06",
-      "passed": false,
+      "passed": true,
       "build_error": null,
-      "routing": "manual_review",
+      "routing": "ready_for_review",
       "expected_routing": [
         "ready_for_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P06 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P06 fails the supplied evaluator sub-check routing",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P06 fails the supplied evaluator sub-check deadline",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
-          "evidence": {
-            "got": "manual_review",
-            "expected": [
-              "ready_for_review"
-            ]
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
-          "evidence": {
-            "got": "ambiguous",
-            "expected": [
-              "service_not_received"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P07",
-      "passed": false,
+      "passed": true,
       "build_error": null,
       "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P07 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'ambiguous' is not one of ['unsupported']",
-          "evidence": {
-            "got": "ambiguous",
-            "expected": [
-              "unsupported"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P08",
-      "passed": false,
+      "passed": true,
       "build_error": null,
       "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P08 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'ambiguous' is not one of ['unsupported']",
-          "evidence": {
-            "got": "ambiguous",
-            "expected": [
-              "unsupported"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P09",
-      "passed": false,
+      "passed": true,
       "build_error": null,
       "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P09 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'ambiguous' is not one of ['unsupported']",
-          "evidence": {
-            "got": "ambiguous",
-            "expected": [
-              "unsupported"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P10",
-      "passed": false,
+      "passed": true,
       "build_error": null,
       "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P10 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'ambiguous' is not one of ['unsupported']",
-          "evidence": {
-            "got": "ambiguous",
-            "expected": [
-              "unsupported"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P11",
@@ -538,152 +294,33 @@
     },
     {
       "case_id": "STR-P13",
-      "passed": false,
+      "passed": true,
       "build_error": null,
       "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "missing claim citations: manual_review_rule",
-          "evidence": {
-            "claims": [
-              "customer_evidence",
-              "instruction_text",
-              "policy_selection",
-              "routing",
-              "transaction_record"
-            ],
-            "missing": [
-              "manual_review_rule"
-            ]
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P14",
-      "passed": false,
-      "build_error": null,
-      "routing": "manual_review",
-      "expected_routing": [
-        "ready_for_review"
-      ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P14 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P14 fails the supplied evaluator sub-check routing",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P14 fails the supplied evaluator sub-check deadline",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
-          "evidence": {
-            "got": "manual_review",
-            "expected": [
-              "ready_for_review"
-            ]
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
-          "evidence": {
-            "got": "ambiguous",
-            "expected": [
-              "service_not_received"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "case_id": "STR-P15",
-      "passed": false,
+      "passed": true,
       "build_error": null,
       "routing": "ready_for_review",
       "expected_routing": [
+        "ready_for_review"
+      ],
+      "failures": []
+    },
+    {
+      "case_id": "STR-P15",
+      "passed": true,
+      "build_error": null,
+      "routing": "manual_review",
+      "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P15 fails the supplied evaluator sub-check classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P15 fails the supplied evaluator sub-check routing",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P15 fails the supplied evaluator sub-check deadline",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": true,
-            "build_error": null
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing 'ready_for_review' is not one of ['manual_review']",
-          "evidence": {
-            "got": "ready_for_review",
-            "expected": [
-              "manual_review"
-            ]
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification 'duplicate_charge' is not one of ['ambiguous']",
-          "evidence": {
-            "got": "duplicate_charge",
-            "expected": [
-              "ambiguous"
-            ]
-          }
-        }
-      ]
+      "failures": []
     }
   ],
   "checks": [
@@ -1134,11 +771,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1146,11 +783,11 @@
     {
       "metric": "conformance.routing",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 fails the supplied evaluator sub-check routing",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1194,11 +831,11 @@
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 fails the supplied evaluator sub-check deadline",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1422,11 +1059,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1434,11 +1071,11 @@
     {
       "metric": "conformance.routing",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 fails the supplied evaluator sub-check routing",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1482,11 +1119,11 @@
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 fails the supplied evaluator sub-check deadline",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1566,11 +1203,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1578,11 +1215,11 @@
     {
       "metric": "conformance.routing",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 fails the supplied evaluator sub-check routing",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1626,11 +1263,11 @@
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 fails the supplied evaluator sub-check deadline",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1710,11 +1347,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1854,11 +1491,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -1998,11 +1635,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -2142,11 +1779,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -2718,11 +2355,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -2730,11 +2367,11 @@
     {
       "metric": "conformance.routing",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 fails the supplied evaluator sub-check routing",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -2778,11 +2415,11 @@
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 fails the supplied evaluator sub-check deadline",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -2862,11 +2499,11 @@
     {
       "metric": "conformance.classification",
       "case_id": "STR-P15",
-      "passed": false,
-      "reason": "STR-P15 fails the supplied evaluator sub-check classification",
+      "passed": true,
+      "reason": "STR-P15 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -2874,11 +2511,11 @@
     {
       "metric": "conformance.routing",
       "case_id": "STR-P15",
-      "passed": false,
-      "reason": "STR-P15 fails the supplied evaluator sub-check routing",
+      "passed": true,
+      "reason": "STR-P15 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -2922,11 +2559,11 @@
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P15",
-      "passed": false,
-      "reason": "STR-P15 fails the supplied evaluator sub-check deadline",
+      "passed": true,
+      "reason": "STR-P15 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
+        "value": true,
         "reported": true,
         "build_error": null
       }
@@ -3086,10 +2723,11 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
+          "classification",
           "customer_evidence",
-          "policy_selection",
+          "deadline",
           "routing",
-          "supported_classifications",
+          "second_charge",
           "transaction_record"
         ],
         "missing": []
@@ -3126,9 +2764,9 @@
       "metric": "grounding.citation_exact",
       "case_id": "STR-P05",
       "passed": true,
-      "reason": "all 7 citations quote their source exactly",
+      "reason": "all 6 citations quote their source exactly",
       "evidence": {
-        "citations": 7,
+        "citations": 6,
         "invalid": []
       }
     },
@@ -3139,10 +2777,10 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
+          "classification",
           "customer_evidence",
-          "policy_selection",
+          "deadline",
           "routing",
-          "supported_classifications",
           "transaction_record"
         ],
         "missing": []
@@ -3152,9 +2790,9 @@
       "metric": "grounding.citation_exact",
       "case_id": "STR-P06",
       "passed": true,
-      "reason": "all 7 citations quote their source exactly",
+      "reason": "all 6 citations quote their source exactly",
       "evidence": {
-        "citations": 7,
+        "citations": 6,
         "invalid": []
       }
     },
@@ -3165,10 +2803,10 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
+          "classification",
           "customer_evidence",
-          "policy_selection",
+          "deadline",
           "routing",
-          "supported_classifications",
           "transaction_record"
         ],
         "missing": []
@@ -3178,9 +2816,9 @@
       "metric": "grounding.citation_exact",
       "case_id": "STR-P07",
       "passed": true,
-      "reason": "all 7 citations quote their source exactly",
+      "reason": "all 8 citations quote their source exactly",
       "evidence": {
-        "citations": 7,
+        "citations": 8,
         "invalid": []
       }
     },
@@ -3191,11 +2829,12 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
+          "cash_withdrawal",
           "customer_evidence",
           "policy_selection",
           "routing",
-          "supported_classifications",
-          "transaction_record"
+          "transaction_record",
+          "unsupported_rule"
         ],
         "missing": []
       }
@@ -3204,9 +2843,9 @@
       "metric": "grounding.citation_exact",
       "case_id": "STR-P08",
       "passed": true,
-      "reason": "all 7 citations quote their source exactly",
+      "reason": "all 8 citations quote their source exactly",
       "evidence": {
-        "citations": 7,
+        "citations": 8,
         "invalid": []
       }
     },
@@ -3217,11 +2856,12 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
+          "cash_withdrawal",
           "customer_evidence",
           "policy_selection",
           "routing",
-          "supported_classifications",
-          "transaction_record"
+          "transaction_record",
+          "unsupported_rule"
         ],
         "missing": []
       }
@@ -3334,50 +2974,23 @@
       "metric": "grounding.citation_exact",
       "case_id": "STR-P13",
       "passed": true,
-      "reason": "all 7 citations quote their source exactly",
+      "reason": "all 8 citations quote their source exactly",
       "evidence": {
-        "citations": 7,
+        "citations": 8,
         "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P13",
-      "passed": false,
-      "reason": "missing claim citations: manual_review_rule",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
         "claims": [
           "customer_evidence",
           "instruction_text",
           "policy_selection",
           "routing",
-          "transaction_record"
-        ],
-        "missing": [
-          "manual_review_rule"
-        ]
-      }
-    },
-    {
-      "metric": "grounding.citation_exact",
-      "case_id": "STR-P14",
-      "passed": true,
-      "reason": "all 7 citations quote their source exactly",
-      "evidence": {
-        "citations": 7,
-        "invalid": []
-      }
-    },
-    {
-      "metric": "grounding.claim_sources",
-      "case_id": "STR-P14",
-      "passed": true,
-      "reason": "every required claim is cited",
-      "evidence": {
-        "claims": [
-          "customer_evidence",
-          "policy_selection",
-          "routing",
           "supported_classifications",
           "transaction_record"
         ],
@@ -3386,11 +2999,37 @@
     },
     {
       "metric": "grounding.citation_exact",
+      "case_id": "STR-P14",
+      "passed": true,
+      "reason": "all 6 citations quote their source exactly",
+      "evidence": {
+        "citations": 6,
+        "invalid": []
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "STR-P14",
+      "passed": true,
+      "reason": "every required claim is cited",
+      "evidence": {
+        "claims": [
+          "classification",
+          "customer_evidence",
+          "deadline",
+          "routing",
+          "transaction_record"
+        ],
+        "missing": []
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
       "case_id": "STR-P15",
       "passed": true,
-      "reason": "all 7 citations quote their source exactly",
+      "reason": "all 8 citations quote their source exactly",
       "evidence": {
-        "citations": 7,
+        "citations": 8,
         "invalid": []
       }
     },
@@ -3401,11 +3040,10 @@
       "reason": "every required claim is cited",
       "evidence": {
         "claims": [
-          "classification",
+          "competing_classification",
           "customer_evidence",
-          "deadline",
+          "policy_selection",
           "routing",
-          "second_charge",
           "transaction_record"
         ],
         "missing": []
@@ -4750,10 +4388,10 @@
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
+      "passed": true,
+      "reason": "routing 'ready_for_review' is allowed",
       "evidence": {
-        "got": "manual_review",
+        "got": "ready_for_review",
         "expected": [
           "ready_for_review"
         ]
@@ -4762,10 +4400,10 @@
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "classification 'ambiguous' is not one of ['duplicate_charge']",
+      "passed": true,
+      "reason": "classification 'duplicate_charge' is allowed",
       "evidence": {
-        "got": "ambiguous",
+        "got": "duplicate_charge",
         "expected": [
           "duplicate_charge"
         ]
@@ -4798,10 +4436,10 @@
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
+      "passed": true,
+      "reason": "routing 'ready_for_review' is allowed",
       "evidence": {
-        "got": "manual_review",
+        "got": "ready_for_review",
         "expected": [
           "ready_for_review"
         ]
@@ -4810,10 +4448,10 @@
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
+      "passed": true,
+      "reason": "classification 'service_not_received' is allowed",
       "evidence": {
-        "got": "ambiguous",
+        "got": "service_not_received",
         "expected": [
           "service_not_received"
         ]
@@ -4822,227 +4460,227 @@
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "ready_for_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P06",
-      "passed": false,
-      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "service_not_received"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P07",
       "passed": true,
-      "reason": "routing 'manual_review' is allowed",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "manual_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P07",
-      "passed": false,
-      "reason": "classification 'ambiguous' is not one of ['unsupported']",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "unsupported"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P08",
-      "passed": true,
-      "reason": "routing 'manual_review' is allowed",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "manual_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P08",
-      "passed": false,
-      "reason": "classification 'ambiguous' is not one of ['unsupported']",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "unsupported"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P09",
-      "passed": true,
-      "reason": "routing 'manual_review' is allowed",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "manual_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P09",
-      "passed": false,
-      "reason": "classification 'ambiguous' is not one of ['unsupported']",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "unsupported"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P10",
-      "passed": true,
-      "reason": "routing 'manual_review' is allowed",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "manual_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P10",
-      "passed": false,
-      "reason": "classification 'ambiguous' is not one of ['unsupported']",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "unsupported"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P11",
-      "passed": true,
-      "reason": "routing 'manual_review' is allowed",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "manual_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P11",
-      "passed": true,
-      "reason": "classification 'ambiguous' is allowed",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "ambiguous"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P12",
-      "passed": true,
-      "reason": "routing 'manual_review' is allowed",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "manual_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P12",
-      "passed": true,
-      "reason": "classification 'ambiguous' is allowed",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "ambiguous"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P13",
-      "passed": true,
-      "reason": "routing 'manual_review' is allowed",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "manual_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P13",
-      "passed": true,
-      "reason": "classification 'ambiguous' is allowed",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "ambiguous"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P14",
-      "passed": false,
-      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
-      "evidence": {
-        "got": "manual_review",
-        "expected": [
-          "ready_for_review"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.class_correct",
-      "case_id": "STR-P14",
-      "passed": false,
-      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
-      "evidence": {
-        "got": "ambiguous",
-        "expected": [
-          "service_not_received"
-        ]
-      }
-    },
-    {
-      "metric": "escalation.route_correct",
-      "case_id": "STR-P15",
-      "passed": false,
-      "reason": "routing 'ready_for_review' is not one of ['manual_review']",
+      "reason": "routing 'ready_for_review' is allowed",
       "evidence": {
         "got": "ready_for_review",
         "expected": [
+          "ready_for_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P06",
+      "passed": true,
+      "reason": "classification 'service_not_received' is allowed",
+      "evidence": {
+        "got": "service_not_received",
+        "expected": [
+          "service_not_received"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P07",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
+          "manual_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P07",
+      "passed": true,
+      "reason": "classification 'unsupported' is allowed",
+      "evidence": {
+        "got": "unsupported",
+        "expected": [
+          "unsupported"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P08",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
+          "manual_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P08",
+      "passed": true,
+      "reason": "classification 'unsupported' is allowed",
+      "evidence": {
+        "got": "unsupported",
+        "expected": [
+          "unsupported"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P09",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
+          "manual_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P09",
+      "passed": true,
+      "reason": "classification 'unsupported' is allowed",
+      "evidence": {
+        "got": "unsupported",
+        "expected": [
+          "unsupported"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P10",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
+          "manual_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P10",
+      "passed": true,
+      "reason": "classification 'unsupported' is allowed",
+      "evidence": {
+        "got": "unsupported",
+        "expected": [
+          "unsupported"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P11",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
+          "manual_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P11",
+      "passed": true,
+      "reason": "classification 'ambiguous' is allowed",
+      "evidence": {
+        "got": "ambiguous",
+        "expected": [
+          "ambiguous"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P12",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
+          "manual_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P12",
+      "passed": true,
+      "reason": "classification 'ambiguous' is allowed",
+      "evidence": {
+        "got": "ambiguous",
+        "expected": [
+          "ambiguous"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P13",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
+          "manual_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P13",
+      "passed": true,
+      "reason": "classification 'ambiguous' is allowed",
+      "evidence": {
+        "got": "ambiguous",
+        "expected": [
+          "ambiguous"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P14",
+      "passed": true,
+      "reason": "routing 'ready_for_review' is allowed",
+      "evidence": {
+        "got": "ready_for_review",
+        "expected": [
+          "ready_for_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "STR-P14",
+      "passed": true,
+      "reason": "classification 'service_not_received' is allowed",
+      "evidence": {
+        "got": "service_not_received",
+        "expected": [
+          "service_not_received"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "STR-P15",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
           "manual_review"
         ]
       }
@@ -5050,10 +4688,10 @@
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P15",
-      "passed": false,
-      "reason": "classification 'duplicate_charge' is not one of ['ambiguous']",
+      "passed": true,
+      "reason": "classification 'ambiguous' is allowed",
       "evidence": {
-        "got": "duplicate_charge",
+        "got": "ambiguous",
         "expected": [
           "ambiguous"
         ]

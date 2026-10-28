@@ -110,40 +110,28 @@ Three limits of this evidence matter:
 
 Run on 2026-10-28 UTC with `tools/hybrid_eval.py`, this repository's code with the tool reads retried (COF-40), CARD-D09's statement read from before the form fields (COF-43), a withdrawn complaint or a taken-back denial read as the customer meant it (COF-39), and a complaint no rule can type or a merchant outage drafted instead of dropped (COF-39), and the unmodified mock and bank evaluator. GPT-6 Luna's recorded answers were replayed from `evals/recordings/gpt-6-luna.jsonl`.
 
-Eleven of the 52 questions had no recording, because the copilot's run never asked them, and each counted as no answer:
+Nine of the 36 questions had no recording, because the copilot's run never asked them, and each counted as no answer. The rules now type most complaints before a model is asked (COF-39), so far fewer questions reach the model than in earlier runs.
 
-- 3 dispute-type questions: `SYN-S03`, `HLD-H07` and `HLD-H08`
-- 8 two-problem questions: `CARD-D08`, `CARD-D10`, `SYN-S14`, `SYN-S17`, `SYN-S18`, `SYN-S24`, `SYN-S25` and `HLD-H01`
 
-`CARD-D10` and `SYN-S14` are asked now because the tool reads retry: in the recorded runs a tool fault stopped both cases before any question. `CARD-D09` is asked now because it is built, and its question had a recording. `HLD-H01` is asked now because its taken-back denial no longer escalates; `SYN-S20` is no longer asked because its withdrawal escalates first. `SYN-S18` is asked now because a merchant outage no longer stops the case.
+`CARD-D10` and `SYN-S14` are asked because the tool reads retry: in the recorded runs a tool fault stopped both cases before any question. The replay report lists every call.
 
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
 | dev (12) | 12 | 12 | 0 → 0 | 7 | 705 / 174 |
-| synth (31) | 21 | 25 | 2 → 2 | 23 | 3,528 / 572 |
-| stress (16) | 7 | 16 | 1 → 0 | 16 | 5,585 / 647 |
-| holdout (8) | 5 | 6 | 0 → 0 | 6 | 747 / 133 |
-| Total (67) | 45 | 59 | 3 → 2 | 52 | 10,565 / 1,526 |
+| synth (31) | 30 | 30 | 0 → 0 | 17 | 1,604 / 433 |
+| stress (16) | 16 | 16 | 0 → 0 | 7 | 1,600 / 336 |
+| holdout (8) | 8 | 8 | 0 → 0 | 5 | 264 / 95 |
+| Total (67) | 66 | 66 | 0 → 0 | 36 | 4,173 / 1,038 |
 
-The two wrong ready drafts left in synth need rule changes outside this record:
+No draft is wrongly marked ready, by the rules or the hybrid. Every case is built. The one case that fails, `SYN-S26`, is an instruction in the complaint text that names a type; the case goes to a person where the gold expects the denied form to decide it, which is the team's choice for instruction text.
 
-- `SYN-S17`: the named transaction is missing from the tool response.
-- `SYN-S24`: a service complaint whose form denies authorization.
-
-None of their two-problem questions had a recording, so this run does not show how the model would have answered them.
-
-The hybrid does not build 3 cases, all for reasons outside this record:
-
-- 2 have no policy version for their reported date (`SYN-S11`, `SYN-S13`).
-- 1 has an attachment without exactly one Amount line (`HLD-H05`).
-
-The gap cases with no recorded answer (`SYN-S03`, `HLD-H07` and `HLD-H08`) are drafted for manual review as `ambiguous`, as they are with no model, and `HLD-H07` passes that way. A merchant outage (`SYN-S18`) is drafted with its usual routing and a note that the merchant record was not read (COF-39).
+The rules now pass as many cases as the hybrid: COF-39 reads more wording as its type and drafts every case instead of dropping it. These suites informed those rules, so this table is a regression score; only the assessor's hidden set measures unseen wording.
 
 ## Rejected alternatives
 
 ### Add more phrasings to the rules
 
-Every new paraphrase needs a code change, and hidden cases change the wording by design. The rules alone pass 45 of 67, and each pattern added for one case risks a false match on another, such as "I called twice".
+Every new paraphrase needs a code change, and hidden cases change the wording by design. The rules alone pass 66 of 67 after COF-39 added general phrasings, and each pattern added for one case risks a false match on another, such as "I called twice".
 
 ### Let the model classify every case and route it
 

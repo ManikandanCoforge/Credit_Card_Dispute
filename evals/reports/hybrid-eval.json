@@ -35,63 +35,19 @@
     {
       "suite": "synth",
       "rules": {
-        "passed": 21,
+        "passed": 30,
         "total": 31,
         "failed": {
-          "SYN-S03": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "SYN-S04": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "SYN-S05": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "SYN-S07": [
-            "classification"
-          ],
-          "SYN-S11": [
-            "submitted"
-          ],
-          "SYN-S13": [
-            "submitted"
-          ],
-          "SYN-S17": [
-            "routing"
-          ],
-          "SYN-S24": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
           "SYN-S26": [
             "classification",
             "deadline",
             "routing"
-          ],
-          "SYN-S31": [
-            "classification"
           ]
         },
-        "not_built_reasons": {
-          "SYN-S11": "the reported date selected no policy version",
-          "SYN-S13": "the reported date selected no policy version"
-        },
-        "wrong_ready": [
-          "SYN-S17",
-          "SYN-S24"
-        ],
-        "manual_review": 11,
-        "not_built": [
-          "SYN-S11",
-          "SYN-S13"
-        ],
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 12,
+        "not_built": [],
         "format_errors": [],
         "model_calls": 0,
         "model_answers": 0,
@@ -99,103 +55,35 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 25,
+        "passed": 30,
         "total": 31,
         "failed": {
-          "SYN-S03": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "SYN-S11": [
-            "submitted"
-          ],
-          "SYN-S13": [
-            "submitted"
-          ],
-          "SYN-S17": [
-            "routing"
-          ],
-          "SYN-S24": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
           "SYN-S26": [
             "classification",
             "deadline",
             "routing"
           ]
         },
-        "not_built_reasons": {
-          "SYN-S11": "the reported date selected no policy version",
-          "SYN-S13": "the reported date selected no policy version"
-        },
-        "wrong_ready": [
-          "SYN-S17",
-          "SYN-S24"
-        ],
-        "manual_review": 9,
-        "not_built": [
-          "SYN-S11",
-          "SYN-S13"
-        ],
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 12,
+        "not_built": [],
         "format_errors": [],
-        "model_calls": 23,
-        "model_answers": 17,
-        "input_tokens": 3528,
-        "output_tokens": 572
+        "model_calls": 17,
+        "model_answers": 13,
+        "input_tokens": 1604,
+        "output_tokens": 433
       }
     },
     {
       "suite": "stress",
       "rules": {
-        "passed": 7,
+        "passed": 16,
         "total": 16,
-        "failed": {
-          "STR-P03": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "STR-P05": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "STR-P06": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "STR-P07": [
-            "classification"
-          ],
-          "STR-P08": [
-            "classification"
-          ],
-          "STR-P09": [
-            "classification"
-          ],
-          "STR-P10": [
-            "classification"
-          ],
-          "STR-P14": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
-          "STR-P15": [
-            "classification",
-            "deadline",
-            "routing"
-          ]
-        },
+        "failed": {},
         "not_built_reasons": {},
-        "wrong_ready": [
-          "STR-P15"
-        ],
-        "manual_review": 11,
+        "wrong_ready": [],
+        "manual_review": 8,
         "not_built": [],
         "format_errors": [],
         "model_calls": 0,
@@ -212,38 +100,22 @@
         "manual_review": 8,
         "not_built": [],
         "format_errors": [],
-        "model_calls": 16,
-        "model_answers": 16,
-        "input_tokens": 5585,
-        "output_tokens": 647
+        "model_calls": 7,
+        "model_answers": 7,
+        "input_tokens": 1600,
+        "output_tokens": 336
       }
     },
     {
       "suite": "holdout",
       "rules": {
-        "passed": 5,
+        "passed": 8,
         "total": 8,
-        "failed": {
-          "HLD-H05": [
-            "submitted"
-          ],
-          "HLD-H06": [
-            "classification"
-          ],
-          "HLD-H08": [
-            "classification",
-            "deadline",
-            "routing"
-          ]
-        },
-        "not_built_reasons": {
-          "HLD-H05": "expected exactly one 'Amount:' line in the source"
-        },
+        "failed": {},
+        "not_built_reasons": {},
         "wrong_ready": [],
-        "manual_review": 3,
-        "not_built": [
-          "HLD-H05"
-        ],
+        "manual_review": 2,
+        "not_built": [],
         "format_errors": [],
         "model_calls": 0,
         "model_answers": 0,
@@ -251,31 +123,18 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 6,
+        "passed": 8,
         "total": 8,
-        "failed": {
-          "HLD-H05": [
-            "submitted"
-          ],
-          "HLD-H08": [
-            "classification",
-            "deadline",
-            "routing"
-          ]
-        },
-        "not_built_reasons": {
-          "HLD-H05": "expected exactly one 'Amount:' line in the source"
-        },
+        "failed": {},
+        "not_built_reasons": {},
         "wrong_ready": [],
-        "manual_review": 3,
-        "not_built": [
-          "HLD-H05"
-        ],
+        "manual_review": 2,
+        "not_built": [],
         "format_errors": [],
-        "model_calls": 6,
-        "model_answers": 3,
-        "input_tokens": 747,
-        "output_tokens": 133
+        "model_calls": 5,
+        "model_answers": 2,
+        "input_tokens": 264,
+        "output_tokens": 95
       }
     }
   ]
