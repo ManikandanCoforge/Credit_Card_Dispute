@@ -92,13 +92,7 @@ _DUPLICATE = re.compile(
     r"\b(?:appears?|appeared|shows?|showed|shown|listed|posted|went through)\b[^.!?]*\btwice\b"
     r"|\bsame (?:charge|payment|transaction)\b[^.!?]*\btwice\b"
     r"|\btwo (?:identical |separate )?(?:charges|debits|payments)\b|\bdouble[- ]?(?:charg|bill)\w*"
-    r"|\bduplicate (?:charges?|transactions?|payments?)\b|\bcharged (?:me )?(?:two|2) times\b"
-    # The same report in other words: "billed me two times", "took the exact same 38
-    # crowns again", "shows up on my statement more than once".
-    r"|\b(?:charged|billed|debited|deducted|took|taken)\b[^.!?]*\b(?:two|2) times\b"
-    r"|\b(?:charged|billed|debited|deducted|took|taken)\b[^.!?]*\bsame\b[^.!?]*\bagain\b"
-    r"|\b(?:charged|billed|debited)\b[^.!?]*\bmore than once\b"
-    r"|\b(?:appears?|appeared|shows? up|showed up|listed|posted)\b[^.!?]*\bmore than once\b",
+    r"|\bduplicate (?:charges?|transactions?|payments?)\b|\bcharged (?:me )?(?:two|2) times\b",
     re.IGNORECASE,
 )
 # A denial of the duplicate itself is not a report of one. It is checked on the same
@@ -114,8 +108,7 @@ _NOT_DUPLICATE = re.compile(
     r"|(?:\bnot|n't|\bnever|\bno)\s+(?:(?:see|find|have|notice|show)\w*\s+)?(?:any\s+)?"
     r"two\s+(?:identical\s+|separate\s+)?(?:charges|debits|payments)\b"
     r"|\b(?:not|never|no)\b\s+(?:a\s+|an\s+|the\s+)?"
-    r"(?:double|duplicate)[- ]?(?:charge|charges|transaction|transactions|payment|payments)\b"
-    r"|(?:\bnot|n't|\bnever)\b[^.!?]{0,25}\bmore than once\b",
+    r"(?:double|duplicate)[- ]?(?:charge|charges|transaction|transactions|payment|payments)\b",
     re.IGNORECASE,
 )
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
@@ -187,21 +180,6 @@ _AUTHORIZATION_LABEL = "Authorization:"
 _AMBIGUOUS_RULE_ANCHOR = "If customer accounts conflict about authorization"
 _UNSUPPORTED_RULE_ANCHOR = "Cash withdrawal disputes are unsupported"
 _SUPPORTED_RULE_ANCHOR = "Supported classifications:"
-# A dispute of a kind the procedure does not support: a fee, a price rise, or a charge
-# above the price quoted. Read only when no supported type fits, so a fee mentioned in a
-# duplicate or service complaint never changes its type.
-_OTHER_DISPUTE = re.compile(
-    r"\bfees?\b|\bovercharg\w*"
-    r"|\bmore than (?:the )?(?:price|amount|quote)\b"
-    r"|\b(?:was|were) quoted\b"
-    r"|\bprice (?:went up|increased?|rose)\b"
-    r"|\b(?:price|fee|rate|subscription) (?:increase|rise|hike)\b",
-    re.IGNORECASE,
-)
-_OTHER_DISPUTE_REASON = (
-    "The customer disputes a fee or a price, which is not one of the procedure's supported "
-    "classifications, so no supported type is assigned and a person decides the case."
-)
 
 # The procedure sentence that supports each classification this step can choose.
 _CLASSIFICATION_ANCHOR = {
@@ -228,21 +206,7 @@ _SERVICE_NOT_DELIVERED = (
     "service not supplied",
     "service was never supplied",
 )
-# The same report in other words: the thing paid for never happened, never came, or was
-# never given ("the photographer never showed up", "the parcel delivery never took place",
-# "nothing was ever provided", "they never gave me the classes").
-_SERVICE_NEVER_HAPPENED = (
-    r"\bnever (?:happened|took place|showed up|turned up|came|arrived|shown|done|"
-    r"performed|provided|supplied|started|completed|gave me|got delivered)\b"
-    r"|\bnothing was (?:ever )?(?:provided|delivered|supplied|received)\b"
-    r"|\b(?:nobody|no one) (?:ever )?(?:came|showed up|turned up)\b"
-    r"|\b(?:did not|didn't|never) (?:show up|turn up|arrive)\b"
-    r"|\b(?:was not|wasn't|were not|weren't) (?:provided|supplied|performed|done)\b"
-)
-_SERVICE = re.compile(
-    "|".join([*(re.escape(p) for p in _SERVICE_NOT_DELIVERED), _SERVICE_NEVER_HAPPENED]),
-    re.IGNORECASE,
-)
+_SERVICE = re.compile("|".join(re.escape(p) for p in _SERVICE_NOT_DELIVERED), re.IGNORECASE)
 # A filing command is not the customer's account of the facts. src.untrusted catches text
 # addressed to the system; these are the commands that try to choose the case's class.
 # A command has the shape "file this as …" or "mark this complaint as …": a bare "I want to
@@ -548,19 +512,6 @@ def _rules_contract(
         # The rules found no type. A configured model may name one (ADR-003). Without a
         # usable answer the case still goes to a person: a case left out of the submission
         # fails every check, and failing closed means manual review, not silence.
-        if any(_OTHER_DISPUTE.search(s) for s in _account_sentences(intake["statement"])):
-            return _escalated_contract(
-                record,
-                intake,
-                {**_no_type_escalation(procedure_text, _OTHER_DISPUTE_REASON), "classification": "unsupported"},
-                intake_text=intake_text,
-                attachment_text=attachment_text,
-                procedure_text=procedure_text,
-                policy_text=policy_text,
-                transactions_text=transactions_text,
-                known=known,
-                notes=notes,
-            )
         lines = None if model is None else _model_lines(statements, known)
         if model is None or lines is None:
             return _escalated_contract(

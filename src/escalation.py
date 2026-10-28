@@ -44,19 +44,8 @@ _AUTHORIZATION_LABEL = "Authorization:"
 # neither is "dispense" alone ("did not dispense the service I paid for"). An "ATM card" is
 # a payment card, not a machine. The wording may come in either order: "I withdrew 200
 # crowns from the ATM" and "The ATM took my money" are both withdrawals.
-_MACHINE = (
-    r"\b(?:ATMs?(?!\s+cards?\b)|cash ?machines?|cash ?points?|kiosks?|(?:cash )?dispensers?)\b"
-)
+_MACHINE = r"\b(?:ATMs?(?!\s+cards?\b)|cash ?machines?|cash ?points?)\b"
 _CASH = re.compile(
-    # A bare "machine" counts only when banknotes, or no cash, came out of it ("the machine
-    # kept my money and no notes came out"). A vending or parking machine that took money
-    # or "only takes cash" is a purchase.
-    r"\bmachines?\b[^.!?]*\b(?:bank ?notes|notes)\b"
-    r"|\bmachines?\b[^.!?]*\b(?:no|any|without)\b[^.!?]{0,15}\b(?:cash|money)\b"
-    # "I took out 60 crowns" is the customer's own withdrawal however the machine is named;
-    # "the gym took out 50 crowns" is a debit.
-    r"|\bI (?:took|tried to take) out \d+ (?:crowns|XCR)\b"
-    r"|"
     rf"{_MACHINE}[^.!?]*\b(?:withdr[ae]w\w*|dispens\w*|pa(?:y|ys|id) out|cash|banknotes)\b"
     rf"|{_MACHINE}[^.!?]*\b(?:took|kept|swallowed|ate|retained)\b[^.!?]*"
     r"\b(?:money|cash|crowns|notes|banknotes|funds)\b"

@@ -115,32 +115,6 @@ def test_without_a_model_a_complaint_the_rules_cannot_type_goes_to_a_person(stat
     _assert_exact_quotes(contract, sources)
 
 
-@pytest.mark.parametrize(
-    "statement",
-    [
-        QUOTED_LESS,
-        "Your bank charged me a 25 crown fee that I don't agree with.",
-        "My subscription price went up without any notice.",
-    ],
-)
-def test_without_a_model_a_fee_or_price_dispute_is_unsupported(statement):
-    # A fee, a price rise or a charge above the quote is a dispute the procedure does not
-    # support, so no supported type is assigned and a person decides.
-    model = _Model(_type("duplicate_charge"))
-
-    contract, calls, sources = _draft(statement, model)
-
-    assert (contract["classification"], contract["routing"], contract["deadline"]) == (
-        "unsupported",
-        "manual_review",
-        None,
-    )
-    assert "disputes a fee or a price" in contract["narrative"]
-    assert model.asked == []
-    assert calls == []
-    _assert_exact_quotes(contract, sources)
-
-
 def test_a_type_the_model_reads_is_drafted_by_the_rules_and_cited_to_its_line():
     model = _Model(_type("duplicate_charge"), NO)
 
