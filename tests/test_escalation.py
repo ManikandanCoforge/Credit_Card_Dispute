@@ -333,6 +333,7 @@ def test_a_follow_up_that_reveals_a_cash_withdrawal_escalates():
         "I no longer want to dispute this charge; my partner made it.",
         "Please cancel this dispute, the shop has sorted it out.",
         "I would like to withdraw my complaint.",
+        "I would really like to withdraw my complaint.",
         "Could you please withdraw my complaint?",
         "Please withdraw my complaint if possible.",
         "I am not sure, but please withdraw my complaint.",
@@ -477,6 +478,10 @@ def test_a_denial_of_recognition_the_customer_takes_back_does_not_conflict(
         # Recognition without a problem to dispute instead does not take the denial back.
         "I didn't recognize the charge, but it turns out it was my order.",
         "I didn't recognize this charge; it turns out it was my card number that was stolen.",
+        (
+            "I didn't recognize this charge; it turns out it was my card number that was stolen. "
+            "The order never arrived."
+        ),
         "I didn't recognize the charge, but it turns out it was my son.",
         "I don't recognize this charge; after all, I have never shopped there.",
         "I don't recognize this charge. After all, I was abroad that week.",

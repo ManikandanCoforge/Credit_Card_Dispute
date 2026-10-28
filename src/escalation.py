@@ -81,7 +81,8 @@ _CONFIRMS = re.compile(
 # authorize it, but it turns out my son used my card" still denies.
 _RECOGNITION_DENIAL = re.compile(r"(?:do not|don't|did not|didn't) recogni[sz]e", re.IGNORECASE)
 _RECOGNISES = re.compile(
-    r"\bturns? out\b[^.!?]{0,20}\b(?:it|this|that) (?:was|is) (?:my|mine)\b"
+    r"\bturns? out\b[^.!?]{0,20}\b(?:it|this|that) (?:was|is) "
+    r"(?:mine|my (?:purchase|order|charge|transaction|booking|payment))\b"
     r"|\b(?:now|later|then)\b[^.!?]{0,20}\b(?:remember|recall)\w*\s+"
     r"(?:buying|ordering|paying|booking|it was (?:my|mine))\b"
     r"|\b(?:it|this|that) (?:was|is) mine\b"
