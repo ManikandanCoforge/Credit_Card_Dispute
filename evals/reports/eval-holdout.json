@@ -1,0 +1,3241 @@
+{
+  "suite": "holdout",
+  "commit": "8553bb3",
+  "started_at": "2026-10-28T03:19:18+00:00",
+  "data_dir": "evals/fixtures/holdout/data",
+  "gold_path": "evals/fixtures/holdout/gold.json",
+  "cases": {
+    "total": 8,
+    "passed": 3
+  },
+  "format_errors": [],
+  "metrics": [
+    {
+      "metric": "conformance.submitted",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "conformance.classification",
+      "n": 8,
+      "passed": 3,
+      "rate": 0.375
+    },
+    {
+      "metric": "conformance.routing",
+      "n": 8,
+      "passed": 3,
+      "rate": 0.375
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "conformance.facts",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "conformance.missing_information",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "conformance.deadline",
+      "n": 8,
+      "passed": 3,
+      "rate": 0.375
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "n": 8,
+      "passed": 4,
+      "rate": 0.5
+    },
+    {
+      "metric": "tools.required_reads",
+      "n": 8,
+      "passed": 8,
+      "rate": 1.0
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "n": 8,
+      "passed": 8,
+      "rate": 1.0
+    },
+    {
+      "metric": "tools.retry_bound",
+      "n": 8,
+      "passed": 8,
+      "rate": 1.0
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "n": 8,
+      "passed": 8,
+      "rate": 1.0
+    },
+    {
+      "metric": "escalation.route_correct",
+      "n": 8,
+      "passed": 3,
+      "rate": 0.375
+    },
+    {
+      "metric": "escalation.class_correct",
+      "n": 8,
+      "passed": 3,
+      "rate": 0.375
+    },
+    {
+      "metric": "pii.restricted_values",
+      "n": 8,
+      "passed": 8,
+      "rate": 1.0
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "n": 8,
+      "passed": 8,
+      "rate": 1.0
+    }
+  ],
+  "gates": [],
+  "escalation": {
+    "normal": {
+      "total": 4,
+      "passed": 3
+    },
+    "escalations": {
+      "total": 0,
+      "passed": 0,
+      "missed": [],
+      "false": [
+        "HLD-H01"
+      ]
+    },
+    "request_information": {
+      "total": 0,
+      "passed": 0
+    },
+    "not_built": [
+      "HLD-H05",
+      "HLD-H06",
+      "HLD-H07",
+      "HLD-H08"
+    ]
+  },
+  "case_results": [
+    {
+      "case_id": "HLD-H01",
+      "passed": false,
+      "build_error": null,
+      "routing": "manual_review",
+      "expected_routing": [
+        "ready_for_review"
+      ],
+      "failures": [
+        {
+          "metric": "conformance.classification",
+          "reason": "HLD-H01 fails the supplied evaluator sub-check classification",
+          "evidence": {
+            "subcheck": "classification",
+            "value": false,
+            "reported": true,
+            "build_error": null
+          }
+        },
+        {
+          "metric": "conformance.routing",
+          "reason": "HLD-H01 fails the supplied evaluator sub-check routing",
+          "evidence": {
+            "subcheck": "routing",
+            "value": false,
+            "reported": true,
+            "build_error": null
+          }
+        },
+        {
+          "metric": "conformance.deadline",
+          "reason": "HLD-H01 fails the supplied evaluator sub-check deadline",
+          "evidence": {
+            "subcheck": "deadline",
+            "value": false,
+            "reported": true,
+            "build_error": null
+          }
+        },
+        {
+          "metric": "escalation.route_correct",
+          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
+          "evidence": {
+            "got": "manual_review",
+            "expected": [
+              "ready_for_review"
+            ]
+          }
+        },
+        {
+          "metric": "escalation.class_correct",
+          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
+          "evidence": {
+            "got": "ambiguous",
+            "expected": [
+              "service_not_received"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HLD-H02",
+      "passed": true,
+      "build_error": null,
+      "routing": "ready_for_review",
+      "expected_routing": [
+        "ready_for_review"
+      ],
+      "failures": []
+    },
+    {
+      "case_id": "HLD-H03",
+      "passed": true,
+      "build_error": null,
+      "routing": "ready_for_review",
+      "expected_routing": [
+        "ready_for_review"
+      ],
+      "failures": []
+    },
+    {
+      "case_id": "HLD-H04",
+      "passed": true,
+      "build_error": null,
+      "routing": "ready_for_review",
+      "expected_routing": [
+        "ready_for_review"
+      ],
+      "failures": []
+    },
+    {
+      "case_id": "HLD-H05",
+      "passed": false,
+      "build_error": "expected exactly one 'Amount:' line in the source",
+      "routing": null,
+      "expected_routing": [
+        "ready_for_review"
+      ],
+      "failures": [
+        {
+          "metric": "conformance.submitted",
+          "reason": "HLD-H05 fails the supplied evaluator sub-check submitted; build error: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "submitted",
+            "value": false,
+            "reported": true,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.classification",
+          "reason": "HLD-H05 was not scored for classification: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "classification",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.routing",
+          "reason": "HLD-H05 was not scored for routing: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "routing",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.policy_selection",
+          "reason": "HLD-H05 was not scored for policy_selection: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "policy_selection",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.facts",
+          "reason": "HLD-H05 was not scored for facts: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "facts",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.missing_information",
+          "reason": "HLD-H05 was not scored for missing_information: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "missing_information",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.deadline",
+          "reason": "HLD-H05 was not scored for deadline: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "deadline",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.citations_valid",
+          "reason": "HLD-H05 was not scored for citations_valid: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "citations_valid",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.required_evidence",
+          "reason": "HLD-H05 was not scored for required_evidence: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "required_evidence",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.narrative_present",
+          "reason": "HLD-H05 was not scored for narrative_present: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "narrative_present",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.no_restricted_values",
+          "reason": "HLD-H05 was not scored for no_restricted_values: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "no_restricted_values",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "conformance.targeted_questions",
+          "reason": "HLD-H05 was not scored for targeted_questions: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "subcheck": "targeted_questions",
+            "value": false,
+            "reported": false,
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "grounding.citation_exact",
+          "reason": "case not built: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "grounding.claim_sources",
+          "reason": "case not built: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "build_error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "escalation.route_correct",
+          "reason": "routing not scored: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "got": null,
+            "expected": [
+              "ready_for_review"
+            ],
+            "error": "expected exactly one 'Amount:' line in the source"
+          }
+        },
+        {
+          "metric": "escalation.class_correct",
+          "reason": "classification not scored: expected exactly one 'Amount:' line in the source",
+          "evidence": {
+            "got": null,
+            "expected": [
+              "unauthorized"
+            ],
+            "error": "expected exactly one 'Amount:' line in the source"
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HLD-H06",
+      "passed": false,
+      "build_error": "the intake supports no supported classification",
+      "routing": null,
+      "expected_routing": [
+        "manual_review"
+      ],
+      "failures": [
+        {
+          "metric": "conformance.submitted",
+          "reason": "HLD-H06 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "submitted",
+            "value": false,
+            "reported": true,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.classification",
+          "reason": "HLD-H06 was not scored for classification: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "classification",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.routing",
+          "reason": "HLD-H06 was not scored for routing: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "routing",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.policy_selection",
+          "reason": "HLD-H06 was not scored for policy_selection: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "policy_selection",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.facts",
+          "reason": "HLD-H06 was not scored for facts: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "facts",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.missing_information",
+          "reason": "HLD-H06 was not scored for missing_information: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "missing_information",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.deadline",
+          "reason": "HLD-H06 was not scored for deadline: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "deadline",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.citations_valid",
+          "reason": "HLD-H06 was not scored for citations_valid: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "citations_valid",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.required_evidence",
+          "reason": "HLD-H06 was not scored for required_evidence: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "required_evidence",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.narrative_present",
+          "reason": "HLD-H06 was not scored for narrative_present: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "narrative_present",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.no_restricted_values",
+          "reason": "HLD-H06 was not scored for no_restricted_values: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "no_restricted_values",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.targeted_questions",
+          "reason": "HLD-H06 was not scored for targeted_questions: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "targeted_questions",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "grounding.citation_exact",
+          "reason": "case not built: the intake supports no supported classification",
+          "evidence": {
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "grounding.claim_sources",
+          "reason": "case not built: the intake supports no supported classification",
+          "evidence": {
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "escalation.route_correct",
+          "reason": "routing not scored: the intake supports no supported classification",
+          "evidence": {
+            "got": null,
+            "expected": [
+              "manual_review"
+            ],
+            "error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "escalation.class_correct",
+          "reason": "classification not scored: the intake supports no supported classification",
+          "evidence": {
+            "got": null,
+            "expected": [
+              "unsupported"
+            ],
+            "error": "the intake supports no supported classification"
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HLD-H07",
+      "passed": false,
+      "build_error": "the intake supports no supported classification",
+      "routing": null,
+      "expected_routing": [
+        "manual_review"
+      ],
+      "failures": [
+        {
+          "metric": "conformance.submitted",
+          "reason": "HLD-H07 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "submitted",
+            "value": false,
+            "reported": true,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.classification",
+          "reason": "HLD-H07 was not scored for classification: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "classification",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.routing",
+          "reason": "HLD-H07 was not scored for routing: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "routing",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.policy_selection",
+          "reason": "HLD-H07 was not scored for policy_selection: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "policy_selection",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.facts",
+          "reason": "HLD-H07 was not scored for facts: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "facts",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.missing_information",
+          "reason": "HLD-H07 was not scored for missing_information: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "missing_information",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.deadline",
+          "reason": "HLD-H07 was not scored for deadline: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "deadline",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.citations_valid",
+          "reason": "HLD-H07 was not scored for citations_valid: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "citations_valid",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.required_evidence",
+          "reason": "HLD-H07 was not scored for required_evidence: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "required_evidence",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.narrative_present",
+          "reason": "HLD-H07 was not scored for narrative_present: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "narrative_present",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.no_restricted_values",
+          "reason": "HLD-H07 was not scored for no_restricted_values: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "no_restricted_values",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.targeted_questions",
+          "reason": "HLD-H07 was not scored for targeted_questions: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "targeted_questions",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "grounding.citation_exact",
+          "reason": "case not built: the intake supports no supported classification",
+          "evidence": {
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "grounding.claim_sources",
+          "reason": "case not built: the intake supports no supported classification",
+          "evidence": {
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "escalation.route_correct",
+          "reason": "routing not scored: the intake supports no supported classification",
+          "evidence": {
+            "got": null,
+            "expected": [
+              "manual_review"
+            ],
+            "error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "escalation.class_correct",
+          "reason": "classification not scored: the intake supports no supported classification",
+          "evidence": {
+            "got": null,
+            "expected": [
+              "ambiguous"
+            ],
+            "error": "the intake supports no supported classification"
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HLD-H08",
+      "passed": false,
+      "build_error": "the intake supports no supported classification",
+      "routing": null,
+      "expected_routing": [
+        "ready_for_review"
+      ],
+      "failures": [
+        {
+          "metric": "conformance.submitted",
+          "reason": "HLD-H08 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "submitted",
+            "value": false,
+            "reported": true,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.classification",
+          "reason": "HLD-H08 was not scored for classification: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "classification",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.routing",
+          "reason": "HLD-H08 was not scored for routing: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "routing",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.policy_selection",
+          "reason": "HLD-H08 was not scored for policy_selection: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "policy_selection",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.facts",
+          "reason": "HLD-H08 was not scored for facts: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "facts",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.missing_information",
+          "reason": "HLD-H08 was not scored for missing_information: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "missing_information",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.deadline",
+          "reason": "HLD-H08 was not scored for deadline: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "deadline",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.citations_valid",
+          "reason": "HLD-H08 was not scored for citations_valid: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "citations_valid",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.required_evidence",
+          "reason": "HLD-H08 was not scored for required_evidence: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "required_evidence",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.narrative_present",
+          "reason": "HLD-H08 was not scored for narrative_present: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "narrative_present",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.no_restricted_values",
+          "reason": "HLD-H08 was not scored for no_restricted_values: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "no_restricted_values",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "conformance.targeted_questions",
+          "reason": "HLD-H08 was not scored for targeted_questions: the intake supports no supported classification",
+          "evidence": {
+            "subcheck": "targeted_questions",
+            "value": false,
+            "reported": false,
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "grounding.citation_exact",
+          "reason": "case not built: the intake supports no supported classification",
+          "evidence": {
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "grounding.claim_sources",
+          "reason": "case not built: the intake supports no supported classification",
+          "evidence": {
+            "build_error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "escalation.route_correct",
+          "reason": "routing not scored: the intake supports no supported classification",
+          "evidence": {
+            "got": null,
+            "expected": [
+              "ready_for_review"
+            ],
+            "error": "the intake supports no supported classification"
+          }
+        },
+        {
+          "metric": "escalation.class_correct",
+          "reason": "classification not scored: the intake supports no supported classification",
+          "evidence": {
+            "got": null,
+            "expected": [
+              "service_not_received"
+            ],
+            "error": "the intake supports no supported classification"
+          }
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "metric": "conformance.submitted",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 was not scored for submitted: the case produced no contract",
+      "evidence": {
+        "subcheck": "submitted",
+        "value": true,
+        "reported": false,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.classification",
+      "case_id": "HLD-H01",
+      "passed": false,
+      "reason": "HLD-H01 fails the supplied evaluator sub-check classification",
+      "evidence": {
+        "subcheck": "classification",
+        "value": false,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.routing",
+      "case_id": "HLD-H01",
+      "passed": false,
+      "reason": "HLD-H01 fails the supplied evaluator sub-check routing",
+      "evidence": {
+        "subcheck": "routing",
+        "value": false,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 passes the supplied evaluator sub-check policy_selection",
+      "evidence": {
+        "subcheck": "policy_selection",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.facts",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 passes the supplied evaluator sub-check facts",
+      "evidence": {
+        "subcheck": "facts",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.missing_information",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 passes the supplied evaluator sub-check missing_information",
+      "evidence": {
+        "subcheck": "missing_information",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.deadline",
+      "case_id": "HLD-H01",
+      "passed": false,
+      "reason": "HLD-H01 fails the supplied evaluator sub-check deadline",
+      "evidence": {
+        "subcheck": "deadline",
+        "value": false,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 passes the supplied evaluator sub-check citations_valid",
+      "evidence": {
+        "subcheck": "citations_valid",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 passes the supplied evaluator sub-check required_evidence",
+      "evidence": {
+        "subcheck": "required_evidence",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 passes the supplied evaluator sub-check narrative_present",
+      "evidence": {
+        "subcheck": "narrative_present",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 passes the supplied evaluator sub-check no_restricted_values",
+      "evidence": {
+        "subcheck": "no_restricted_values",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "HLD-H01 passes the supplied evaluator sub-check targeted_questions",
+      "evidence": {
+        "subcheck": "targeted_questions",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.submitted",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 was not scored for submitted: the case produced no contract",
+      "evidence": {
+        "subcheck": "submitted",
+        "value": true,
+        "reported": false,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.classification",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check classification",
+      "evidence": {
+        "subcheck": "classification",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.routing",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check routing",
+      "evidence": {
+        "subcheck": "routing",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check policy_selection",
+      "evidence": {
+        "subcheck": "policy_selection",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.facts",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check facts",
+      "evidence": {
+        "subcheck": "facts",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.missing_information",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check missing_information",
+      "evidence": {
+        "subcheck": "missing_information",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.deadline",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check deadline",
+      "evidence": {
+        "subcheck": "deadline",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check citations_valid",
+      "evidence": {
+        "subcheck": "citations_valid",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check required_evidence",
+      "evidence": {
+        "subcheck": "required_evidence",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check narrative_present",
+      "evidence": {
+        "subcheck": "narrative_present",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check no_restricted_values",
+      "evidence": {
+        "subcheck": "no_restricted_values",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "HLD-H02 passes the supplied evaluator sub-check targeted_questions",
+      "evidence": {
+        "subcheck": "targeted_questions",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.submitted",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 was not scored for submitted: the case produced no contract",
+      "evidence": {
+        "subcheck": "submitted",
+        "value": true,
+        "reported": false,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.classification",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check classification",
+      "evidence": {
+        "subcheck": "classification",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.routing",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check routing",
+      "evidence": {
+        "subcheck": "routing",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check policy_selection",
+      "evidence": {
+        "subcheck": "policy_selection",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.facts",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check facts",
+      "evidence": {
+        "subcheck": "facts",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.missing_information",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check missing_information",
+      "evidence": {
+        "subcheck": "missing_information",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.deadline",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check deadline",
+      "evidence": {
+        "subcheck": "deadline",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check citations_valid",
+      "evidence": {
+        "subcheck": "citations_valid",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check required_evidence",
+      "evidence": {
+        "subcheck": "required_evidence",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check narrative_present",
+      "evidence": {
+        "subcheck": "narrative_present",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check no_restricted_values",
+      "evidence": {
+        "subcheck": "no_restricted_values",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "HLD-H03 passes the supplied evaluator sub-check targeted_questions",
+      "evidence": {
+        "subcheck": "targeted_questions",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.submitted",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 was not scored for submitted: the case produced no contract",
+      "evidence": {
+        "subcheck": "submitted",
+        "value": true,
+        "reported": false,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.classification",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check classification",
+      "evidence": {
+        "subcheck": "classification",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.routing",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check routing",
+      "evidence": {
+        "subcheck": "routing",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check policy_selection",
+      "evidence": {
+        "subcheck": "policy_selection",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.facts",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check facts",
+      "evidence": {
+        "subcheck": "facts",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.missing_information",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check missing_information",
+      "evidence": {
+        "subcheck": "missing_information",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.deadline",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check deadline",
+      "evidence": {
+        "subcheck": "deadline",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check citations_valid",
+      "evidence": {
+        "subcheck": "citations_valid",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check required_evidence",
+      "evidence": {
+        "subcheck": "required_evidence",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check narrative_present",
+      "evidence": {
+        "subcheck": "narrative_present",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check no_restricted_values",
+      "evidence": {
+        "subcheck": "no_restricted_values",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "HLD-H04 passes the supplied evaluator sub-check targeted_questions",
+      "evidence": {
+        "subcheck": "targeted_questions",
+        "value": true,
+        "reported": true,
+        "build_error": null
+      }
+    },
+    {
+      "metric": "conformance.submitted",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 fails the supplied evaluator sub-check submitted; build error: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "submitted",
+        "value": false,
+        "reported": true,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.classification",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for classification: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "classification",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.routing",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for routing: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "routing",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for policy_selection: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "policy_selection",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.facts",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for facts: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "facts",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.missing_information",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for missing_information: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "missing_information",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.deadline",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for deadline: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "deadline",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for citations_valid: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "citations_valid",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for required_evidence: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "required_evidence",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for narrative_present: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "narrative_present",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for no_restricted_values: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "no_restricted_values",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "HLD-H05 was not scored for targeted_questions: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "subcheck": "targeted_questions",
+        "value": false,
+        "reported": false,
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "conformance.submitted",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "submitted",
+        "value": false,
+        "reported": true,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.classification",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for classification: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "classification",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.routing",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for routing: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "routing",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for policy_selection: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "policy_selection",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.facts",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for facts: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "facts",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.missing_information",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for missing_information: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "missing_information",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.deadline",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for deadline: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "deadline",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for citations_valid: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "citations_valid",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for required_evidence: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "required_evidence",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for narrative_present: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "narrative_present",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for no_restricted_values: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "no_restricted_values",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "HLD-H06 was not scored for targeted_questions: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "targeted_questions",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.submitted",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "submitted",
+        "value": false,
+        "reported": true,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.classification",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for classification: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "classification",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.routing",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for routing: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "routing",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for policy_selection: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "policy_selection",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.facts",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for facts: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "facts",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.missing_information",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for missing_information: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "missing_information",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.deadline",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for deadline: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "deadline",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for citations_valid: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "citations_valid",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for required_evidence: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "required_evidence",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for narrative_present: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "narrative_present",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for no_restricted_values: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "no_restricted_values",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "HLD-H07 was not scored for targeted_questions: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "targeted_questions",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.submitted",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "submitted",
+        "value": false,
+        "reported": true,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.classification",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for classification: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "classification",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.routing",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for routing: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "routing",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.policy_selection",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for policy_selection: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "policy_selection",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.facts",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for facts: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "facts",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.missing_information",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for missing_information: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "missing_information",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.deadline",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for deadline: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "deadline",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.citations_valid",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for citations_valid: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "citations_valid",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.required_evidence",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for required_evidence: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "required_evidence",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.narrative_present",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for narrative_present: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "narrative_present",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.no_restricted_values",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for no_restricted_values: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "no_restricted_values",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "conformance.targeted_questions",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "HLD-H08 was not scored for targeted_questions: the intake supports no supported classification",
+      "evidence": {
+        "subcheck": "targeted_questions",
+        "value": false,
+        "reported": false,
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "all 9 citations quote their source exactly",
+      "evidence": {
+        "citations": 9,
+        "invalid": []
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "every required claim is cited",
+      "evidence": {
+        "claims": [
+          "ambiguous_rule",
+          "authorization_confirmed",
+          "authorization_denied",
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "transaction_record"
+        ],
+        "missing": []
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "all 6 citations quote their source exactly",
+      "evidence": {
+        "citations": 6,
+        "invalid": []
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "every required claim is cited",
+      "evidence": {
+        "claims": [
+          "classification",
+          "customer_evidence",
+          "deadline",
+          "routing",
+          "transaction_record"
+        ],
+        "missing": []
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
+      "evidence": {
+        "citations": 7,
+        "invalid": []
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "every required claim is cited",
+      "evidence": {
+        "claims": [
+          "classification",
+          "customer_evidence",
+          "deadline",
+          "routing",
+          "second_charge",
+          "transaction_record"
+        ],
+        "missing": []
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "all 6 citations quote their source exactly",
+      "evidence": {
+        "citations": 6,
+        "invalid": []
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "every required claim is cited",
+      "evidence": {
+        "claims": [
+          "classification",
+          "customer_evidence",
+          "deadline",
+          "routing",
+          "transaction_record"
+        ],
+        "missing": []
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "case not built: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "case not built: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "build_error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "case not built: the intake supports no supported classification",
+      "evidence": {
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "case not built: the intake supports no supported classification",
+      "evidence": {
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "case not built: the intake supports no supported classification",
+      "evidence": {
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "case not built: the intake supports no supported classification",
+      "evidence": {
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "grounding.citation_exact",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "case not built: the intake supports no supported classification",
+      "evidence": {
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "grounding.claim_sources",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "case not built: the intake supports no supported classification",
+      "evidence": {
+        "build_error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "tools.required_reads",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "transactions answered 200; merchant answered 200",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "missing": []
+      }
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "no write event in the audit",
+      "evidence": {
+        "write_events": [
+          "duplicate_prevented",
+          "forbidden_write_attempt",
+          "idempotency_conflict",
+          "record_created",
+          "unapproved_write_attempt",
+          "unsupported_write_attempt",
+          "write_replayed"
+        ],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.retry_bound",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "every tool was read at most 3 times",
+      "evidence": {
+        "limit": 3,
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "over_limit": {}
+      }
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "every tool read was declared",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "extra_tools": [],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.required_reads",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "transactions answered 200; merchant answered 200",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "missing": []
+      }
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "no write event in the audit",
+      "evidence": {
+        "write_events": [
+          "duplicate_prevented",
+          "forbidden_write_attempt",
+          "idempotency_conflict",
+          "record_created",
+          "unapproved_write_attempt",
+          "unsupported_write_attempt",
+          "write_replayed"
+        ],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.retry_bound",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "every tool was read at most 3 times",
+      "evidence": {
+        "limit": 3,
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "over_limit": {}
+      }
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "every tool read was declared",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "extra_tools": [],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.required_reads",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "transactions answered 200; merchant answered 200",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "missing": []
+      }
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "no write event in the audit",
+      "evidence": {
+        "write_events": [
+          "duplicate_prevented",
+          "forbidden_write_attempt",
+          "idempotency_conflict",
+          "record_created",
+          "unapproved_write_attempt",
+          "unsupported_write_attempt",
+          "write_replayed"
+        ],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.retry_bound",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "every tool was read at most 3 times",
+      "evidence": {
+        "limit": 3,
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "over_limit": {}
+      }
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "every tool read was declared",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "extra_tools": [],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.required_reads",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "transactions answered 200; merchant answered 200",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "missing": []
+      }
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "no write event in the audit",
+      "evidence": {
+        "write_events": [
+          "duplicate_prevented",
+          "forbidden_write_attempt",
+          "idempotency_conflict",
+          "record_created",
+          "unapproved_write_attempt",
+          "unsupported_write_attempt",
+          "write_replayed"
+        ],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.retry_bound",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "every tool was read at most 3 times",
+      "evidence": {
+        "limit": 3,
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "over_limit": {}
+      }
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "every tool read was declared",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "extra_tools": [],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.required_reads",
+      "case_id": "HLD-H05",
+      "passed": true,
+      "reason": "transactions answered 200; merchant answered 200",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "missing": []
+      }
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "case_id": "HLD-H05",
+      "passed": true,
+      "reason": "no write event in the audit",
+      "evidence": {
+        "write_events": [
+          "duplicate_prevented",
+          "forbidden_write_attempt",
+          "idempotency_conflict",
+          "record_created",
+          "unapproved_write_attempt",
+          "unsupported_write_attempt",
+          "write_replayed"
+        ],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.retry_bound",
+      "case_id": "HLD-H05",
+      "passed": true,
+      "reason": "every tool was read at most 3 times",
+      "evidence": {
+        "limit": 3,
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "over_limit": {}
+      }
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "case_id": "HLD-H05",
+      "passed": true,
+      "reason": "every tool read was declared",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "extra_tools": [],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.required_reads",
+      "case_id": "HLD-H06",
+      "passed": true,
+      "reason": "transactions answered 200; merchant answered 200",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "missing": []
+      }
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "case_id": "HLD-H06",
+      "passed": true,
+      "reason": "no write event in the audit",
+      "evidence": {
+        "write_events": [
+          "duplicate_prevented",
+          "forbidden_write_attempt",
+          "idempotency_conflict",
+          "record_created",
+          "unapproved_write_attempt",
+          "unsupported_write_attempt",
+          "write_replayed"
+        ],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.retry_bound",
+      "case_id": "HLD-H06",
+      "passed": true,
+      "reason": "every tool was read at most 3 times",
+      "evidence": {
+        "limit": 3,
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "over_limit": {}
+      }
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "case_id": "HLD-H06",
+      "passed": true,
+      "reason": "every tool read was declared",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "extra_tools": [],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.required_reads",
+      "case_id": "HLD-H07",
+      "passed": true,
+      "reason": "transactions answered 200; merchant answered 200",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "missing": []
+      }
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "case_id": "HLD-H07",
+      "passed": true,
+      "reason": "no write event in the audit",
+      "evidence": {
+        "write_events": [
+          "duplicate_prevented",
+          "forbidden_write_attempt",
+          "idempotency_conflict",
+          "record_created",
+          "unapproved_write_attempt",
+          "unsupported_write_attempt",
+          "write_replayed"
+        ],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.retry_bound",
+      "case_id": "HLD-H07",
+      "passed": true,
+      "reason": "every tool was read at most 3 times",
+      "evidence": {
+        "limit": 3,
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "over_limit": {}
+      }
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "case_id": "HLD-H07",
+      "passed": true,
+      "reason": "every tool read was declared",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "extra_tools": [],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.required_reads",
+      "case_id": "HLD-H08",
+      "passed": true,
+      "reason": "transactions answered 200; merchant answered 200",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "missing": []
+      }
+    },
+    {
+      "metric": "tools.no_forbidden_writes",
+      "case_id": "HLD-H08",
+      "passed": true,
+      "reason": "no write event in the audit",
+      "evidence": {
+        "write_events": [
+          "duplicate_prevented",
+          "forbidden_write_attempt",
+          "idempotency_conflict",
+          "record_created",
+          "unapproved_write_attempt",
+          "unsupported_write_attempt",
+          "write_replayed"
+        ],
+        "offending": []
+      }
+    },
+    {
+      "metric": "tools.retry_bound",
+      "case_id": "HLD-H08",
+      "passed": true,
+      "reason": "every tool was read at most 3 times",
+      "evidence": {
+        "limit": 3,
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "over_limit": {}
+      }
+    },
+    {
+      "metric": "tools.no_extra_reads",
+      "case_id": "HLD-H08",
+      "passed": true,
+      "reason": "every tool read was declared",
+      "evidence": {
+        "declared_tools": [
+          "transactions",
+          "merchant"
+        ],
+        "attempts": {
+          "transactions": [
+            200
+          ],
+          "merchant": [
+            200
+          ]
+        },
+        "extra_tools": [],
+        "offending": []
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "HLD-H01",
+      "passed": false,
+      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
+      "evidence": {
+        "got": "manual_review",
+        "expected": [
+          "ready_for_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "HLD-H01",
+      "passed": false,
+      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
+      "evidence": {
+        "got": "ambiguous",
+        "expected": [
+          "service_not_received"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "routing 'ready_for_review' is allowed",
+      "evidence": {
+        "got": "ready_for_review",
+        "expected": [
+          "ready_for_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "classification 'service_not_received' is allowed",
+      "evidence": {
+        "got": "service_not_received",
+        "expected": [
+          "service_not_received"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "routing 'ready_for_review' is allowed",
+      "evidence": {
+        "got": "ready_for_review",
+        "expected": [
+          "ready_for_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "classification 'duplicate_charge' is allowed",
+      "evidence": {
+        "got": "duplicate_charge",
+        "expected": [
+          "duplicate_charge"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "routing 'ready_for_review' is allowed",
+      "evidence": {
+        "got": "ready_for_review",
+        "expected": [
+          "ready_for_review"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "classification 'unauthorized' is allowed",
+      "evidence": {
+        "got": "unauthorized",
+        "expected": [
+          "unauthorized"
+        ]
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "routing not scored: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "got": null,
+        "expected": [
+          "ready_for_review"
+        ],
+        "error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "HLD-H05",
+      "passed": false,
+      "reason": "classification not scored: expected exactly one 'Amount:' line in the source",
+      "evidence": {
+        "got": null,
+        "expected": [
+          "unauthorized"
+        ],
+        "error": "expected exactly one 'Amount:' line in the source"
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "routing not scored: the intake supports no supported classification",
+      "evidence": {
+        "got": null,
+        "expected": [
+          "manual_review"
+        ],
+        "error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "HLD-H06",
+      "passed": false,
+      "reason": "classification not scored: the intake supports no supported classification",
+      "evidence": {
+        "got": null,
+        "expected": [
+          "unsupported"
+        ],
+        "error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "routing not scored: the intake supports no supported classification",
+      "evidence": {
+        "got": null,
+        "expected": [
+          "manual_review"
+        ],
+        "error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "HLD-H07",
+      "passed": false,
+      "reason": "classification not scored: the intake supports no supported classification",
+      "evidence": {
+        "got": null,
+        "expected": [
+          "ambiguous"
+        ],
+        "error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "escalation.route_correct",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "routing not scored: the intake supports no supported classification",
+      "evidence": {
+        "got": null,
+        "expected": [
+          "ready_for_review"
+        ],
+        "error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "escalation.class_correct",
+      "case_id": "HLD-H08",
+      "passed": false,
+      "reason": "classification not scored: the intake supports no supported classification",
+      "evidence": {
+        "got": null,
+        "expected": [
+          "service_not_received"
+        ],
+        "error": "the intake supports no supported classification"
+      }
+    },
+    {
+      "metric": "pii.restricted_values",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "pii.restricted_values: no restricted value appears in the contract, narrative or audit",
+      "evidence": {
+        "leaked": []
+      }
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "case_id": "HLD-H01",
+      "passed": true,
+      "reason": "pii.synthetic_patterns: no synthetic token or Luhn-valid card number appears in the contract, narrative or audit",
+      "evidence": {
+        "matches": []
+      }
+    },
+    {
+      "metric": "pii.restricted_values",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "pii.restricted_values: no restricted value appears in the contract, narrative or audit",
+      "evidence": {
+        "leaked": []
+      }
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "case_id": "HLD-H02",
+      "passed": true,
+      "reason": "pii.synthetic_patterns: no synthetic token or Luhn-valid card number appears in the contract, narrative or audit",
+      "evidence": {
+        "matches": []
+      }
+    },
+    {
+      "metric": "pii.restricted_values",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "pii.restricted_values: no restricted value appears in the contract, narrative or audit",
+      "evidence": {
+        "leaked": []
+      }
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "case_id": "HLD-H03",
+      "passed": true,
+      "reason": "pii.synthetic_patterns: no synthetic token or Luhn-valid card number appears in the contract, narrative or audit",
+      "evidence": {
+        "matches": []
+      }
+    },
+    {
+      "metric": "pii.restricted_values",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "pii.restricted_values: no restricted value appears in the contract, narrative or audit",
+      "evidence": {
+        "leaked": []
+      }
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "case_id": "HLD-H04",
+      "passed": true,
+      "reason": "pii.synthetic_patterns: no synthetic token or Luhn-valid card number appears in the contract, narrative or audit",
+      "evidence": {
+        "matches": []
+      }
+    },
+    {
+      "metric": "pii.restricted_values",
+      "case_id": "HLD-H05",
+      "passed": true,
+      "reason": "pii.restricted_values: no restricted value appears in the contract, narrative or audit",
+      "evidence": {
+        "leaked": []
+      }
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "case_id": "HLD-H05",
+      "passed": true,
+      "reason": "pii.synthetic_patterns: no synthetic token or Luhn-valid card number appears in the contract, narrative or audit",
+      "evidence": {
+        "matches": []
+      }
+    },
+    {
+      "metric": "pii.restricted_values",
+      "case_id": "HLD-H06",
+      "passed": true,
+      "reason": "pii.restricted_values: no restricted value appears in the contract, narrative or audit",
+      "evidence": {
+        "leaked": []
+      }
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "case_id": "HLD-H06",
+      "passed": true,
+      "reason": "pii.synthetic_patterns: no synthetic token or Luhn-valid card number appears in the contract, narrative or audit",
+      "evidence": {
+        "matches": []
+      }
+    },
+    {
+      "metric": "pii.restricted_values",
+      "case_id": "HLD-H07",
+      "passed": true,
+      "reason": "pii.restricted_values: no restricted value appears in the contract, narrative or audit",
+      "evidence": {
+        "leaked": []
+      }
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "case_id": "HLD-H07",
+      "passed": true,
+      "reason": "pii.synthetic_patterns: no synthetic token or Luhn-valid card number appears in the contract, narrative or audit",
+      "evidence": {
+        "matches": []
+      }
+    },
+    {
+      "metric": "pii.restricted_values",
+      "case_id": "HLD-H08",
+      "passed": true,
+      "reason": "pii.restricted_values: no restricted value appears in the contract, narrative or audit",
+      "evidence": {
+        "leaked": []
+      }
+    },
+    {
+      "metric": "pii.synthetic_patterns",
+      "case_id": "HLD-H08",
+      "passed": true,
+      "reason": "pii.synthetic_patterns: no synthetic token or Luhn-valid card number appears in the contract, narrative or audit",
+      "evidence": {
+        "matches": []
+      }
+    }
+  ]
+}
