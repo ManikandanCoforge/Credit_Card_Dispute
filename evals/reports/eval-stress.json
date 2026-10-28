@@ -1,98 +1,98 @@
 {
   "suite": "stress",
-  "commit": "1338540",
-  "started_at": "2026-10-28T14:05:18+00:00",
+  "commit": "a65379c",
+  "started_at": "2026-10-28T17:44:29+00:00",
   "data_dir": "evals/fixtures/stress/data",
   "gold_path": "evals/fixtures/stress/gold.json",
   "cases": {
     "total": 16,
-    "passed": 4
+    "passed": 6
   },
   "format_errors": [],
   "metrics": [
     {
       "metric": "conformance.submitted",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.classification",
       "n": 16,
-      "passed": 5,
-      "rate": 0.3125
+      "passed": 7,
+      "rate": 0.4375
     },
     {
       "metric": "conformance.routing",
       "n": 16,
-      "passed": 5,
-      "rate": 0.3125
+      "passed": 11,
+      "rate": 0.6875
     },
     {
       "metric": "conformance.policy_selection",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.facts",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.missing_information",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.deadline",
       "n": 16,
-      "passed": 5,
-      "rate": 0.3125
+      "passed": 11,
+      "rate": 0.6875
     },
     {
       "metric": "conformance.citations_valid",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.required_evidence",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.narrative_present",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.no_restricted_values",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "conformance.targeted_questions",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "grounding.citation_exact",
       "n": 16,
-      "passed": 6,
-      "rate": 0.375
+      "passed": 16,
+      "rate": 1.0
     },
     {
       "metric": "grounding.claim_sources",
       "n": 16,
-      "passed": 5,
-      "rate": 0.3125
+      "passed": 15,
+      "rate": 0.9375
     },
     {
       "metric": "tools.required_reads",
@@ -121,14 +121,14 @@
     {
       "metric": "escalation.route_correct",
       "n": 16,
-      "passed": 5,
-      "rate": 0.3125
+      "passed": 11,
+      "rate": 0.6875
     },
     {
       "metric": "escalation.class_correct",
       "n": 16,
-      "passed": 5,
-      "rate": 0.3125
+      "passed": 7,
+      "rate": 0.4375
     },
     {
       "metric": "pii.restricted_values",
@@ -146,33 +146,27 @@
   "gates": [],
   "escalation": {
     "normal": {
-      "total": 1,
+      "total": 5,
       "passed": 1
     },
     "escalations": {
-      "total": 2,
-      "passed": 1,
+      "total": 8,
+      "passed": 7,
       "missed": [
         "STR-P15"
       ],
-      "false": []
+      "false": [
+        "STR-P03",
+        "STR-P05",
+        "STR-P06",
+        "STR-P14"
+      ]
     },
     "request_information": {
       "total": 3,
       "passed": 3
     },
-    "not_built": [
-      "STR-P03",
-      "STR-P05",
-      "STR-P06",
-      "STR-P07",
-      "STR-P08",
-      "STR-P09",
-      "STR-P10",
-      "STR-P11",
-      "STR-P12",
-      "STR-P14"
-    ]
+    "not_built": []
   },
   "case_results": [
     {
@@ -208,166 +202,60 @@
     {
       "case_id": "STR-P03",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "ready_for_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "STR-P03 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "STR-P03 was not scored for classification: the intake supports no supported classification",
+          "reason": "STR-P03 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.routing",
-          "reason": "STR-P03 was not scored for routing: the intake supports no supported classification",
+          "reason": "STR-P03 fails the supplied evaluator sub-check routing",
           "evidence": {
             "subcheck": "routing",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P03 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P03 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P03 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.deadline",
-          "reason": "STR-P03 was not scored for deadline: the intake supports no supported classification",
+          "reason": "STR-P03 fails the supplied evaluator sub-check deadline",
           "evidence": {
             "subcheck": "deadline",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P03 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P03 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P03 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P03 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P03 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
+          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
           "evidence": {
-            "got": null,
+            "got": "manual_review",
             "expected": [
               "ready_for_review"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['duplicate_charge']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "duplicate_charge"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
@@ -385,166 +273,60 @@
     {
       "case_id": "STR-P05",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "ready_for_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "STR-P05 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "STR-P05 was not scored for classification: the intake supports no supported classification",
+          "reason": "STR-P05 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.routing",
-          "reason": "STR-P05 was not scored for routing: the intake supports no supported classification",
+          "reason": "STR-P05 fails the supplied evaluator sub-check routing",
           "evidence": {
             "subcheck": "routing",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P05 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P05 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P05 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.deadline",
-          "reason": "STR-P05 was not scored for deadline: the intake supports no supported classification",
+          "reason": "STR-P05 fails the supplied evaluator sub-check deadline",
           "evidence": {
             "subcheck": "deadline",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P05 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P05 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P05 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P05 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P05 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
+          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
           "evidence": {
-            "got": null,
+            "got": "manual_review",
             "expected": [
               "ready_for_review"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "service_not_received"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
@@ -552,166 +334,60 @@
     {
       "case_id": "STR-P06",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "ready_for_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "STR-P06 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "STR-P06 was not scored for classification: the intake supports no supported classification",
+          "reason": "STR-P06 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.routing",
-          "reason": "STR-P06 was not scored for routing: the intake supports no supported classification",
+          "reason": "STR-P06 fails the supplied evaluator sub-check routing",
           "evidence": {
             "subcheck": "routing",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P06 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P06 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P06 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.deadline",
-          "reason": "STR-P06 was not scored for deadline: the intake supports no supported classification",
+          "reason": "STR-P06 fails the supplied evaluator sub-check deadline",
           "evidence": {
             "subcheck": "deadline",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P06 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P06 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P06 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P06 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P06 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
+          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
           "evidence": {
-            "got": null,
+            "got": "manual_review",
             "expected": [
               "ready_for_review"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "service_not_received"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
@@ -719,166 +395,30 @@
     {
       "case_id": "STR-P07",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "STR-P07 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "STR-P07 was not scored for classification: the intake supports no supported classification",
+          "reason": "STR-P07 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P07 was not scored for routing: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P07 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P07 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P07 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P07 was not scored for deadline: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P07 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P07 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P07 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P07 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P07 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "manual_review"
-            ],
-            "error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['unsupported']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "unsupported"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
@@ -886,166 +426,30 @@
     {
       "case_id": "STR-P08",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "STR-P08 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "STR-P08 was not scored for classification: the intake supports no supported classification",
+          "reason": "STR-P08 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P08 was not scored for routing: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P08 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P08 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P08 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P08 was not scored for deadline: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P08 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P08 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P08 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P08 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P08 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "manual_review"
-            ],
-            "error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['unsupported']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "unsupported"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
@@ -1053,166 +457,30 @@
     {
       "case_id": "STR-P09",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "STR-P09 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "STR-P09 was not scored for classification: the intake supports no supported classification",
+          "reason": "STR-P09 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P09 was not scored for routing: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P09 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P09 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P09 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P09 was not scored for deadline: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P09 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P09 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P09 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P09 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P09 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "manual_review"
-            ],
-            "error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['unsupported']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "unsupported"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
@@ -1220,503 +488,53 @@
     {
       "case_id": "STR-P10",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "STR-P10 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "STR-P10 was not scored for classification: the intake supports no supported classification",
+          "reason": "STR-P10 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P10 was not scored for routing: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P10 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P10 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P10 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P10 was not scored for deadline: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P10 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P10 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P10 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P10 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P10 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "manual_review"
-            ],
-            "error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['unsupported']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "unsupported"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
     },
     {
       "case_id": "STR-P11",
-      "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "passed": true,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.submitted",
-          "reason": "STR-P11 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P11 was not scored for classification: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P11 was not scored for routing: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P11 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P11 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P11 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P11 was not scored for deadline: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P11 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P11 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P11 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P11 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P11 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "manual_review"
-            ],
-            "error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "ambiguous"
-            ],
-            "error": "the intake supports no supported classification"
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P12",
-      "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "passed": true,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.submitted",
-          "reason": "STR-P12 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.classification",
-          "reason": "STR-P12 was not scored for classification: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "STR-P12 was not scored for routing: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P12 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P12 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P12 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "STR-P12 was not scored for deadline: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P12 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P12 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P12 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P12 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P12 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "manual_review"
-            ],
-            "error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "ambiguous"
-            ],
-            "error": "the intake supports no supported classification"
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "STR-P13",
@@ -1748,166 +566,60 @@
     {
       "case_id": "STR-P14",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "ready_for_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "STR-P14 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "STR-P14 was not scored for classification: the intake supports no supported classification",
+          "reason": "STR-P14 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.routing",
-          "reason": "STR-P14 was not scored for routing: the intake supports no supported classification",
+          "reason": "STR-P14 fails the supplied evaluator sub-check routing",
           "evidence": {
             "subcheck": "routing",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "STR-P14 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "STR-P14 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "STR-P14 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.deadline",
-          "reason": "STR-P14 was not scored for deadline: the intake supports no supported classification",
+          "reason": "STR-P14 fails the supplied evaluator sub-check deadline",
           "evidence": {
             "subcheck": "deadline",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "STR-P14 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "STR-P14 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "STR-P14 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "STR-P14 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "STR-P14 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
+          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
           "evidence": {
-            "got": null,
+            "got": "manual_review",
             "expected": [
               "ready_for_review"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "service_not_received"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
@@ -2410,145 +1122,145 @@
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P03",
       "passed": false,
-      "reason": "STR-P03 was not scored for classification: the intake supports no supported classification",
+      "reason": "STR-P03 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P03",
       "passed": false,
-      "reason": "STR-P03 was not scored for routing: the intake supports no supported classification",
+      "reason": "STR-P03 fails the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P03",
       "passed": false,
-      "reason": "STR-P03 was not scored for deadline: the intake supports no supported classification",
+      "reason": "STR-P03 fails the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "STR-P03 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P03 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
@@ -2698,1153 +1410,1153 @@
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P05",
       "passed": false,
-      "reason": "STR-P05 was not scored for classification: the intake supports no supported classification",
+      "reason": "STR-P05 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P05",
       "passed": false,
-      "reason": "STR-P05 was not scored for routing: the intake supports no supported classification",
+      "reason": "STR-P05 fails the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P05",
       "passed": false,
-      "reason": "STR-P05 was not scored for deadline: the intake supports no supported classification",
+      "reason": "STR-P05 fails the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "STR-P05 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P05 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P06",
       "passed": false,
-      "reason": "STR-P06 was not scored for classification: the intake supports no supported classification",
+      "reason": "STR-P06 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P06",
       "passed": false,
-      "reason": "STR-P06 was not scored for routing: the intake supports no supported classification",
+      "reason": "STR-P06 fails the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P06",
       "passed": false,
-      "reason": "STR-P06 was not scored for deadline: the intake supports no supported classification",
+      "reason": "STR-P06 fails the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "STR-P06 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P06 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P07",
       "passed": false,
-      "reason": "STR-P07 was not scored for classification: the intake supports no supported classification",
+      "reason": "STR-P07 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for routing: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for deadline: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "STR-P07 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P07 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P08",
       "passed": false,
-      "reason": "STR-P08 was not scored for classification: the intake supports no supported classification",
+      "reason": "STR-P08 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for routing: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for deadline: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "STR-P08 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P08 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P09",
       "passed": false,
-      "reason": "STR-P09 was not scored for classification: the intake supports no supported classification",
+      "reason": "STR-P09 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for routing: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for deadline: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "STR-P09 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P09 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P10",
       "passed": false,
-      "reason": "STR-P10 was not scored for classification: the intake supports no supported classification",
+      "reason": "STR-P10 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for routing: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for deadline: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "STR-P10 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P10 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for classification: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for routing: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for deadline: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "STR-P11 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P11 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for classification: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for routing: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for deadline: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "STR-P12 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P12 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
@@ -3994,145 +2706,145 @@
     {
       "metric": "conformance.submitted",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "STR-P14",
       "passed": false,
-      "reason": "STR-P14 was not scored for classification: the intake supports no supported classification",
+      "reason": "STR-P14 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "STR-P14",
       "passed": false,
-      "reason": "STR-P14 was not scored for routing: the intake supports no supported classification",
+      "reason": "STR-P14 fails the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "STR-P14",
       "passed": false,
-      "reason": "STR-P14 was not scored for deadline: the intake supports no supported classification",
+      "reason": "STR-P14 fails the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "STR-P14 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "STR-P14 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
@@ -4360,19 +3072,27 @@
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P03",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
@@ -4405,145 +3125,209 @@
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P05",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P06",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
@@ -4577,19 +3361,27 @@
     {
       "metric": "grounding.citation_exact",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "STR-P14",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
@@ -5959,26 +4751,24 @@
       "metric": "escalation.route_correct",
       "case_id": "STR-P03",
       "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "ready_for_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P03",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['duplicate_charge']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "duplicate_charge"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
@@ -6009,208 +4799,192 @@
       "metric": "escalation.route_correct",
       "case_id": "STR-P05",
       "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "ready_for_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P05",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "service_not_received"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P06",
       "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "ready_for_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P06",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "service_not_received"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P07",
-      "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "manual_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P07",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['unsupported']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "unsupported"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P08",
-      "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "manual_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P08",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['unsupported']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "unsupported"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P09",
-      "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "manual_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P09",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['unsupported']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "unsupported"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P10",
-      "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "manual_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P10",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['unsupported']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "unsupported"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "manual_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P11",
-      "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "classification 'ambiguous' is allowed",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "ambiguous"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "manual_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P12",
-      "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "classification 'ambiguous' is allowed",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "ambiguous"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
@@ -6241,26 +5015,24 @@
       "metric": "escalation.route_correct",
       "case_id": "STR-P14",
       "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "ready_for_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "STR-P14",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "service_not_received"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {

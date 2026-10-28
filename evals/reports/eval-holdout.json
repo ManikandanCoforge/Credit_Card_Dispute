@@ -1,98 +1,98 @@
 {
   "suite": "holdout",
-  "commit": "f3ee194",
-  "started_at": "2026-10-28T14:25:13+00:00",
+  "commit": "a65379c",
+  "started_at": "2026-10-28T17:44:27+00:00",
   "data_dir": "evals/fixtures/holdout/data",
   "gold_path": "evals/fixtures/holdout/gold.json",
   "cases": {
     "total": 8,
-    "passed": 4
+    "passed": 5
   },
   "format_errors": [],
   "metrics": [
     {
       "metric": "conformance.submitted",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.classification",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 5,
+      "rate": 0.625
     },
     {
       "metric": "conformance.routing",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 6,
+      "rate": 0.75
     },
     {
       "metric": "conformance.policy_selection",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.facts",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.missing_information",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.deadline",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 6,
+      "rate": 0.75
     },
     {
       "metric": "conformance.citations_valid",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.required_evidence",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.narrative_present",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.no_restricted_values",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "conformance.targeted_questions",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "grounding.citation_exact",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "grounding.claim_sources",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 7,
+      "rate": 0.875
     },
     {
       "metric": "tools.required_reads",
@@ -121,14 +121,14 @@
     {
       "metric": "escalation.route_correct",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 6,
+      "rate": 0.75
     },
     {
       "metric": "escalation.class_correct",
       "n": 8,
-      "passed": 4,
-      "rate": 0.5
+      "passed": 5,
+      "rate": 0.625
     },
     {
       "metric": "pii.restricted_values",
@@ -146,24 +146,23 @@
   "gates": [],
   "escalation": {
     "normal": {
-      "total": 4,
+      "total": 5,
       "passed": 4
     },
     "escalations": {
-      "total": 0,
-      "passed": 0,
+      "total": 2,
+      "passed": 2,
       "missed": [],
-      "false": []
+      "false": [
+        "HLD-H08"
+      ]
     },
     "request_information": {
       "total": 0,
       "passed": 0
     },
     "not_built": [
-      "HLD-H05",
-      "HLD-H06",
-      "HLD-H07",
-      "HLD-H08"
+      "HLD-H05"
     ]
   },
   "case_results": [
@@ -377,500 +376,101 @@
     {
       "case_id": "HLD-H06",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "HLD-H06 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "HLD-H06 was not scored for classification: the intake supports no supported classification",
+          "reason": "HLD-H06 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "HLD-H06 was not scored for routing: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "HLD-H06 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "HLD-H06 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "HLD-H06 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "HLD-H06 was not scored for deadline: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "HLD-H06 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "HLD-H06 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "HLD-H06 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "HLD-H06 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "HLD-H06 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "manual_review"
-            ],
-            "error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['unsupported']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "unsupported"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
     },
     {
       "case_id": "HLD-H07",
-      "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "passed": true,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "manual_review"
       ],
-      "failures": [
-        {
-          "metric": "conformance.submitted",
-          "reason": "HLD-H07 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.classification",
-          "reason": "HLD-H07 was not scored for classification: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "classification",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.routing",
-          "reason": "HLD-H07 was not scored for routing: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "routing",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "HLD-H07 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "HLD-H07 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "HLD-H07 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.deadline",
-          "reason": "HLD-H07 was not scored for deadline: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "deadline",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "HLD-H07 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "HLD-H07 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "HLD-H07 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "HLD-H07 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "HLD-H07 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "manual_review"
-            ],
-            "error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
-          "evidence": {
-            "got": null,
-            "expected": [
-              "ambiguous"
-            ],
-            "error": "the intake supports no supported classification"
-          }
-        }
-      ]
+      "failures": []
     },
     {
       "case_id": "HLD-H08",
       "passed": false,
-      "build_error": "the intake supports no supported classification",
-      "routing": null,
+      "build_error": null,
+      "routing": "manual_review",
       "expected_routing": [
         "ready_for_review"
       ],
       "failures": [
         {
-          "metric": "conformance.submitted",
-          "reason": "HLD-H08 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "submitted",
-            "value": false,
-            "reported": true,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
           "metric": "conformance.classification",
-          "reason": "HLD-H08 was not scored for classification: the intake supports no supported classification",
+          "reason": "HLD-H08 fails the supplied evaluator sub-check classification",
           "evidence": {
             "subcheck": "classification",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.routing",
-          "reason": "HLD-H08 was not scored for routing: the intake supports no supported classification",
+          "reason": "HLD-H08 fails the supplied evaluator sub-check routing",
           "evidence": {
             "subcheck": "routing",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.policy_selection",
-          "reason": "HLD-H08 was not scored for policy_selection: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "policy_selection",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.facts",
-          "reason": "HLD-H08 was not scored for facts: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "facts",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.missing_information",
-          "reason": "HLD-H08 was not scored for missing_information: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "missing_information",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "conformance.deadline",
-          "reason": "HLD-H08 was not scored for deadline: the intake supports no supported classification",
+          "reason": "HLD-H08 fails the supplied evaluator sub-check deadline",
           "evidence": {
             "subcheck": "deadline",
             "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.citations_valid",
-          "reason": "HLD-H08 was not scored for citations_valid: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "citations_valid",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.required_evidence",
-          "reason": "HLD-H08 was not scored for required_evidence: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "required_evidence",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.narrative_present",
-          "reason": "HLD-H08 was not scored for narrative_present: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "narrative_present",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.no_restricted_values",
-          "reason": "HLD-H08 was not scored for no_restricted_values: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "no_restricted_values",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "conformance.targeted_questions",
-          "reason": "HLD-H08 was not scored for targeted_questions: the intake supports no supported classification",
-          "evidence": {
-            "subcheck": "targeted_questions",
-            "value": false,
-            "reported": false,
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.citation_exact",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
-          }
-        },
-        {
-          "metric": "grounding.claim_sources",
-          "reason": "case not built: the intake supports no supported classification",
-          "evidence": {
-            "build_error": "the intake supports no supported classification"
+            "reported": true,
+            "build_error": null
           }
         },
         {
           "metric": "escalation.route_correct",
-          "reason": "routing not scored: the intake supports no supported classification",
+          "reason": "routing 'manual_review' is not one of ['ready_for_review']",
           "evidence": {
-            "got": null,
+            "got": "manual_review",
             "expected": [
               "ready_for_review"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         },
         {
           "metric": "escalation.class_correct",
-          "reason": "classification not scored: the intake supports no supported classification",
+          "reason": "classification 'ambiguous' is not one of ['service_not_received']",
           "evidence": {
-            "got": null,
+            "got": "ambiguous",
             "expected": [
               "service_not_received"
-            ],
-            "error": "the intake supports no supported classification"
+            ]
           }
         }
       ]
@@ -1600,433 +1200,433 @@
     {
       "metric": "conformance.submitted",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "HLD-H06",
       "passed": false,
-      "reason": "HLD-H06 was not scored for classification: the intake supports no supported classification",
+      "reason": "HLD-H06 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for routing: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for deadline: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "HLD-H06 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H06 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for classification: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for routing: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for deadline: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "HLD-H07 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H07 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.submitted",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 was not scored for submitted: the case produced no contract",
       "evidence": {
         "subcheck": "submitted",
-        "value": false,
-        "reported": true,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": false,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.classification",
       "case_id": "HLD-H08",
       "passed": false,
-      "reason": "HLD-H08 was not scored for classification: the intake supports no supported classification",
+      "reason": "HLD-H08 fails the supplied evaluator sub-check classification",
       "evidence": {
         "subcheck": "classification",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.routing",
       "case_id": "HLD-H08",
       "passed": false,
-      "reason": "HLD-H08 was not scored for routing: the intake supports no supported classification",
+      "reason": "HLD-H08 fails the supplied evaluator sub-check routing",
       "evidence": {
         "subcheck": "routing",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.policy_selection",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 was not scored for policy_selection: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 passes the supplied evaluator sub-check policy_selection",
       "evidence": {
         "subcheck": "policy_selection",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.facts",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 was not scored for facts: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 passes the supplied evaluator sub-check facts",
       "evidence": {
         "subcheck": "facts",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.missing_information",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 was not scored for missing_information: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 passes the supplied evaluator sub-check missing_information",
       "evidence": {
         "subcheck": "missing_information",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.deadline",
       "case_id": "HLD-H08",
       "passed": false,
-      "reason": "HLD-H08 was not scored for deadline: the intake supports no supported classification",
+      "reason": "HLD-H08 fails the supplied evaluator sub-check deadline",
       "evidence": {
         "subcheck": "deadline",
         "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.citations_valid",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 was not scored for citations_valid: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 passes the supplied evaluator sub-check citations_valid",
       "evidence": {
         "subcheck": "citations_valid",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.required_evidence",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 was not scored for required_evidence: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 passes the supplied evaluator sub-check required_evidence",
       "evidence": {
         "subcheck": "required_evidence",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.narrative_present",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 was not scored for narrative_present: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 passes the supplied evaluator sub-check narrative_present",
       "evidence": {
         "subcheck": "narrative_present",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.no_restricted_values",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 was not scored for no_restricted_values: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 passes the supplied evaluator sub-check no_restricted_values",
       "evidence": {
         "subcheck": "no_restricted_values",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
       "metric": "conformance.targeted_questions",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "HLD-H08 was not scored for targeted_questions: the intake supports no supported classification",
+      "passed": true,
+      "reason": "HLD-H08 passes the supplied evaluator sub-check targeted_questions",
       "evidence": {
         "subcheck": "targeted_questions",
-        "value": false,
-        "reported": false,
-        "build_error": "the intake supports no supported classification"
+        "value": true,
+        "reported": true,
+        "build_error": null
       }
     },
     {
@@ -2155,55 +1755,79 @@
     {
       "metric": "grounding.citation_exact",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
       "metric": "grounding.citation_exact",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "all 7 citations quote their source exactly",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "citations": 7,
+        "invalid": []
       }
     },
     {
       "metric": "grounding.claim_sources",
       "case_id": "HLD-H08",
-      "passed": false,
-      "reason": "case not built: the intake supports no supported classification",
+      "passed": true,
+      "reason": "every required claim is cited",
       "evidence": {
-        "build_error": "the intake supports no supported classification"
+        "claims": [
+          "customer_evidence",
+          "policy_selection",
+          "routing",
+          "supported_classifications",
+          "transaction_record"
+        ],
+        "missing": []
       }
     },
     {
@@ -2963,79 +2587,73 @@
     {
       "metric": "escalation.route_correct",
       "case_id": "HLD-H06",
-      "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "manual_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "HLD-H06",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['unsupported']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "unsupported"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "routing 'manual_review' is allowed",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "manual_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "HLD-H07",
-      "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "passed": true,
+      "reason": "classification 'ambiguous' is allowed",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "ambiguous"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.route_correct",
       "case_id": "HLD-H08",
       "passed": false,
-      "reason": "routing not scored: the intake supports no supported classification",
+      "reason": "routing 'manual_review' is not one of ['ready_for_review']",
       "evidence": {
-        "got": null,
+        "got": "manual_review",
         "expected": [
           "ready_for_review"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {
       "metric": "escalation.class_correct",
       "case_id": "HLD-H08",
       "passed": false,
-      "reason": "classification not scored: the intake supports no supported classification",
+      "reason": "classification 'ambiguous' is not one of ['service_not_received']",
       "evidence": {
-        "got": null,
+        "got": "ambiguous",
         "expected": [
           "service_not_received"
-        ],
-        "error": "the intake supports no supported classification"
+        ]
       }
     },
     {

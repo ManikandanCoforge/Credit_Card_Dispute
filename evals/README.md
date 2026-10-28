@@ -82,16 +82,16 @@ Everything in this folder supports [ADR-003](../docs/decisions/ADR-003-hybrid-mo
 
 ### Latest deterministic results
 
-Offline suite, five primary evals, 2026-10-28 UTC: holdout at commit `f3ee194`, after the COF-39 escalation fixes, and stress at `1338540`, whose result those fixes do not change (measured). Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
+Offline suite, five primary evals, 2026-10-28 UTC: holdout and stress at commit `a65379c`, after COF-39 sends a complaint no rule can type to a person instead of leaving it out of the submission. Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
 
 | Suite | Cases | Fully passed | Failing cases | Artifact |
 |---|---|---|---|---|
-| `holdout` | 8 | 4 | `HLD-H05`, `HLD-H06`, `HLD-H07`, `HLD-H08` | [`eval-holdout.md`](reports/eval-holdout.md) |
-| `stress` | 16 | 4 | `STR-P03`, `STR-P05` to `STR-P12`, `STR-P13`, `STR-P14`, `STR-P15` | [`eval-stress.md`](reports/eval-stress.md) |
+| `holdout` | 8 | 5 | `HLD-H05`, `HLD-H06`, `HLD-H08` | [`eval-holdout.md`](reports/eval-holdout.md) |
+| `stress` | 16 | 6 | `STR-P03`, `STR-P05` to `STR-P10`, `STR-P13`, `STR-P14`, `STR-P15` | [`eval-stress.md`](reports/eval-stress.md) |
 
-The supplied bank evaluator scores the same cases higher with recorded model answers: 5 of 8 holdout and 16 of 16 stress in `reports/hybrid-eval.json`. Its rules-alone row uses that evaluator too (4 of 8 and 5 of 16), not these five evals, so the two tables are not one progression: the offline suite also requires a manual-review-rule citation, which is why `STR-P13` fails here and not there. `synth` is not rerun here; its rows are in the hybrid report.
+The supplied bank evaluator scores the same cases higher with recorded model answers: 6 of 8 holdout and 16 of 16 stress in `reports/hybrid-eval.json`. Its rules-alone row uses that evaluator too (5 of 8 and 7 of 16), not these five evals, so the two tables are not one progression: the offline suite also requires a manual-review-rule citation, which is why `STR-P13` fails here and not there. `synth` is not rerun here; its rows are in the hybrid report.
 
-The failures are those numbers, not the counts alone. HLD-H05 stops at intake with `expected exactly one 'Amount:' line in the source`, and HLD-H06 to HLD-H08 stop because the intake supports no supported classification. On stress, STR-P03 and STR-P05 to STR-P12 and STR-P14 stop for the same reason, STR-P13 misses the manual-review-rule citation, and STR-P15 is typed as a duplicate where the gold expects an ambiguous escalation. The artifacts carry every failing check with its evidence.
+The failures are those numbers, not the counts alone. HLD-H05 stops at intake with `expected exactly one 'Amount:' line in the source`. No other case is left out of the submission. HLD-H06 (cash without a machine keyword) and HLD-H08 (a service paraphrase) are drafted for manual review as `ambiguous`, because no rule names their type; the gold expects `unsupported` and a ready `service_not_received` draft. On stress, STR-P03, STR-P05, STR-P06 and STR-P14 are paraphrases of a supported type, and STR-P07 to STR-P10 are cash, fee and overcharge complaints the gold calls `unsupported`; all eight are drafted for manual review as `ambiguous`. STR-P13 misses the manual-review-rule citation, and STR-P15 is typed as a duplicate because "never shown" is not a service phrase the rules know. The artifacts carry every failing check with its evidence.
 
 Reproduce both runs from the repository root:
 
@@ -123,12 +123,12 @@ These are the sets a model must pass before `models.toml` may list it. The READM
 
 They come from the copilot's registered Week 10 runs of 25 October, one trace per suite. Each answer was replayed through this repository's pipeline against the unmodified mock. It was kept only when the prompt this code sends is byte-for-byte the prompt Luna was sent, matched by prompt hash.
 
-In the current evaluation this code asks 51 questions. Ten of them were not asked in that run, so they have no recording and replay as no answer:
+In the current evaluation this code asks 52 questions. Eleven of them were not asked in that run, so they have no recording and replay as no answer:
 
 - 3 dispute-type questions: SYN-S03, HLD-H07 and HLD-H08
-- 7 two-problem questions: CARD-D08, CARD-D10, SYN-S14, SYN-S17, SYN-S24, SYN-S25 and HLD-H01
+- 8 two-problem questions: CARD-D08, CARD-D10, SYN-S14, SYN-S17, SYN-S18, SYN-S24, SYN-S25 and HLD-H01
 
-CARD-D10 and SYN-S14 are asked now because the tool reads retry (COF-40): in the recorded runs a tool fault stopped both cases before any question. HLD-H01 is asked now because its taken-back denial no longer escalates (COF-39), and SYN-S20 is no longer asked because its withdrawal escalates before any question.
+CARD-D10 and SYN-S14 are asked now because the tool reads retry (COF-40): in the recorded runs a tool fault stopped both cases before any question. HLD-H01 is asked now because its taken-back denial no longer escalates (COF-39), and SYN-S20 is no longer asked because its withdrawal escalates before any question. SYN-S18 is asked now because a merchant outage no longer stops the case (COF-39).
 
 Each line holds three things:
 
@@ -167,9 +167,9 @@ Results on 2026-10-28 UTC:
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
 | dev (12) | 12 | 12 | 0 → 0 | 7 | 705 / 174 |
-| synth (31) | 20 | 24 | 2 → 2 | 22 | 3,528 / 572 |
-| stress (16) | 5 | 16 | 1 → 0 | 16 | 5,585 / 647 |
-| holdout (8) | 4 | 5 | 0 → 0 | 6 | 747 / 133 |
-| Total (67) | 41 | 57 | 3 → 2 | 51 | 10,565 / 1,526 |
+| synth (31) | 21 | 25 | 2 → 2 | 23 | 3,528 / 572 |
+| stress (16) | 7 | 16 | 1 → 0 | 16 | 5,585 / 647 |
+| holdout (8) | 5 | 6 | 0 → 0 | 6 | 747 / 133 |
+| Total (67) | 45 | 59 | 3 → 2 | 52 | 10,565 / 1,526 |
 
 Rerunning the replay command above on this tree reproduces the table exactly, and the checked-in report is that output. ADR-003 explains the cases that still fail. The token counts are Luna's own counts for these exact prompts, recorded on 25 October.

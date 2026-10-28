@@ -9,7 +9,7 @@
 
 ## Context
 
-`src/contract.py` `_classification` types a complaint by matching fixed phrasings. When the customer writes a phrasing the rules do not know, the case fails closed with `ContractError` ("the intake supports no supported classification") and the reviewer gets no draft at all. On the 67 cases in `data/dev` and `evals/fixtures`, the rules alone pass 33. Eighteen of the cases they miss are never built because no rule matches the wording. Examples:
+`src/contract.py` `_classification` types a complaint by matching fixed phrasings. When the customer writes a phrasing the rules do not know, the case failed closed with `ContractError` ("the intake supports no supported classification") and the reviewer got no draft at all. Since COF-39 such a case is drafted for manual review as `ambiguous` instead, so it stays in the submission, but it still reaches the reviewer untyped. On the 67 cases in `data/dev` and `evals/fixtures`, the rules alone pass 33. Eighteen of the cases they miss are never built because no rule matches the wording. Examples:
 
 - "took the exact same 38 crowns again a minute later" is a duplicate charge.
 - "a cleaning that never happened" is a service not received.
@@ -54,7 +54,7 @@ The detectors are patterns. Text written to steer a model in a way they do not r
 | `cash_withdrawal` | `unsupported` and `manual_review`. Code cites the line and the procedure's cash-withdrawal sentence. |
 | `other_dispute` | `unsupported` and `manual_review`. Code cites the line and the procedure's supported-classifications sentence. |
 | `none` | `ambiguous` and `manual_review`. The narrative says neither the rules nor the model could name a type. |
-| No usable answer | The case is not built, exactly as it is with no model. |
+| No usable answer | `ambiguous` and `manual_review`, as with no model (COF-39). The narrative says neither the rules nor the model could name a type. |
 | More than one problem: true | `ambiguous` and `manual_review`, with a narrative note saying why. When the model chose the type, its line stays cited. |
 | More than one problem: false, or no answer | The rules' draft is unchanged. |
 
@@ -108,22 +108,22 @@ Three limits of this evidence matter:
 
 ## Measured result
 
-Run on 2026-10-28 UTC with `tools/hybrid_eval.py`, this repository's code with the tool reads retried (COF-40), CARD-D09's statement read from before the form fields (COF-43), and a withdrawn complaint or a taken-back denial read as the customer meant it (COF-39), and the unmodified mock and bank evaluator. GPT-6 Luna's recorded answers were replayed from `evals/recordings/gpt-6-luna.jsonl`.
+Run on 2026-10-28 UTC with `tools/hybrid_eval.py`, this repository's code with the tool reads retried (COF-40), CARD-D09's statement read from before the form fields (COF-43), a withdrawn complaint or a taken-back denial read as the customer meant it (COF-39), and a complaint no rule can type or a merchant outage drafted instead of dropped (COF-39), and the unmodified mock and bank evaluator. GPT-6 Luna's recorded answers were replayed from `evals/recordings/gpt-6-luna.jsonl`.
 
-Ten of the 51 questions had no recording, because the copilot's run never asked them, and each counted as no answer:
+Eleven of the 52 questions had no recording, because the copilot's run never asked them, and each counted as no answer:
 
 - 3 dispute-type questions: `SYN-S03`, `HLD-H07` and `HLD-H08`
-- 7 two-problem questions: `CARD-D08`, `CARD-D10`, `SYN-S14`, `SYN-S17`, `SYN-S24`, `SYN-S25` and `HLD-H01`
+- 8 two-problem questions: `CARD-D08`, `CARD-D10`, `SYN-S14`, `SYN-S17`, `SYN-S18`, `SYN-S24`, `SYN-S25` and `HLD-H01`
 
-`CARD-D10` and `SYN-S14` are asked now because the tool reads retry: in the recorded runs a tool fault stopped both cases before any question. `CARD-D09` is asked now because it is built, and its question had a recording. `HLD-H01` is asked now because its taken-back denial no longer escalates; `SYN-S20` is no longer asked because its withdrawal escalates first.
+`CARD-D10` and `SYN-S14` are asked now because the tool reads retry: in the recorded runs a tool fault stopped both cases before any question. `CARD-D09` is asked now because it is built, and its question had a recording. `HLD-H01` is asked now because its taken-back denial no longer escalates; `SYN-S20` is no longer asked because its withdrawal escalates first. `SYN-S18` is asked now because a merchant outage no longer stops the case.
 
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
 | dev (12) | 12 | 12 | 0 → 0 | 7 | 705 / 174 |
-| synth (31) | 20 | 24 | 2 → 2 | 22 | 3,528 / 572 |
-| stress (16) | 5 | 16 | 1 → 0 | 16 | 5,585 / 647 |
-| holdout (8) | 4 | 5 | 0 → 0 | 6 | 747 / 133 |
-| Total (67) | 41 | 57 | 3 → 2 | 51 | 10,565 / 1,526 |
+| synth (31) | 21 | 25 | 2 → 2 | 23 | 3,528 / 572 |
+| stress (16) | 7 | 16 | 1 → 0 | 16 | 5,585 / 647 |
+| holdout (8) | 5 | 6 | 0 → 0 | 6 | 747 / 133 |
+| Total (67) | 45 | 59 | 3 → 2 | 52 | 10,565 / 1,526 |
 
 The two wrong ready drafts left in synth need rule changes outside this record:
 
@@ -132,17 +132,18 @@ The two wrong ready drafts left in synth need rule changes outside this record:
 
 None of their two-problem questions had a recording, so this run does not show how the model would have answered them.
 
-The hybrid still does not build 7 cases. Three are the gap cases with no recorded answer: `SYN-S03`, `HLD-H07` and `HLD-H08`. The other 4 fail for reasons outside this record:
+The hybrid does not build 3 cases, all for reasons outside this record:
 
-- 1 stops because the merchant service stays unavailable after three attempts (`SYN-S18`). A transaction outage is drafted for manual review instead (COF-40).
-- 2 have no policy version for their reported date.
+- 2 have no policy version for their reported date (`SYN-S11`, `SYN-S13`).
 - 1 has an attachment without exactly one Amount line (`HLD-H05`).
+
+The gap cases with no recorded answer (`SYN-S03`, `HLD-H07` and `HLD-H08`) are drafted for manual review as `ambiguous`, as they are with no model, and `HLD-H07` passes that way. A merchant outage (`SYN-S18`) is drafted with its usual routing and a note that the merchant record was not read (COF-39).
 
 ## Rejected alternatives
 
 ### Add more phrasings to the rules
 
-Every new paraphrase needs a code change, and hidden cases change the wording by design. The rules alone pass 41 of 67, and each pattern added for one case risks a false match on another, such as "I called twice".
+Every new paraphrase needs a code change, and hidden cases change the wording by design. The rules alone pass 45 of 67, and each pattern added for one case risks a false match on another, such as "I called twice".
 
 ### Let the model classify every case and route it
 
@@ -150,7 +151,7 @@ Every new paraphrase needs a code change, and hidden cases change the wording by
 
 ### Keep the model on the narrative only
 
-This is `ADR-001` as it stands. It does nothing for a case that is never built, and it does nothing for a two-problem complaint marked ready.
+This is `ADR-001` as it stands. It does nothing for a case the rules cannot type, and it does nothing for a two-problem complaint marked ready.
 
 ### Ask the model on every case and keep the answer only when it agrees with the rules
 
@@ -160,7 +161,7 @@ This would double the calls and the cost and add no draft the rules could not al
 
 Positive:
 
-- A paraphrase the rules miss gets a cited draft instead of no draft, and the reviewer is told which line to check.
+- A paraphrase the rules miss gets a typed, cited draft instead of an untyped one for manual review, and the reviewer is told which line to check.
 - A two-problem complaint is not marked ready.
 - The default path, the scored run and CI are unchanged and make no model call.
 - Every call is metered, and the evaluation repeats exactly from recordings.
@@ -169,7 +170,7 @@ Positive:
 Negative:
 
 - A live run sends redacted customer lines to the provider. The bank must approve the provider and the data location, and record its approval, before any live use.
-- A live run depends on the provider. No answer leaves the rules to decide, and a gap case is then not built.
+- A live run depends on the provider. No answer leaves the rules to decide, and a gap case then goes to a person as `ambiguous`.
 - A model-assisted draft needs the reviewer to check the cited line, which is more work than reviewing a rules draft.
 - The detectors that keep a model away from injected text are patterns, and unrecognised phrasing still reaches the model.
 - Changing a prompt means a new prompt version, requalifying every model, and new recordings.

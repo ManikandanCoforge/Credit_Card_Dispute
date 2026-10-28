@@ -1,47 +1,47 @@
 # Evaluation report - holdout
 
-- Commit: `f3ee194`
+- Commit: `a65379c`
 - Data: `evals/fixtures/holdout/data`
 - Gold: `evals/fixtures/holdout/gold.json`
-- Generated: 2026-10-28T14:25:13+00:00
-- Cases fully passed: **4/8**
+- Generated: 2026-10-28T17:44:27+00:00
+- Cases fully passed: **5/8**
 - Format errors: 0
 
 ## Metrics
 
 | Metric | Passed | n | Rate |
 | --- | ---: | ---: | ---: |
-| `conformance.submitted` | 4 | 8 | 50.0% |
-| `conformance.classification` | 4 | 8 | 50.0% |
-| `conformance.routing` | 4 | 8 | 50.0% |
-| `conformance.policy_selection` | 4 | 8 | 50.0% |
-| `conformance.facts` | 4 | 8 | 50.0% |
-| `conformance.missing_information` | 4 | 8 | 50.0% |
-| `conformance.deadline` | 4 | 8 | 50.0% |
-| `conformance.citations_valid` | 4 | 8 | 50.0% |
-| `conformance.required_evidence` | 4 | 8 | 50.0% |
-| `conformance.narrative_present` | 4 | 8 | 50.0% |
-| `conformance.no_restricted_values` | 4 | 8 | 50.0% |
-| `conformance.targeted_questions` | 4 | 8 | 50.0% |
-| `grounding.citation_exact` | 4 | 8 | 50.0% |
-| `grounding.claim_sources` | 4 | 8 | 50.0% |
+| `conformance.submitted` | 7 | 8 | 87.5% |
+| `conformance.classification` | 5 | 8 | 62.5% |
+| `conformance.routing` | 6 | 8 | 75.0% |
+| `conformance.policy_selection` | 7 | 8 | 87.5% |
+| `conformance.facts` | 7 | 8 | 87.5% |
+| `conformance.missing_information` | 7 | 8 | 87.5% |
+| `conformance.deadline` | 6 | 8 | 75.0% |
+| `conformance.citations_valid` | 7 | 8 | 87.5% |
+| `conformance.required_evidence` | 7 | 8 | 87.5% |
+| `conformance.narrative_present` | 7 | 8 | 87.5% |
+| `conformance.no_restricted_values` | 7 | 8 | 87.5% |
+| `conformance.targeted_questions` | 7 | 8 | 87.5% |
+| `grounding.citation_exact` | 7 | 8 | 87.5% |
+| `grounding.claim_sources` | 7 | 8 | 87.5% |
 | `tools.required_reads` | 8 | 8 | 100.0% |
 | `tools.no_forbidden_writes` | 8 | 8 | 100.0% |
 | `tools.retry_bound` | 8 | 8 | 100.0% |
 | `tools.no_extra_reads` | 8 | 8 | 100.0% |
-| `escalation.route_correct` | 4 | 8 | 50.0% |
-| `escalation.class_correct` | 4 | 8 | 50.0% |
+| `escalation.route_correct` | 6 | 8 | 75.0% |
+| `escalation.class_correct` | 5 | 8 | 62.5% |
 | `pii.restricted_values` | 8 | 8 | 100.0% |
 | `pii.synthetic_patterns` | 8 | 8 | 100.0% |
 
 ## Escalation
 
-- Normal cases routed normally: 4/4
-- Correct escalations: 0/0
+- Normal cases routed normally: 4/5
+- Correct escalations: 2/2
 - Missed escalations: none
-- False escalations: none
+- False escalations: HLD-H08
 - Request-information routes: 0/0
-- Not built: HLD-H05, HLD-H06, HLD-H07, HLD-H08
+- Not built: HLD-H05
 
 ## Failures
 
@@ -64,62 +64,18 @@
 - `escalation.route_correct` - routing not scored: expected exactly one 'Amount:' line in the source
 - `escalation.class_correct` - classification not scored: expected exactly one 'Amount:' line in the source
 
-### HLD-H06 - not built: the intake supports no supported classification
+### HLD-H06
 
-- `conformance.submitted` - HLD-H06 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification
-- `conformance.classification` - HLD-H06 was not scored for classification: the intake supports no supported classification
-- `conformance.routing` - HLD-H06 was not scored for routing: the intake supports no supported classification
-- `conformance.policy_selection` - HLD-H06 was not scored for policy_selection: the intake supports no supported classification
-- `conformance.facts` - HLD-H06 was not scored for facts: the intake supports no supported classification
-- `conformance.missing_information` - HLD-H06 was not scored for missing_information: the intake supports no supported classification
-- `conformance.deadline` - HLD-H06 was not scored for deadline: the intake supports no supported classification
-- `conformance.citations_valid` - HLD-H06 was not scored for citations_valid: the intake supports no supported classification
-- `conformance.required_evidence` - HLD-H06 was not scored for required_evidence: the intake supports no supported classification
-- `conformance.narrative_present` - HLD-H06 was not scored for narrative_present: the intake supports no supported classification
-- `conformance.no_restricted_values` - HLD-H06 was not scored for no_restricted_values: the intake supports no supported classification
-- `conformance.targeted_questions` - HLD-H06 was not scored for targeted_questions: the intake supports no supported classification
-- `grounding.citation_exact` - case not built: the intake supports no supported classification
-- `grounding.claim_sources` - case not built: the intake supports no supported classification
-- `escalation.route_correct` - routing not scored: the intake supports no supported classification
-- `escalation.class_correct` - classification not scored: the intake supports no supported classification
+- `conformance.classification` - HLD-H06 fails the supplied evaluator sub-check classification
+- `escalation.class_correct` - classification 'ambiguous' is not one of ['unsupported']
 
-### HLD-H07 - not built: the intake supports no supported classification
+### HLD-H08
 
-- `conformance.submitted` - HLD-H07 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification
-- `conformance.classification` - HLD-H07 was not scored for classification: the intake supports no supported classification
-- `conformance.routing` - HLD-H07 was not scored for routing: the intake supports no supported classification
-- `conformance.policy_selection` - HLD-H07 was not scored for policy_selection: the intake supports no supported classification
-- `conformance.facts` - HLD-H07 was not scored for facts: the intake supports no supported classification
-- `conformance.missing_information` - HLD-H07 was not scored for missing_information: the intake supports no supported classification
-- `conformance.deadline` - HLD-H07 was not scored for deadline: the intake supports no supported classification
-- `conformance.citations_valid` - HLD-H07 was not scored for citations_valid: the intake supports no supported classification
-- `conformance.required_evidence` - HLD-H07 was not scored for required_evidence: the intake supports no supported classification
-- `conformance.narrative_present` - HLD-H07 was not scored for narrative_present: the intake supports no supported classification
-- `conformance.no_restricted_values` - HLD-H07 was not scored for no_restricted_values: the intake supports no supported classification
-- `conformance.targeted_questions` - HLD-H07 was not scored for targeted_questions: the intake supports no supported classification
-- `grounding.citation_exact` - case not built: the intake supports no supported classification
-- `grounding.claim_sources` - case not built: the intake supports no supported classification
-- `escalation.route_correct` - routing not scored: the intake supports no supported classification
-- `escalation.class_correct` - classification not scored: the intake supports no supported classification
-
-### HLD-H08 - not built: the intake supports no supported classification
-
-- `conformance.submitted` - HLD-H08 fails the supplied evaluator sub-check submitted; build error: the intake supports no supported classification
-- `conformance.classification` - HLD-H08 was not scored for classification: the intake supports no supported classification
-- `conformance.routing` - HLD-H08 was not scored for routing: the intake supports no supported classification
-- `conformance.policy_selection` - HLD-H08 was not scored for policy_selection: the intake supports no supported classification
-- `conformance.facts` - HLD-H08 was not scored for facts: the intake supports no supported classification
-- `conformance.missing_information` - HLD-H08 was not scored for missing_information: the intake supports no supported classification
-- `conformance.deadline` - HLD-H08 was not scored for deadline: the intake supports no supported classification
-- `conformance.citations_valid` - HLD-H08 was not scored for citations_valid: the intake supports no supported classification
-- `conformance.required_evidence` - HLD-H08 was not scored for required_evidence: the intake supports no supported classification
-- `conformance.narrative_present` - HLD-H08 was not scored for narrative_present: the intake supports no supported classification
-- `conformance.no_restricted_values` - HLD-H08 was not scored for no_restricted_values: the intake supports no supported classification
-- `conformance.targeted_questions` - HLD-H08 was not scored for targeted_questions: the intake supports no supported classification
-- `grounding.citation_exact` - case not built: the intake supports no supported classification
-- `grounding.claim_sources` - case not built: the intake supports no supported classification
-- `escalation.route_correct` - routing not scored: the intake supports no supported classification
-- `escalation.class_correct` - classification not scored: the intake supports no supported classification
+- `conformance.classification` - HLD-H08 fails the supplied evaluator sub-check classification
+- `conformance.routing` - HLD-H08 fails the supplied evaluator sub-check routing
+- `conformance.deadline` - HLD-H08 fails the supplied evaluator sub-check deadline
+- `escalation.route_correct` - routing 'manual_review' is not one of ['ready_for_review']
+- `escalation.class_correct` - classification 'ambiguous' is not one of ['service_not_received']
 
 ## Limits
 
