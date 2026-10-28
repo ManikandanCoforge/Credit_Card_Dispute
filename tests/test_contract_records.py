@@ -689,7 +689,7 @@ def test_each_result_lists_the_model_calls_made_for_its_case():
     ]
 
 
-def test_model_calls_are_kept_for_a_case_that_is_not_built(tmp_path):
+def test_model_calls_are_kept_for_a_case_no_answer_could_type(tmp_path):
     dataset = tmp_path / "data"
     shutil.copytree(DEV, dataset)
     intake = dataset / "documents" / "CARD-D01-INTAKE.md"
@@ -706,10 +706,12 @@ def test_model_calls_are_kept_for_a_case_that_is_not_built(tmp_path):
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
         [result] = load_contract_results(base_url, dataset, model=_Model(None))
 
-    assert result["contract"] is None
-    assert result["error"] == (
-        "the intake supports no supported classification, and the model gave no usable "
-        "answer: timeout"
+    contract = result["contract"]
+    assert result["error"] is None
+    assert (contract["classification"], contract["routing"], contract["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
     )
     assert [(call["purpose"], call["error"]) for call in result["model_calls"]] == [
         ("dispute_type", "timeout")
@@ -1322,26 +1324,27 @@ def test_a_transaction_service_that_never_answers_is_read_three_times_and_sent_t
     assert "did not answer within the procedure's three attempts" in contract["narrative"]
 
 
-def test_a_merchant_service_that_never_answers_stops_only_that_case():
+def test_a_merchant_service_that_never_answers_still_drafts_the_case_and_says_so():
+    # Assumption Q5: the merchant record is never cited, so its outage does not by itself
+    # send the case to a person. The case is drafted as usual and the reviewer is told.
     retry, _waits = _retry()
 
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES, timeouts={MERCHANT: "always"}) as (
         base_url,
         seen,
     ):
-        results = load_contract_results(base_url, DEV, retry=retry)
+        [result] = load_contract_results(base_url, DEV, retry=retry)
 
-    assert results == [
-        {
-            "case_id": "CARD-D01",
-            "contract": None,
-            "error": "the merchant service was unavailable",
-            "narrative_meter": None,
-            "model_calls": [],
-            "meter_error": None,
-        }
-    ]
+    contract = result["contract"]
+    assert result["error"] is None
     assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT, MERCHANT, MERCHANT]
+    assert (contract["classification"], contract["routing"], contract["deadline"]) == (
+        "unauthorized",
+        "ready_for_review",
+        "2026-10-31",
+    )
+    assert "merchant record was not read" in contract["narrative"]
+    assert "CARD-D01-MERCHANT" not in {c["source_id"] for c in contract["citations"]}
 
 
 def test_three_complaints_in_a_row_that_use_every_attempt_open_the_breaker():

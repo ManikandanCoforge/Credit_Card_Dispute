@@ -19,7 +19,8 @@ retryable failure (a dropped connection, or a 503 marked retryable) is tried
 again with src/resilience.py, one breaker per tool for the whole run. Any other
 failed read stops the case. A transaction service that stays unavailable is not
 an empty history: the case is drafted for manual_review with amount and currency
-null. A merchant service that stays unavailable stops the case. A stopped case
+null. A merchant service that stays unavailable is drafted too: its record is never
+cited, so the routing stands, and the narrative says it was not read. A stopped case
 does not stop the others: load_contract_results keeps going and reports the
 reason for each case it could not build.
 """
@@ -68,7 +69,6 @@ from src.resilience import (
 from src.untrusted import RestrictedValueError, guard
 
 _TOOLS = ("transactions", "merchant")
-_MERCHANT_UNAVAILABLE = "the merchant service was unavailable"
 # The case list names an intake and an attachment that share one prefix.
 _INTAKE_SUFFIX = "-INTAKE"
 _ATTACHMENT_SUFFIX = "-ATTACHMENT"
@@ -386,11 +386,14 @@ def _contract_record(
     else:
         tool, transactions_text = transactions
         enriched = build_transaction(record, tool)
-    merchant, private_token = _merchant(base_url, record["case_id"], retry)
-    enriched = build_merchant(enriched, merchant)
     # The drafting and the output guard use the same known values, so a sentence holding
     # one is cited by its Source ID line instead of being quoted and then refused.
-    known = [private_token, _customer_reference(intake_text)]
+    known = [_customer_reference(intake_text)]
+    merchant = _merchant(base_url, record["case_id"], retry)
+    if merchant is not None:
+        merchant_tool, private_token = merchant
+        enriched = build_merchant(enriched, merchant_tool)
+        known.insert(0, private_token)
     try:
         contract, meter = assemble_draft(
             enriched,
@@ -404,6 +407,7 @@ def _contract_record(
             model=model,
             model_calls=calls,
             known_values=known,
+            merchant_unavailable=merchant is None,
         )
     except ContractError as error:
         raise ContractRecordError from error
@@ -445,17 +449,20 @@ def _transactions(
     return tool, json.dumps(json.loads(raw), sort_keys=True)
 
 
-def _merchant(base_url: str, case_id: str, retry: ToolRetry) -> tuple[MerchantTool, str]:
+def _merchant(
+    base_url: str, case_id: str, retry: ToolRetry
+) -> tuple[MerchantTool, str] | None:
     """The merchant tool body, and its private token for the restricted-value guard.
 
     The private token is never copied into the merchant record. A merchant service
-    that does not answer within its attempts stops the case: the procedure says to
-    retrieve merchant context, and gives no way to draft without it.
+    that does not answer within its attempts gives None: the procedure says to
+    retrieve merchant context, but the draft never cites it, so the case is still
+    drafted and the reviewer is told it was not read (assumption Q5).
     """
     try:
         raw = _read_tool(base_url, case_id, "merchant", retry)
     except DependencyUnavailable:
-        raise ContractRecordError(_MERCHANT_UNAVAILABLE) from None
+        return None
     try:
         payload = MerchantToolPayload.model_validate_json(raw)
     except ValidationError as error:

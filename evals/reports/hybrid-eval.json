@@ -35,20 +35,26 @@
     {
       "suite": "synth",
       "rules": {
-        "passed": 20,
+        "passed": 21,
         "total": 31,
         "failed": {
           "SYN-S03": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ],
           "SYN-S04": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ],
           "SYN-S05": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ],
           "SYN-S07": [
-            "submitted"
+            "classification"
           ],
           "SYN-S11": [
             "submitted"
@@ -58,9 +64,6 @@
           ],
           "SYN-S17": [
             "routing"
-          ],
-          "SYN-S18": [
-            "submitted"
           ],
           "SYN-S24": [
             "classification",
@@ -73,33 +76,21 @@
             "routing"
           ],
           "SYN-S31": [
-            "submitted"
+            "classification"
           ]
         },
         "not_built_reasons": {
-          "SYN-S03": "the intake supports no supported classification",
-          "SYN-S04": "the intake supports no supported classification",
-          "SYN-S05": "the intake supports no supported classification",
-          "SYN-S07": "the intake supports no supported classification",
           "SYN-S11": "the reported date selected no policy version",
-          "SYN-S13": "the reported date selected no policy version",
-          "SYN-S18": "the merchant service was unavailable",
-          "SYN-S31": "the intake supports no supported classification"
+          "SYN-S13": "the reported date selected no policy version"
         },
         "wrong_ready": [
           "SYN-S17",
           "SYN-S24"
         ],
-        "manual_review": 6,
+        "manual_review": 11,
         "not_built": [
-          "SYN-S03",
-          "SYN-S04",
-          "SYN-S05",
-          "SYN-S07",
           "SYN-S11",
-          "SYN-S13",
-          "SYN-S18",
-          "SYN-S31"
+          "SYN-S13"
         ],
         "format_errors": [],
         "model_calls": 0,
@@ -108,11 +99,13 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 24,
+        "passed": 25,
         "total": 31,
         "failed": {
           "SYN-S03": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ],
           "SYN-S11": [
             "submitted"
@@ -122,9 +115,6 @@
           ],
           "SYN-S17": [
             "routing"
-          ],
-          "SYN-S18": [
-            "submitted"
           ],
           "SYN-S24": [
             "classification",
@@ -138,24 +128,20 @@
           ]
         },
         "not_built_reasons": {
-          "SYN-S03": "the intake supports no supported classification, and the model gave no usable answer: no_recording",
           "SYN-S11": "the reported date selected no policy version",
-          "SYN-S13": "the reported date selected no policy version",
-          "SYN-S18": "the merchant service was unavailable"
+          "SYN-S13": "the reported date selected no policy version"
         },
         "wrong_ready": [
           "SYN-S17",
           "SYN-S24"
         ],
-        "manual_review": 8,
+        "manual_review": 9,
         "not_built": [
-          "SYN-S03",
           "SYN-S11",
-          "SYN-S13",
-          "SYN-S18"
+          "SYN-S13"
         ],
         "format_errors": [],
-        "model_calls": 22,
+        "model_calls": 23,
         "model_answers": 17,
         "input_tokens": 3528,
         "output_tokens": 572
@@ -164,38 +150,40 @@
     {
       "suite": "stress",
       "rules": {
-        "passed": 5,
+        "passed": 7,
         "total": 16,
         "failed": {
           "STR-P03": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ],
           "STR-P05": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ],
           "STR-P06": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ],
           "STR-P07": [
-            "submitted"
+            "classification"
           ],
           "STR-P08": [
-            "submitted"
+            "classification"
           ],
           "STR-P09": [
-            "submitted"
+            "classification"
           ],
           "STR-P10": [
-            "submitted"
-          ],
-          "STR-P11": [
-            "submitted"
-          ],
-          "STR-P12": [
-            "submitted"
+            "classification"
           ],
           "STR-P14": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ],
           "STR-P15": [
             "classification",
@@ -203,34 +191,12 @@
             "routing"
           ]
         },
-        "not_built_reasons": {
-          "STR-P03": "the intake supports no supported classification",
-          "STR-P05": "the intake supports no supported classification",
-          "STR-P06": "the intake supports no supported classification",
-          "STR-P07": "the intake supports no supported classification",
-          "STR-P08": "the intake supports no supported classification",
-          "STR-P09": "the intake supports no supported classification",
-          "STR-P10": "the intake supports no supported classification",
-          "STR-P11": "the intake supports no supported classification",
-          "STR-P12": "the intake supports no supported classification",
-          "STR-P14": "the intake supports no supported classification"
-        },
+        "not_built_reasons": {},
         "wrong_ready": [
           "STR-P15"
         ],
-        "manual_review": 1,
-        "not_built": [
-          "STR-P03",
-          "STR-P05",
-          "STR-P06",
-          "STR-P07",
-          "STR-P08",
-          "STR-P09",
-          "STR-P10",
-          "STR-P11",
-          "STR-P12",
-          "STR-P14"
-        ],
+        "manual_review": 11,
+        "not_built": [],
         "format_errors": [],
         "model_calls": 0,
         "model_answers": 0,
@@ -255,35 +221,28 @@
     {
       "suite": "holdout",
       "rules": {
-        "passed": 4,
+        "passed": 5,
         "total": 8,
         "failed": {
           "HLD-H05": [
             "submitted"
           ],
           "HLD-H06": [
-            "submitted"
-          ],
-          "HLD-H07": [
-            "submitted"
+            "classification"
           ],
           "HLD-H08": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ]
         },
         "not_built_reasons": {
-          "HLD-H05": "expected exactly one 'Amount:' line in the source",
-          "HLD-H06": "the intake supports no supported classification",
-          "HLD-H07": "the intake supports no supported classification",
-          "HLD-H08": "the intake supports no supported classification"
+          "HLD-H05": "expected exactly one 'Amount:' line in the source"
         },
         "wrong_ready": [],
-        "manual_review": 0,
+        "manual_review": 3,
         "not_built": [
-          "HLD-H05",
-          "HLD-H06",
-          "HLD-H07",
-          "HLD-H08"
+          "HLD-H05"
         ],
         "format_errors": [],
         "model_calls": 0,
@@ -292,30 +251,25 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 5,
+        "passed": 6,
         "total": 8,
         "failed": {
           "HLD-H05": [
             "submitted"
           ],
-          "HLD-H07": [
-            "submitted"
-          ],
           "HLD-H08": [
-            "submitted"
+            "classification",
+            "deadline",
+            "routing"
           ]
         },
         "not_built_reasons": {
-          "HLD-H05": "expected exactly one 'Amount:' line in the source",
-          "HLD-H07": "the intake supports no supported classification, and the model gave no usable answer: no_recording",
-          "HLD-H08": "the intake supports no supported classification, and the model gave no usable answer: no_recording"
+          "HLD-H05": "expected exactly one 'Amount:' line in the source"
         },
         "wrong_ready": [],
-        "manual_review": 1,
+        "manual_review": 3,
         "not_built": [
-          "HLD-H05",
-          "HLD-H07",
-          "HLD-H08"
+          "HLD-H05"
         ],
         "format_errors": [],
         "model_calls": 6,

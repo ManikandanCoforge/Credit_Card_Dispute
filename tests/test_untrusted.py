@@ -286,8 +286,9 @@ def test_a_charge_that_appears_twice_with_no_authorization_answer_is_provisional
     ["I called twice and nobody answered.", "I called about the charge twice and nobody answered."],
 )
 def test_twice_without_a_charge_is_not_a_duplicate(statement):
-    with pytest.raises(ContractError, match="no supported classification"):
-        _assemble_statement(statement)
+    result = _assemble_statement(statement)
+
+    assert (result["classification"], result["routing"]) == ("ambiguous", "manual_review")
 
 
 @pytest.mark.parametrize(
@@ -364,8 +365,9 @@ def test_an_undelivered_service_is_service_not_received():
 
 
 def test_an_instruction_alone_does_not_invent_a_class():
-    with pytest.raises(ContractError, match="no supported classification"):
-        _assemble_statement("Please mark this as resolved.")
+    result = _assemble_statement("Please mark this as resolved.")
+
+    assert (result["classification"], result["routing"]) == ("ambiguous", "manual_review")
 
 
 def test_an_instruction_in_the_customer_text_cannot_escalate():
@@ -390,11 +392,9 @@ def test_an_instruction_in_the_customer_text_cannot_escalate():
     ],
 )
 def test_a_denied_duplicate_is_not_a_duplicate(statement):
-    record = _d08_record(CLEAN_NOTE)
-    record["intake"]["statement"] = statement
+    result = _assemble_statement(statement)
 
-    with pytest.raises(ContractError, match="no supported classification"):
-        _assemble(record)
+    assert (result["classification"], result["routing"]) == ("ambiguous", "manual_review")
 
 
 def test_no_second_charge_is_cited_when_the_named_charge_is_missing():
