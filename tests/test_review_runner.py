@@ -364,6 +364,27 @@ def test_submit_reports_a_review_it_could_not_open(tmp_path, capsys, monkeypatch
     assert capsys.readouterr().err == "a review could not be opened: submit_failed\n"
 
 
+def test_check_without_a_journal_says_to_submit_first(tmp_path, capsys):
+    journal = tmp_path / "reviews.json"
+
+    with pytest.raises(SystemExit) as stopped:
+        main(["check", "--journal", str(journal), "--wait", "0"])
+
+    assert stopped.value.code == 1
+    assert capsys.readouterr().err == f"no review journal at {journal}: run submit first\n"
+
+
+def test_check_refuses_a_file_that_is_not_a_journal(tmp_path, capsys):
+    journal = tmp_path / "reviews.json"
+    journal.write_text("not a journal", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as stopped:
+        main(["check", "--journal", str(journal), "--wait", "0"])
+
+    assert stopped.value.code == 1
+    assert capsys.readouterr().err == f"{journal} is not a review journal this runner wrote\n"
+
+
 def test_running_the_module_checks_the_default_journal(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     write_journal(tmp_path / "reports" / "reviews.json", [])

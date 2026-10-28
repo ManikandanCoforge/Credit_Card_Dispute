@@ -96,9 +96,12 @@ Terminal 2, the copilot:
 mkdir -p submissions
 uv run --locked python -m src.contract_records http://127.0.0.1:8765 data/dev > submissions/results.json
 uv run --locked python tools/scored_run.py --base-url http://127.0.0.1:8765
+uv run --locked python -m src.review_runner submit --base-url http://127.0.0.1:8765 --data data/dev
 ```
 
-The first command prints one contract per built case and names on stderr each case it could not build. The second drafts and scores every case and publishes the report. `make score` wraps the second command.
+The first command prints one contract per built case and names on stderr each case it could not build. The second drafts and scores every case and publishes the report. `make score` wraps the second command. The third opens one human review per built draft and keeps them in `reports/reviews.json`, which `check` reads later; add `--case CARD-D01` to open a single review. Without it, `pending` below lists nothing and `check` has no journal to read.
+
+Each command reads the bank again. CARD-D10's one injected failure is spent by the first read after a reset, so show its retry from the first command's output, not from a later one.
 
 Terminal 3, the operator. This is a person, not the agent:
 

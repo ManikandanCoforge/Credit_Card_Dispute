@@ -210,7 +210,15 @@ def _submit(args: argparse.Namespace) -> None:
 
 
 def _check_journal(args: argparse.Namespace) -> None:
-    entries = check_reviews(args.base_url, read_journal(args.journal), wait_seconds=args.wait)
+    try:
+        journal = read_journal(args.journal)
+    except FileNotFoundError:
+        sys.stderr.write(f"no review journal at {args.journal}: run submit first\n")
+        raise SystemExit(1) from None
+    except json.JSONDecodeError:
+        sys.stderr.write(f"{args.journal} is not a review journal this runner wrote\n")
+        raise SystemExit(1) from None
+    entries = check_reviews(args.base_url, journal, wait_seconds=args.wait)
     write_journal(args.journal, entries)
     for entry in entries:
         sys.stdout.write(f"{entry['case_id']}: {_outcome(entry)}\n")
