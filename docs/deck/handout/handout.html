@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<title>Lumen Bank · Dispute Copilot · Leave-behind · 29 October 2026</title>
+<link rel="stylesheet" href="handout.css">
+</head>
+<body>
+<main class="sheet">
+
+  <header class="chrome">
+    <span class="mark">Lumen Bank · Dispute Copilot</span>
+    <span class="meta">Leave-behind · 29 October 2026</span>
+  </header>
+
+  <h1>From complaint to cited draft.</h1>
+
+  <p class="lede">The system reads the case, cites every fact it uses, drafts the contract, and stops. Nothing is written until a person approves that exact draft, and the approval is bound to its hash.</p>
+
+  <section class="sec path">
+    <div class="label"><span>The path</span><i></i></div>
+    <ol class="stages">
+      <li class="stage">
+        <span class="no">01</span>
+        <h2>Read the bank</h2>
+        <p>27 tool attempts per pass, including 3 retries.</p>
+      </li>
+      <li class="stage">
+        <span class="no">02</span>
+        <h2>Bytes to typed bodies</h2>
+        <p>A bad body is retried, then a typed error, never an empty list.</p>
+      </li>
+      <li class="stage">
+        <span class="no">03</span>
+        <h2>Text to a contract</h2>
+        <p>Six to nine citations, each an exact slice of a named source.</p>
+      </li>
+      <li class="stage">
+        <span class="no">04</span>
+        <h2>Hash and human gate</h2>
+        <p>A human approves the hash; a changed draft returns 403.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="sec proven">
+    <div class="label"><span>Proven today</span><i></i></div>
+    <div class="stats">
+      <div class="stat">
+        <div class="n">12/12</div>
+        <div class="k">Dev cases pass</div>
+        <div class="s">0 format errors, 0 exceptions</div>
+      </div>
+      <div class="stat">
+        <div class="n">1014</div>
+        <div class="k">Tests pass</div>
+        <div class="s">suite runs in about 126 s</div>
+      </div>
+      <div class="stat">
+        <div class="n">100.00%</div>
+        <div class="k">Line coverage</div>
+        <div class="s">over 3404 statements</div>
+      </div>
+      <div class="stat">
+        <div class="n">3670.0</div>
+        <div class="k">P95 draft build, ms</div>
+        <div class="s">p50 31.0 ms; D07 3.7 s, D10 1.3 s</div>
+      </div>
+      <div class="stat">
+        <div class="n">0</div>
+        <div class="k">Model calls</div>
+        <div class="s">0.00 USD per pass</div>
+      </div>
+    </div>
+    <p class="caveat">Measured at 8c3ac7f on 28 October 2026, against the 12 dev cases. Code at main 8553bb3.</p>
+  </section>
+
+  <section class="sec limits">
+    <div class="limits-head">
+      <span class="band-label">Not done, named</span>
+      <span class="band-note">A gap is not delivered</span>
+    </div>
+    <div class="cols">
+      <div class="col">
+        <div class="col-head">
+          <span class="big">4</span>
+          <span class="cap">Named gaps</span>
+          <span class="cap right">Ticket</span>
+        </div>
+        <ul class="rows">
+          <li><span class="id">M1</span><span class="why">reviewer identity</span><span class="tk">no ticket</span></li>
+          <li><span class="id">M3</span><span class="why">live model route, off by default</span><span class="tk">ADR-003</span></li>
+          <li><span class="id">L1</span><span class="why">updates and closes, blocked by Gate U</span><span class="tk">no ticket</span></li>
+          <li><span class="id">L4</span><span class="why">wrapped statement limit</span><span class="tk">RED_TEAM</span></li>
+        </ul>
+        <p class="col-note">None of these is delivered. All twelve dev cases pass.</p>
+      </div>
+      <div class="col">
+        <div class="col-head">
+          <span class="big">0</span>
+          <span class="cap">Pull requests open</span>
+        </div>
+        <ul class="rows prs">
+          <li><span class="id">#52</span><span class="why">escalation and untrusted evidence, merged</span></li>
+          <li><span class="id">#63</span><span class="why">review gate for the endpoint, merged</span></li>
+          <li><span class="id">#65</span><span class="why">hybrid model path, ADR-003, merged</span></li>
+          <li><span class="id">#66</span><span class="why">meters delivered as COF-43, closed</span></li>
+        </ul>
+        <p class="col-note">Every change landed on main. The four gaps above are the work left.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec next">
+    <div class="label"><span>Next 30 days</span><i></i></div>
+    <ol class="moves">
+      <li>
+        <span class="no">01</span>
+        <span class="move"><b>Add reviewer identity.</b> M1: the gate records who approved, not just that someone did.</span>
+        <span class="dur">2 weeks</span>
+      </li>
+      <li>
+        <span class="no">02</span>
+        <span class="move"><b>Approve the model route.</b> ADR-003 needs a volume run before anyone quotes latency or price.</span>
+        <span class="dur">1 week</span>
+      </li>
+      <li>
+        <span class="no">03</span>
+        <span class="move"><b>Start the intake pilot.</b> Two analysts, real complaints, the same contract and the same gate.</span>
+        <span class="dur">30 days</span>
+      </li>
+      <li>
+        <span class="no">04</span>
+        <span class="move"><b>Productize the next two complaint types.</b> Pick them from what the pilot sees most.</span>
+        <span class="dur">after the pilot</span>
+      </li>
+      <li>
+        <span class="no">05</span>
+        <span class="move"><b>Turn on ruleset enforcement.</b> Blocked by the GitHub plan, so the checks are advisory today.</span>
+        <span class="dur">blocked</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="sec ask">
+    <div class="ask-body">
+      <div class="label"><span>The ask</span></div>
+      <ol class="asks">
+        <li><span class="no">1</span><span>Approve the model route for the two closed questions.</span></li>
+        <li><span class="no">2</span><span>Name the next two complaint types to productize.</span></li>
+        <li><span class="no">3</span><span>Two analysts for a 30 day intake pilot.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <dl class="foot-grid">
+      <dt>Repo</dt>
+      <dd>github.com/ManikandanCoforge/Credit_Card_Dispute</dd>
+      <dt>Commit</dt>
+      <dd>8553bb3 · 28 October 2026</dd>
+      <dt>Reproduce</dt>
+      <dd>uv run --locked python -m src.run_loop</dd>
+      <dt>Scored run</dt>
+      <dd>reports/scored-run.json</dd>
+    </dl>
+    <p class="foot-note">Fictional training data. Mock system of record. No customer data.</p>
+  </footer>
+
+</main>
+</body>
+</html>
