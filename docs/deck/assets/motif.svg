@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1600" viewBox="0 0 1600 1600" role="img" aria-labelledby="t d">
+<title id="t">Cover motif: one route, one stop</title>
+<desc id="d">Abstract mark on navy: a single thin route crosses a faint technical field and ends at one amber node.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#0D6F6A"/></marker></defs>
+<rect x="0.0" y="0.0" width="1600.0" height="1600.0" rx="0" fill="#0A1C24" stroke="none" stroke-width="1.0"/>
+<path d="M260.0 240.0 L260.0 1360.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.18"/>
+<path d="M520.0 240.0 L520.0 1360.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.18"/>
+<path d="M780.0 240.0 L780.0 1360.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.18"/>
+<path d="M1040.0 240.0 L1040.0 1360.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.18"/>
+<path d="M1300.0 240.0 L1300.0 1360.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.18"/>
+<path d="M180.0 400.0 L1420.0 400.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.13"/>
+<path d="M180.0 660.0 L1420.0 660.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.13"/>
+<path d="M180.0 920.0 L1420.0 920.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.13"/>
+<path d="M180.0 1180.0 L1420.0 1180.0" fill="none" stroke="#0D6F6A" stroke-width="1.0" opacity="0.13"/>
+<path d="M 180 1280 H 520 V 1080 H 820 V 860 H 1080 V 700 H 1160" fill="none" stroke="#E6F2EF" stroke-width="3.0" stroke-linecap="square" stroke-linejoin="miter" opacity="0.95"/>
+<path d="M 180 1210 H 470" fill="none" stroke="#E6F2EF" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter" opacity="0.28"/>
+<path d="M 180 1350 H 570 V 1150 H 760" fill="none" stroke="#E6F2EF" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter" opacity="0.28"/>
+<path d="M 180 1140 H 430 V 980 H 700" fill="none" stroke="#E6F2EF" stroke-width="1.4" stroke-linecap="square" stroke-linejoin="miter" opacity="0.18"/>
+<path d="M470.0 1203.0 L470.0 1217.0" fill="none" stroke="#E6F2EF" stroke-width="1.6" opacity="0.4"/>
+<path d="M760.0 1143.0 L760.0 1157.0" fill="none" stroke="#E6F2EF" stroke-width="1.6" opacity="0.4"/>
+<path d="M700.0 973.0 L700.0 987.0" fill="none" stroke="#E6F2EF" stroke-width="1.6" opacity="0.4"/>
+<path d="M1160.0 650.0 L1160.0 750.0" fill="none" stroke="#E6F2EF" stroke-width="1.2" opacity="0.45"/>
+<path d="M1110.0 700.0 L1210.0 700.0" fill="none" stroke="#E6F2EF" stroke-width="1.2" opacity="0.45"/>
+<circle cx="1160" cy="700" r="36" fill="none" stroke="#A96900" stroke-width="1.4" opacity="0.55"/>
+<circle cx="1160" cy="700" r="15" fill="#A96900"/>
+</svg>

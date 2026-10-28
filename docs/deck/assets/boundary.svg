@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3200" height="1400" viewBox="0 0 3200 1400" role="img" aria-labelledby="t d">
+<title id="t">Trust boundary: untrusted evidence, controls in code, and the proof behind them</title>
+<desc id="d">Customer statement, attachment text and merchant note sit on the untrusted side. Controls treat text as data, classify in code, cite exact slices and bind an approval to the draft hash. Proof includes tests, audit rows and the 403 and 409 responses. Review and record are operator steps; the scored run stops at the draft.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#0D6F6A"/></marker></defs>
+<rect x="0.0" y="0.0" width="3200.0" height="1400.0" rx="0" fill="#FBFAF7" stroke="none" stroke-width="1.0"/>
+<text x="130.0" y="66.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="700" letter-spacing="2.6">LUMEN BANK · DISPUTE COPILOT</text>
+<text x="130.0" y="96.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="17" fill="#68777D" text-anchor="start" font-weight="400" letter-spacing="2.2">DECK ASSET · TRUST BOUNDARY</text>
+<text x="3070.0" y="66.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="end" font-weight="700" letter-spacing="2.2">MAIN 8553BB3 · 28 OCT 2026</text>
+<text x="3070.0" y="96.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="17" fill="#68777D" text-anchor="end" font-weight="400" letter-spacing="2.2">FICTIONAL TRAINING DATA</text>
+<path d="M130.0 132.0 L3070.0 132.0" fill="none" stroke="#D3CDC0" stroke-width="1.4"/>
+<text x="130.0" y="196.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#0D6F6A" text-anchor="start" font-weight="700" letter-spacing="3.2">WHAT IS TRUSTED, WHAT IS ONLY DATA</text>
+<text x="130.0" y="258.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="52" fill="#12262E" text-anchor="start" font-weight="400">Untrusted text in. A code gate out.</text>
+<text x="130.0" y="308.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="28" fill="#2B454F" text-anchor="start" font-weight="400">Nothing a customer or merchant writes can choose a class, a citation, or an approval.</text>
+<rect x="130.0" y="352.0" width="800.0" height="48.0" rx="0" fill="#F3EFE6" stroke="none" stroke-width="1.0"/>
+<rect x="990.0" y="352.0" width="1120.0" height="48.0" rx="0" fill="#E6F2EF" stroke="none" stroke-width="1.0"/>
+<rect x="2170.0" y="352.0" width="900.0" height="48.0" rx="0" fill="#F3EFE6" stroke="none" stroke-width="1.0"/>
+<text x="150.0" y="384.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#A96900" text-anchor="start" font-weight="700" letter-spacing="3.0">01 · UNTRUSTED INPUT</text>
+<text x="1010.0" y="384.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#0D6F6A" text-anchor="start" font-weight="700" letter-spacing="3.0">02 · CONTROLS IN CODE</text>
+<text x="2190.0" y="384.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#2B454F" text-anchor="start" font-weight="700" letter-spacing="3.0">03 · PROOF</text>
+<text x="960.0" y="336.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="16" fill="#A96900" text-anchor="middle" font-weight="700" letter-spacing="2.4">TRUST BOUNDARY</text>
+<path d="M960.0 420.0 L960.0 1300.0" fill="none" stroke="#D3CDC0" stroke-width="1.2" stroke-dasharray="3 7"/>
+<path d="M2140.0 420.0 L2140.0 1300.0" fill="none" stroke="#D3CDC0" stroke-width="1.2" stroke-dasharray="3 7"/>
+<text x="150.0" y="470.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="33" fill="#12262E" text-anchor="start" font-weight="400">Customer statement</text>
+<text x="150.0" y="506.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">Free text. It may name a rule.</text>
+<text x="150.0" y="536.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="400">intake · follow-up</text>
+<text x="150.0" y="600.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="33" fill="#12262E" text-anchor="start" font-weight="400">Attachment text</text>
+<text x="150.0" y="636.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">Partial, wrong, or absent.</text>
+<text x="150.0" y="666.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="400">attachment status</text>
+<text x="150.0" y="730.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="33" fill="#12262E" text-anchor="start" font-weight="400">Merchant note</text>
+<text x="150.0" y="766.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">Written by the other side.</text>
+<text x="150.0" y="796.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="400">note, kept as supplied</text>
+<path d="M130.0 840.0 L930.0 840.0" fill="none" stroke="#E2DDD2" stroke-width="1.0"/>
+<text x="150.0" y="882.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#A96900" text-anchor="start" font-weight="700" letter-spacing="3.0">THE RULE</text>
+<text x="150.0" y="928.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="36" fill="#12262E" text-anchor="start" font-weight="400">Read as data.</text>
+<text x="150.0" y="968.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="36" fill="#12262E" text-anchor="start" font-weight="400">Never as an instruction.</text>
+<text x="150.0" y="1010.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="25" fill="#2B454F" text-anchor="start" font-weight="400">A quote may leave the record. An order may not.</text>
+<text x="150.0" y="1042.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="400">quote must be an exact slice</text>
+<text x="1010.0" y="470.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#0D6F6A" text-anchor="start" font-weight="700" letter-spacing="2.8">01 · TREAT AS DATA</text>
+<text x="1010.0" y="508.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="33" fill="#12262E" text-anchor="start" font-weight="400">Text is evidence, not authority.</text>
+<text x="1010.0" y="545.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">The merchant note is stored, never obeyed.</text>
+<text x="1010.0" y="575.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">Its source id and private token are not copied.</text>
+<text x="1010.0" y="611.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="21" fill="#68777D" text-anchor="start" font-weight="400">build_merchant keeps 3 keys</text>
+<path d="M990.0 635.0 L2110.0 635.0" fill="none" stroke="#E2DDD2" stroke-width="1.0"/>
+<text x="1010.0" y="660.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#0D6F6A" text-anchor="start" font-weight="700" letter-spacing="2.8">02 · CLASSIFY IN CODE</text>
+<text x="1010.0" y="698.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="33" fill="#12262E" text-anchor="start" font-weight="400">Code picks the class and the route.</text>
+<text x="1010.0" y="735.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">Procedure anchors and routing precedence decide.</text>
+<text x="1010.0" y="765.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">A day count or quote that cannot be checked stops.</text>
+<text x="1010.0" y="801.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="21" fill="#68777D" text-anchor="start" font-weight="400">assemble_contract(record, ...)</text>
+<path d="M990.0 825.0 L2110.0 825.0" fill="none" stroke="#E2DDD2" stroke-width="1.0"/>
+<text x="1010.0" y="850.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#0D6F6A" text-anchor="start" font-weight="700" letter-spacing="2.8">03 · CITE THE SLICE</text>
+<text x="1010.0" y="888.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="33" fill="#12262E" text-anchor="start" font-weight="400">Every citation is an exact slice.</text>
+<text x="1010.0" y="925.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">Each case cites six to nine exact slices.</text>
+<text x="1010.0" y="955.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">A quote absent from its source is refused.</text>
+<text x="1010.0" y="991.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="21" fill="#68777D" text-anchor="start" font-weight="400">quote in source_text</text>
+<path d="M990.0 1015.0 L2110.0 1015.0" fill="none" stroke="#E2DDD2" stroke-width="1.0"/>
+<text x="1010.0" y="1040.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#0D6F6A" text-anchor="start" font-weight="700" letter-spacing="2.8">04 · BIND THE APPROVAL</text>
+<text x="1010.0" y="1078.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="33" fill="#12262E" text-anchor="start" font-weight="400">The approval binds the draft hash.</text>
+<text x="1010.0" y="1115.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">sha256 of canonical JSON, stored with the review.</text>
+<text x="1010.0" y="1145.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="26" fill="#2B454F" text-anchor="start" font-weight="400">The record write checks it again. A changed draft is 403.</text>
+<text x="1010.0" y="1181.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="21" fill="#68777D" text-anchor="start" font-weight="400">review.hash == digest(draft)</text>
+<path d="M990.0 1205.0 L2110.0 1205.0" fill="none" stroke="#E2DDD2" stroke-width="1.0"/>
+<text x="2190.0" y="470.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="700" letter-spacing="2.8">TESTS AT 8553BB3</text>
+<text x="2190.0" y="520.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="46" fill="#12262E" text-anchor="start" font-weight="400">1014 tests pass.</text>
+<text x="2190.0" y="556.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="25" fill="#2B454F" text-anchor="start" font-weight="400">100 percent line coverage over 3404 statements.</text>
+<path d="M2170.0 584.0 L3070.0 584.0" fill="none" stroke="#E2DDD2" stroke-width="1.0"/>
+<text x="2190.0" y="626.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="700" letter-spacing="2.8">THE GATE ANSWERS</text>
+<text x="2190.0" y="666.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="26" fill="#0D6F6A" text-anchor="start" font-weight="700">201</text>
+<text x="2262.0" y="666.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="25" fill="#2B454F" text-anchor="start" font-weight="400">review requested, pending</text>
+<text x="2190.0" y="709.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="26" fill="#0D6F6A" text-anchor="start" font-weight="700">200</text>
+<text x="2262.0" y="709.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="25" fill="#2B454F" text-anchor="start" font-weight="400">replay with the same key</text>
+<text x="2190.0" y="752.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="26" fill="#0D6F6A" text-anchor="start" font-weight="700">403</text>
+<text x="2262.0" y="752.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="25" fill="#2B454F" text-anchor="start" font-weight="400">approval missing or draft changed</text>
+<text x="2190.0" y="795.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="26" fill="#0D6F6A" text-anchor="start" font-weight="700">409</text>
+<text x="2262.0" y="795.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="25" fill="#2B454F" text-anchor="start" font-weight="400">duplicate_case</text>
+<path d="M2170.0 828.0 L3070.0 828.0" fill="none" stroke="#E2DDD2" stroke-width="1.0"/>
+<text x="2190.0" y="870.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="700" letter-spacing="2.8">HAND-WALKED D01</text>
+<text x="2190.0" y="910.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="24" fill="#12262E" text-anchor="start" font-weight="400">af65f686...ebd4</text>
+<text x="2190.0" y="942.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="24" fill="#12262E" text-anchor="start" font-weight="400">dispute-d01</text>
+<text x="2190.0" y="980.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="24" fill="#2B454F" text-anchor="start" font-weight="400">5 audit rows move with it.</text>
+<path d="M2170.0 1008.0 L3070.0 1008.0" fill="none" stroke="#E2DDD2" stroke-width="1.0"/>
+<text x="2190.0" y="1050.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="start" font-weight="700" letter-spacing="2.8">BOUNDARY IN ONE LINE</text>
+<text x="2190.0" y="1096.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="28" fill="#12262E" text-anchor="start" font-weight="400">Text may be quoted. Code decides.</text>
+<text x="2190.0" y="1130.0" font-family="Georgia, Cambria, 'Times New Roman', serif" font-size="28" fill="#12262E" text-anchor="start" font-weight="400">A human approves.</text>
+<rect x="130.0" y="1230.0" width="2940.0" height="76.0" rx="0" fill="#F3EFE6" stroke="none" stroke-width="1.0"/>
+<rect x="130.0" y="1230.0" width="4.0" height="76.0" rx="0" fill="#A96900" stroke="none" stroke-width="1.0"/>
+<text x="158.0" y="1260.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="19" fill="#A96900" text-anchor="start" font-weight="700" letter-spacing="3.0">OPEN EDGE</text>
+<text x="290.0" y="1262.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="24" fill="#2B454F" text-anchor="start" font-weight="400">Review and record are operator steps. The scored run stops at the draft.</text>
+<text x="290.0" y="1292.0" font-family="'Segoe UI', 'Segoe UI Variable', Arial, sans-serif" font-size="21" fill="#68777D" text-anchor="start" font-weight="400">#52 escalation merged. Retry merged and wired. ADR-003 model route merged, off by default.</text>
+<path d="M130.0 1330.0 L3070.0 1330.0" fill="none" stroke="#D3CDC0" stroke-width="1.2"/>
+<text x="130.0" y="1366.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#12262E" text-anchor="start" font-weight="700" letter-spacing="1.0">NO MODEL CALL ON THE READ PATH · CLASSIFICATION, ROUTING, FACTS, CITATIONS AND DEADLINE COME FROM CODE.</text>
+<text x="3070.0" y="1366.0" font-family="'Cascadia Mono', 'Cascadia Code', Consolas, monospace" font-size="20" fill="#68777D" text-anchor="end" font-weight="400" letter-spacing="1.0">28 OCT 2026</text>
+</svg>
