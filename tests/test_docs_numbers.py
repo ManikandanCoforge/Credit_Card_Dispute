@@ -9,6 +9,7 @@ number the report holds.
 
 import json
 import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -283,5 +284,17 @@ def test_the_deck_artifacts_are_tracked_and_present():
         assert artifact.is_file(), f"docs/deck/out/{name} is missing"
         assert artifact.stat().st_size > 50_000, (
             f"docs/deck/out/{name} is {artifact.stat().st_size} bytes, too small to be the built artifact"
+        )
+        relative = artifact.relative_to(ROOT).as_posix()
+        tracked = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", relative],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert tracked.returncode == 0, (
+            f"git does not track {relative}; a deck artifact in the checkout but not in the tree "
+            "is not part of the evidence pack"
         )
 

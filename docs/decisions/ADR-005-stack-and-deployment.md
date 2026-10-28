@@ -40,8 +40,9 @@ framework, on a single machine, against a supplied mock bank that speaks HTTP.
 2. **Data layer.** Two file-backed stores and one remote store:
    - JSON datasets: `data/dev` for the cases, `feedback/dev_gold.json` for
      expectations, `evals/suites/` for the evaluation suites. Read-only inputs.
-   - SQLite: the mock bank's state file (`BANK_STATE`, default
-     `.state/mock.sqlite`) holds records, reviews and their approval binding,
+   - SQLite: the mock bank's state file (`BANK_STATE` in the container
+     wrapper, `--state` in the assessed mock, default `.state/mock.sqlite`)
+     holds records, reviews and their approval binding,
      so the audit trail survives a restart; the trace store
      (`src/observability.py:241`, `TRACE_DB` default
      `.state/traces.sqlite3`) holds finished spans through the `SpanStore`

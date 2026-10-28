@@ -1,7 +1,7 @@
 # Demo rehearsal and defence run
 
 - Ticket: COF-48
-- Status: **ARC REHEARSED TWICE WITH NO FAILED BEAT** (2026-10-28, after the COF-43 fix for CARD-D09). The CARD-D09 beat and the live-change drills were re-run on 8553bb3 on 2026-10-28. Pass conditions 2 to 4 are still open.
+- Status: **ARC REHEARSED TWICE WITH NO FAILED BEAT** (2026-10-28, after the COF-43 fix for CARD-D09). The CARD-D09 beat and the live-change drills were re-run on 8553bb3 on 2026-10-28. Pass conditions 3 and 4 are still open.
 - Last updated: 2026-10-28
 - Rehearsed: 2026-10-27 from commit 1c1d8ba (1c1d8baa00dafc5e4bbe6f03dfa15bb251187af2), mock on http://127.0.0.1:8793; 2026-10-28 from commit 2030440 (20304404b9a5585dddf0b6e7b2a9b17a60166c85), mock on http://127.0.0.1:8794; supplementary checks 2026-10-28 from commit 8553bb3, mock on http://127.0.0.1:8855
 - Current scored run: 12 of 12, 0 format errors (reports/scored-run.md, generated 2026-10-28T02:10:46Z from 8c3ac7f)
@@ -16,7 +16,7 @@ On 2026-10-28 the CARD-D09 path and the live-change drills were run once more at
 | # | Acceptance criterion | Current status | Blocker |
 |---|---|---|---|
 | 1 | The full six-beat arc runs twice without manual repair | **Met on 2030440** | Runs 3 and 4 (2026-10-28, 2030440) passed six of six beats with no repair between them. Runs 1 and 2 (2026-10-27, on the frozen build 1c1d8ba) failed beat 5 on CARD-D09 (COF-43); the fix came after the freeze, so this holds only if the pod takes it (see Freeze and escalation). Beat 5 was re-run at 8553bb3 on 2026-10-28 and passed; the other five beats were not re-run at 8553bb3. |
-| 2 | Every number in the deck matches the published report | **Met at 8553bb3** | docs/deck is tracked and was rebuilt from reports/scored-run.json on 2026-10-28: 12 of 12, 0 format errors, p50 31.000 ms, p95 3670.000 ms, 27 attempts, 3 retries, 0 model calls, 0.00 USD, 1014 tests over 3404 statements. docs/deck/FACTS.md records the source commit (8553bb3) and the published run (8c3ac7f), and tests/test_docs_numbers.py guards the deck's headline numbers against the report. The numbers move when the report is regenerated, so re-run the guard before the demo. |
+| 2 | Every number in the deck matches the published report | **Met at 8553bb3** | docs/deck is tracked and was rebuilt from reports/scored-run.json on 2026-10-28: 12 of 12, 0 format errors, p50 31.000 ms, p95 3670.000 ms, 27 attempts, 3 retries, 0 model calls, 0.00 USD, 1014 tests over 3404 statements at 8553bb3 (1017 once the three documentation guards landed). docs/deck/FACTS.md records the source commit (8553bb3) and the published run (8c3ac7f), and tests/test_docs_numbers.py guards the deck's headline numbers against the report. The numbers move when the report is regenerated, so re-run the guard before the demo. |
 | 3 | Each person explains one case and makes one live change | **Not met** | The three person drills were run by the rehearsal driver on scratch copies on 2026-10-28, and the policy drill was run with a checksum-matched revert (table below). The named people have not yet done their own drill live. A copy run proves the mechanics, not the person. |
 | 4 | A recorded fallback exists if the live run fails | **Not met** | No recording exists. Owner: Ken (Lead). Deadline: the 2026-10-29 dry run. See Recorded fallback. |
 | 5 | The audit trail is shown, including no forbidden write attempts | **Met** | Shown in all four arc runs and in the 2026-10-28 duplicate and identity runs; no unapproved_write_attempt, forbidden_write_attempt or unsupported_write_attempt. |

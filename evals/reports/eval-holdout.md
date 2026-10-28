@@ -1,9 +1,9 @@
 # Evaluation report - holdout
 
-- Commit: `8553bb3`
+- Commit: `8a915e0`
 - Data: `evals/fixtures/holdout/data`
 - Gold: `evals/fixtures/holdout/gold.json`
-- Generated: 2026-10-28T03:19:18+00:00
+- Generated: 2026-10-28T03:49:38+00:00
 - Cases fully passed: **3/8**
 - Format errors: 0
 

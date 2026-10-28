@@ -1,9 +1,9 @@
 # Evaluation report - dev
 
-- Commit: `8553bb3`
+- Commit: `8a915e0`
 - Data: `data/dev`
 - Gold: `feedback/dev_gold.json`
-- Generated: 2026-10-28T03:14:35+00:00
+- Generated: 2026-10-28T03:48:23+00:00
 - Cases fully passed: **12/12**
 - Format errors: 0
 

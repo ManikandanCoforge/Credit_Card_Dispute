@@ -82,7 +82,7 @@ Everything in this folder supports [ADR-003](../docs/decisions/ADR-003-hybrid-mo
 
 ### Latest deterministic results
 
-Offline suite, five primary evals, branch HEAD `8553bb3`, 2026-10-28 UTC. Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
+Offline suite, five primary evals, commit `8a915e0` (the branch HEAD when the runs were made; later commits touch docs, tests and artifacts only), 2026-10-28 UTC. Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
 
 | Suite | Cases | Fully passed | Failing cases | Artifact |
 |---|---|---|---|---|
