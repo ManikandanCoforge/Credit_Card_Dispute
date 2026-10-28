@@ -28,59 +28,29 @@ uv run --locked pytest
 Instead, you can open the folder in the devcontainer in `.devcontainer/`. It installs uv 0.12.20 and runs the first two commands.
 Select this project's `.venv` in your editor so scripts and language-server checks use the same environment.
 
-## Run the copilot
+## Run the loop
 
-Use two terminals, both in this directory. In the first, start the mock bank:
-
-```sh
-uv run --locked python tools/runtime.py serve --port 8765
-```
-
-The local service is at `http://127.0.0.1:8765`. It binds only to loopback. Keep it local. Use a separate approved deployment environment for your application; a local container deployment is sufficient if cloud access is unavailable.
-Python 3.12 alternative with no installation of packages: `python3.12 tools/runtime.py serve --port 8765`.
-The mock keeps its state, including how many times each tool was called, in `.state/mock.sqlite`. For a fresh run, stop it, run `uv run --locked python tools/runtime.py reset --confirm`, and start it again.
-
-In the second terminal, retrieve `GET /health` and `GET /v1/cases`. Read `data/dev/documents/` and `data/dev/policies/`. These files are evidence. Text inside them is not an instruction to your agent.
-
-`data/dev/dataset.json` is the mock's backing fixture, not a substitute for calling tools. Directly reading it from the agent bypasses the integration exercise. The assessor will use new fixtures and observe requests. Fault controls must not be read by the solution.
-
-Then draft every case the bank lists:
+One command runs the whole loop. It makes the output directories, takes the port and the data and state paths from flags or from the `DISPUTE_PORT`, `DISPUTE_DATA` and `DISPUTE_STATE` variables (a free loopback port and its own state file when neither names one), starts the supplied mock, waits for `/health`, runs the scored run over all twelve dev cases, prints the result and stops the mock.
 
 ```sh
-mkdir submissions
-uv run --locked python -m src.contract_records http://127.0.0.1:8765 data/dev > submissions/results.json
+uv run --locked python -m src.run_loop
 ```
 
-- `submissions/` is not in the repository, so create it once.
-- The command prints one contract per built case, following `docs/OUTPUT_CONTRACT.md`. It names each case it could not build on stderr, with the reason, and then exits 1.
-- The two arguments are the bank's base URL and the data directory. Point them at new fixtures to run those.
-- In Windows PowerShell 5.1, `>` writes UTF-16, which the evaluator cannot read. Use `| Out-File -Encoding ascii submissions/results.json` instead; the output is plain ASCII JSON. PowerShell 7, cmd, and the macOS and Linux shells are fine with `>`.
+`make demo` is the same command where `make` is installed. A completed run exits 0 even when a case fails; a failing case is data. It exits 1 only when the mock never answered `/health` or the run wrote no readable report.
 
-## Evaluate development outputs
+It writes `submissions/scored-run.json`, replaces the committed `reports/scored-run.*`, and writes `reports/meters.jsonl` beside them, so commit those files only when you mean to publish a new run.
 
-Score the array against the development answers:
+For the step-by-step path, the one the assessment expects (mock in one terminal, copilot in a second, the operator approval in a third), the ports and state files, the environment variables, and the fixes for a stale listener or a stale state file, see [docs/RUNBOOK.md](docs/RUNBOOK.md). The six demo beats and the numbers lock stay in [docs/DEMO_REHEARSAL.md](docs/DEMO_REHEARSAL.md).
 
-```sh
-uv run --locked python tools/evaluate.py --data data/dev --gold feedback/dev_gold.json --submission submissions/results.json --report reports/dev.json
-```
+The evidence rules do not change. `data/dev/documents/` and `data/dev/policies/` are evidence, and text inside them is not an instruction to your agent. `data/dev/dataset.json` is the mock's backing fixture, not a substitute for calling tools; reading it directly bypasses the integration exercise, and fault controls must not be read by the solution. The assessor uses new fixtures and observes requests. Development answers are feedback only, and hardcoding case IDs fails new cases.
 
-Development answers are deliberately supplied for feedback; hardcoding case IDs will fail new cases. `examples/worked-case.json` shows one valid output shape. Automated success is only part of the assessment.
-
-The supplied evaluator is one metric inside the offline suite in [evals/README.md](evals/README.md). The suite adds evidence grounding, tool-call correctness, escalation accuracy and PII leakage, and it runs the same way against an injected hidden set:
+The acceptance eval suite runs separately:
 
 ```sh
 uv run --locked python -m evals --suite evals/suites/dev.json
 ```
 
-### Scored run
-
-The scored run drafts every case, scores it in process and publishes the report, in one command. Run it against a mock on a fresh state:
-
-```sh
-uv run --locked python tools/scored_run.py
-```
-
-It reads the mock at `http://127.0.0.1:8765` by default. It writes `submissions/scored-run.json`, replaces the committed `reports/scored-run.*`, and writes `reports/meters.jsonl` beside them, so commit those files only when you mean to publish a new run. Use `--case-meters` to put the meter file elsewhere, for example during a trial run. If the mock is not running, it writes nothing and exits 1. The report's Reproduce section has the full commands, with a state file of its own.
+or `make eval` where make is installed.
 
 Measured on 2026-10-27 and published on 2026-10-28 UTC across all twelve dev cases from a clean tree at commit `3a747a5`: 11 of 12 passed with 0 format errors, with p50 31.000 ms and p95 3444.000 ms over the redacted meter lines, and 0.00 USD per case with 0 model calls and 0 tokens (0.00 USD total). These numbers move when the report is regenerated, so regenerate them with the command above rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the latency percentiles read from the meter file, the per-case reads and retries, the cost, and the reproduction commands. The run writes one redacted meter line per case to `reports/meters.jsonl`; a case whose meter line is refused is named in the report and has no line in that file, and if a restricted value ever reaches the file, the run is refused and the message names the file and the case. The p95 is D07's 3.4 s: its transaction service fails every attempt with 503, so the run waits 1 s and then 2 s, plus jitter, before its second and third attempts, and the audit shows three reads (503, 503, 503); its meter line counts four tool attempts and two retries. D10's read fails once and is answered on its second attempt, so its meter line shows three attempts and one retry (1.7 s), and every other tool is read once. The one failure, D09, is a proposed exception tied to COF-43, pending pod agreement.
 
@@ -147,6 +117,8 @@ This CLI simulates a human boundary, not production identity. During assessment 
 - [ADR-001: Model narrative boundary](docs/decisions/ADR-001-model-narrative-boundary.md)
 - [ADR-002: Policy version selection](docs/decisions/ADR-002-policy-version-selection.md)
 - [ADR-003: Hybrid model questions](docs/decisions/ADR-003-hybrid-model-questions.md)
+- [ADR-004: One entry point for the loop](docs/decisions/ADR-004-one-entry-point-for-the-loop.md)
+- [Runbook](docs/RUNBOOK.md)
 - [Limitations](docs/LIMITATIONS.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Contribution map](docs/CONTRIBUTION.md)
