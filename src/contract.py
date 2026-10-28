@@ -892,7 +892,7 @@ def _model_escalation(
     kind, line = answer["type"], answer["line"]
     procedure_source = _source_id(procedure_text)
     if kind == "none":
-        return {"classification": "ambiguous", "reason": _NO_TYPE_REASON, "citations": []}
+        return _no_type_escalation(procedure_text, _NO_TYPE_REASON)
     if kind == "cash_withdrawal":
         return {
             "classification": "unsupported",
