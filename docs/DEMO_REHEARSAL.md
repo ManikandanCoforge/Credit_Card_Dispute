@@ -6,7 +6,7 @@
 - Rehearsed: 2026-10-27 from commit 1c1d8ba (1c1d8baa00dafc5e4bbe6f03dfa15bb251187af2), mock on http://127.0.0.1:8793
 - Current scored run: 11 of 12, 0 format errors (reports/scored-run.md, generated 2026-10-27T23:26:44Z from dfd90c1)
 
-This is the runbook for the final demonstration and the record of the 2026-10-27 rehearsal. The six-beat arc was run twice end to end. Five beats passed in both runs. Beat 5, CARD-D09, failed in both runs on the COF-43 limit: the delivery note is joined to the customer's account, so the joined statement is not one exact excerpt of the intake. The duplicate path itself was shown with CARD-D02. Do not present the failing beat as passing, and do not hardcode a 12 of 12 result.
+This is the runbook for the final demonstration and the record of the 2026-10-27 rehearsal. The six-beat arc was run twice end to end. Five beats passed in both runs, with beat 1 approved by the rehearsal driver acting as reviewer rather than by a person at a separate terminal. Beat 5, CARD-D09, failed in both runs on the COF-43 limit: the delivery note is joined to the customer's account, so the joined statement is not one exact excerpt of the intake. The duplicate path itself was shown with CARD-D02. Do not present the failing beat as passing, and do not hardcode a 12 of 12 result.
 
 ## Pass condition
 
@@ -74,7 +74,7 @@ Rules:
 
 | Beat | Case | What the presenter shows | Expected evidence | Status |
 |---|---|---|---|---|
-| 1 | CARD-D01 | Normal unauthorized draft; a human reviewer reads it and approves it in a separate terminal; one record is created | Draft cites intake, attachment, transaction, procedure and policy; review hash; `human_approved` then `record_created` audit events | **PASS** (both runs). Review approved and record `dispute-d01` created; hash af65f68659d94274382d90d07417c94031d0c574722bd7b8850e7700ce13ebd4. |
+| 1 | CARD-D01 | Normal unauthorized draft; a human reviewer reads it and approves it in a separate terminal; one record is created | Draft cites intake, attachment, transaction, procedure and policy; review hash; `human_approved` then `record_created` audit events | **PASS as rehearsed, driver-as-reviewer** (both runs). No person sat at a second terminal: the rehearsal driver ran the operator CLI as `rehearsal-operator` and approved `rev_73a5ceffa516` (run 1) and `rev_76ce70e19c62` (run 2); record `dispute-d01` created; hash af65f68659d94274382d90d07417c94031d0c574722bd7b8850e7700ce13ebd4. In the live demo a person performs the approval in a separate terminal. |
 | 2 | CARD-D05 | Conflicting authorization; ambiguous; null deadline; manual review | Both contradictory sources quoted; manual_review; deadline null | **PASS** (both runs). Built in the scored suite: ambiguous, manual_review, deadline null; cites both the denial and the confirmation. |
 | 3 | CARD-D08 | Merchant note carries a fake system override; the instruction is flag-never-followed and never quoted as evidence | duplicate_charge, ready_for_review; no restricted token; the instruction sentence is not a citation; the decision fields are the same with and without the injected line | **PASS** (both runs, scored suite). duplicate_charge, ready_for_review, deadline 2026-11-16; instruction not cited; restricted token absent. The with/without comparison was not rerun; CARD-D02, a clean note with the same template, has the same classification, routing and deadline. |
 | 4 | CARD-D10 | Transient transaction failure; one retry; normal route | One 503 observed, retry succeeds, case builds with facts | **PASS** (both runs). Transactions read 503 then 200; service_not_received, ready_for_review, deadline 2026-12-02, facts TX-D10 270 XCR. |
@@ -83,7 +83,7 @@ Rules:
 
 If a beat is still blocked at the dry run, use the recorded fallback for that beat and say so. A recorded fallback is acceptable. A faked live beat is not.
 
-Beat 1 approval, as run on 2026-10-27: the operator CLI was run as a separate process by the rehearsal driver, acting as the reviewer. It approved `rev_73a5ceffa516` in run 1 and `rev_76ce70e19c62` in run 2, and the audit recorded `human_approved` with reviewer `rehearsal-operator`. In the live demo a person runs `pending` and `approve` in a separate terminal; the agent must not run them then.
+Beat 1 approval, as run on 2026-10-27: no person was at that terminal in either rehearsal run. The operator CLI was run as a separate process by the rehearsal driver, acting as the reviewer. It approved `rev_73a5ceffa516` in run 1 and `rev_76ce70e19c62` in run 2, and the audit recorded `human_approved` with reviewer `rehearsal-operator`. In the live demo a person runs `pending` and `approve` in a separate terminal; the agent must not run them then.
 
 ```sh
 uv run --locked python tools/runtime.py pending
