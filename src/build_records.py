@@ -141,7 +141,12 @@ def _policy(reported: date | None, versions: list[_PolicyVersion]) -> Policy:
         if reported is not None and version["start"] <= reported <= version["end"]
     ]
     if len(chosen) != 1:
-        return {"version_id": None, "procedure_id": None}
+        # No version, or more than one, covers the date. The procedure the covering
+        # versions name, or with none every version names, still applies, so the case
+        # can be drafted for a person under it.
+        procedures = {version["procedure_id"] for version in chosen or versions}
+        procedure_id = procedures.pop() if len(procedures) == 1 else None
+        return {"version_id": None, "procedure_id": procedure_id}
     match = chosen[0]
     return {
         "version_id": match["source_id"],

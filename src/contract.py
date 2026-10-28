@@ -20,6 +20,7 @@ from datetime import date, datetime, timedelta
 from src.escalation import (
     Escalation,
     EscalationError,
+    Quote,
     find_escalation,
     instruction_holds_cue,
 )
@@ -91,7 +92,13 @@ _DUPLICATE = re.compile(
     r"\b(?:appears?|appeared|shows?|showed|shown|listed|posted|went through)\b[^.!?]*\btwice\b"
     r"|\bsame (?:charge|payment|transaction)\b[^.!?]*\btwice\b"
     r"|\btwo (?:identical |separate )?(?:charges|debits|payments)\b|\bdouble[- ]?(?:charg|bill)\w*"
-    r"|\bduplicate (?:charges?|transactions?|payments?)\b|\bcharged (?:me )?(?:two|2) times\b",
+    r"|\bduplicate (?:charges?|transactions?|payments?)\b|\bcharged (?:me )?(?:two|2) times\b"
+    # The same report in other words: "billed me two times", "took the exact same 38
+    # crowns again", "shows up on my statement more than once".
+    r"|\b(?:charged|billed|debited|deducted|took|taken)\b[^.!?]*\b(?:two|2) times\b"
+    r"|\b(?:charged|billed|debited|deducted|took|taken)\b[^.!?]*\bsame\b[^.!?]*\bagain\b"
+    r"|\b(?:charged|billed|debited)\b[^.!?]*\bmore than once\b"
+    r"|\b(?:appears?|appeared|shows? up|showed up|listed|posted)\b[^.!?]*\bmore than once\b",
     re.IGNORECASE,
 )
 # A denial of the duplicate itself is not a report of one. It is checked on the same
@@ -107,7 +114,8 @@ _NOT_DUPLICATE = re.compile(
     r"|(?:\bnot|n't|\bnever|\bno)\s+(?:(?:see|find|have|notice|show)\w*\s+)?(?:any\s+)?"
     r"two\s+(?:identical\s+|separate\s+)?(?:charges|debits|payments)\b"
     r"|\b(?:not|never|no)\b\s+(?:a\s+|an\s+|the\s+)?"
-    r"(?:double|duplicate)[- ]?(?:charge|charges|transaction|transactions|payment|payments)\b",
+    r"(?:double|duplicate)[- ]?(?:charge|charges|transaction|transactions|payment|payments)\b"
+    r"|(?:\bnot|n't|\bnever)\b[^.!?]{0,25}\bmore than once\b",
     re.IGNORECASE,
 )
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
@@ -121,6 +129,21 @@ _INSTRUCTION_REASON = (
 _ONE_CHARGE_NOTE = (
     "Only one charge for this purchase is on record, and the procedure asks for both "
     "transaction records, so a person must find the second charge before this draft is used."
+)
+# The service answered, but not with the charge the intake names: the amount is unknown,
+# so the draft cannot be ready ("Take amount and currency from the transaction service
+# for the named transaction").
+_NAMED_MISSING_NOTE = (
+    "The transaction service answered, but the named transaction is not in its response, "
+    "so amount and currency are unknown. A person must find the charge before this draft "
+    "is used."
+)
+# A form that denies authorization beside a statement of a purchase that was paid for and
+# not delivered: the customer's accounts conflict about authorization.
+_DENIED_SERVICE_REASON = (
+    "The intake form denies authorization, but the customer describes a purchase they paid "
+    "for that was not delivered. The accounts conflict, so this draft does not decide which "
+    "is correct."
 )
 # The transaction service did not answer within the procedure's three attempts.
 _RETRY_RULE_ANCHOR = "Retry a transient failure"
@@ -164,6 +187,21 @@ _AUTHORIZATION_LABEL = "Authorization:"
 _AMBIGUOUS_RULE_ANCHOR = "If customer accounts conflict about authorization"
 _UNSUPPORTED_RULE_ANCHOR = "Cash withdrawal disputes are unsupported"
 _SUPPORTED_RULE_ANCHOR = "Supported classifications:"
+# A dispute of a kind the procedure does not support: a fee, a price rise, or a charge
+# above the price quoted. Read only when no supported type fits, so a fee mentioned in a
+# duplicate or service complaint never changes its type.
+_OTHER_DISPUTE = re.compile(
+    r"\bfees?\b|\bovercharg\w*"
+    r"|\bmore than (?:the )?(?:price|amount|quote)\b"
+    r"|\b(?:was|were) quoted\b"
+    r"|\bprice (?:went up|increased?|rose)\b"
+    r"|\b(?:price|fee|rate|subscription) (?:increase|rise|hike)\b",
+    re.IGNORECASE,
+)
+_OTHER_DISPUTE_REASON = (
+    "The customer disputes a fee or a price, which is not one of the procedure's supported "
+    "classifications, so no supported type is assigned and a person decides the case."
+)
 
 # The procedure sentence that supports each classification this step can choose.
 _CLASSIFICATION_ANCHOR = {
@@ -190,7 +228,21 @@ _SERVICE_NOT_DELIVERED = (
     "service not supplied",
     "service was never supplied",
 )
-_SERVICE = re.compile("|".join(re.escape(p) for p in _SERVICE_NOT_DELIVERED), re.IGNORECASE)
+# The same report in other words: the thing paid for never happened, never came, or was
+# never given ("the photographer never showed up", "the parcel delivery never took place",
+# "nothing was ever provided", "they never gave me the classes").
+_SERVICE_NEVER_HAPPENED = (
+    r"\bnever (?:happened|took place|showed up|turned up|came|arrived|shown|done|"
+    r"performed|provided|supplied|started|completed|gave me|got delivered)\b"
+    r"|\bnothing was (?:ever )?(?:provided|delivered|supplied|received)\b"
+    r"|\b(?:nobody|no one) (?:ever )?(?:came|showed up|turned up)\b"
+    r"|\b(?:did not|didn't|never) (?:show up|turn up|arrive)\b"
+    r"|\b(?:was not|wasn't|were not|weren't) (?:provided|supplied|performed|done)\b"
+)
+_SERVICE = re.compile(
+    "|".join([*(re.escape(p) for p in _SERVICE_NOT_DELIVERED), _SERVICE_NEVER_HAPPENED]),
+    re.IGNORECASE,
+)
 # A filing command is not the customer's account of the facts. src.untrusted catches text
 # addressed to the system; these are the commands that try to choose the case's class.
 # A command has the shape "file this as …" or "mark this complaint as …": a bare "I want to
@@ -249,7 +301,7 @@ def assemble_contract(
     intake_text: str,
     attachment_text: str,
     procedure_text: str,
-    policy_text: str,
+    policy_text: str | None,
     transactions_text: str | None,
     customer_texts: Sequence[str] = (),
 ) -> Contract:
@@ -275,7 +327,7 @@ def assemble_draft(
     intake_text: str,
     attachment_text: str,
     procedure_text: str,
-    policy_text: str,
+    policy_text: str | None,
     transactions_text: str | None,
     customer_texts: Sequence[str] = (),
     writer: ProseWriter | None = None,
@@ -283,6 +335,7 @@ def assemble_draft(
     model_calls: list[ModelCall] | None = None,
     known_values: Sequence[str] = (),
     merchant_unavailable: bool = False,
+    other_documents: Sequence[str] = (),
 ) -> tuple[Contract, NarrativeMeter]:
     """Return the contract object for one working record, and how its narrative was made.
 
@@ -311,6 +364,15 @@ def assemble_draft(
     undelivered service, is drafted as ambiguous for manual_review with a null deadline.
     It is never left unbuilt, because a case missing from the submission fails every
     check.
+
+    policy_text is None when no policy version, or more than one, covers the reported
+    date. The case is then drafted for manual_review under the procedure alone: the type
+    is still read, the deadline is null, policy_ids names only the procedure, and the
+    intake's reported-date line is cited as the reason.
+
+    other_documents are the texts of listed documents that are not customer statements,
+    such as a second receipt. Each is cited by its Amount line, or its Source ID line, and
+    named in the narrative; none is read as the customer's account.
 
     merchant_unavailable is True when the merchant service did not answer within its
     attempts. The merchant record is never cited, so routing is unchanged (assumption
@@ -343,20 +405,58 @@ def assemble_draft(
     Citations are exact slices of the supplied sources. A slice that cannot be
     made exactly raises ContractError.
     """
-    contract, notes = _rules_contract(
-        record,
-        intake_text=intake_text,
-        attachment_text=attachment_text,
-        procedure_text=procedure_text,
-        policy_text=policy_text,
-        transactions_text=transactions_text,
-        customer_texts=customer_texts,
-        model=model,
-        calls=[] if model_calls is None else model_calls,
-        known=known_values,
-    )
+    if policy_text is None:
+        contract, notes = _no_policy_contract(
+            record,
+            intake_text=intake_text,
+            attachment_text=attachment_text,
+            procedure_text=procedure_text,
+            transactions_text=transactions_text,
+            customer_texts=customer_texts,
+            known=known_values,
+        )
+    else:
+        contract, notes = _rules_contract(
+            record,
+            intake_text=intake_text,
+            attachment_text=attachment_text,
+            procedure_text=procedure_text,
+            policy_text=policy_text,
+            transactions_text=transactions_text,
+            customer_texts=customer_texts,
+            model=model,
+            calls=[] if model_calls is None else model_calls,
+            known=known_values,
+        )
     if merchant_unavailable:
         notes.append(_MERCHANT_UNAVAILABLE_NOTE)
+    # Every customer statement the draft read is on file: one the rules did not quote is
+    # cited by its Source ID line. A statement that declares no single source id cannot
+    # be cited exactly, and is left as the rules left it.
+    cited = {citation["source_id"] for citation in contract["citations"]}
+    statements_on_file: list[Citation] = []
+    for text in customer_texts:
+        source_lines = _lines_starting(text, _SOURCE_ID_LABEL)
+        if len(source_lines) != 1:
+            continue
+        source_id = source_lines[0].split(":", 1)[1].strip()
+        if source_id and source_id not in cited:
+            statements_on_file.append(
+                {"claim": "customer_statement", "source_id": source_id, "quote": source_lines[0]}
+            )
+    if statements_on_file:
+        contract = {**contract, "citations": [*contract["citations"], *statements_on_file]}
+    if other_documents:
+        # Each further document is cited, as the attachment is, so the evidence is on file;
+        # none is read as the customer's account.
+        extra = [_attachment_citation(text, [], escalated=True) for text in other_documents]
+        contract = {**contract, "citations": [*contract["citations"], *extra]}
+        notes.append(
+            "Further documents were listed that are not customer statements, so they were "
+            "not read for the dispute: "
+            f"{', '.join(citation['source_id'] for citation in extra)}. "
+            "A person should check them."
+        )
     narrative, meter = draft_narrative(contract, notes, writer)
     return {**contract, "narrative": narrative}, meter
 
@@ -389,7 +489,7 @@ def _rules_contract(
     # only ever send a case to a person, never choose its class or make it ready.
     statements = [intake_text, *customer_texts]
     if escalation is None:
-        escalation = _instruction_escalation(statements)
+        escalation = _instruction_escalation(statements, procedure_text)
     if escalation is not None:
         return _escalated_contract(
             record,
@@ -406,6 +506,31 @@ def _rules_contract(
     model_citations: list[Citation] = []
     provisional = False
     classification = _classification(intake)
+    if intake["authorization"] == _DENIED and any(
+        _SERVICE.search(sentence) for sentence in _account_sentences(intake["statement"])
+    ):
+        return _escalated_contract(
+            record,
+            intake,
+            {
+                "classification": "ambiguous",
+                "reason": _DENIED_SERVICE_REASON,
+                "citations": [
+                    {
+                        "claim": "ambiguous_rule",
+                        "source_id": _source_id(procedure_text),
+                        "quote": _sentence(procedure_text, _AMBIGUOUS_RULE_ANCHOR),
+                    }
+                ],
+            },
+            intake_text=intake_text,
+            attachment_text=attachment_text,
+            procedure_text=procedure_text,
+            policy_text=policy_text,
+            transactions_text=transactions_text,
+            known=known,
+            notes=notes,
+        )
     if _two_problems(intake):
         return _escalated_contract(
             record,
@@ -423,6 +548,19 @@ def _rules_contract(
         # The rules found no type. A configured model may name one (ADR-003). Without a
         # usable answer the case still goes to a person: a case left out of the submission
         # fails every check, and failing closed means manual review, not silence.
+        if any(_OTHER_DISPUTE.search(s) for s in _account_sentences(intake["statement"])):
+            return _escalated_contract(
+                record,
+                intake,
+                {**_no_type_escalation(procedure_text, _OTHER_DISPUTE_REASON), "classification": "unsupported"},
+                intake_text=intake_text,
+                attachment_text=attachment_text,
+                procedure_text=procedure_text,
+                policy_text=policy_text,
+                transactions_text=transactions_text,
+                known=known,
+                notes=notes,
+            )
         lines = None if model is None else _model_lines(statements, known)
         if model is None or lines is None:
             return _escalated_contract(
@@ -511,6 +649,9 @@ def _rules_contract(
     if transactions_text is None:
         routing = _MANUAL_REVIEW
         notes.append(_UNAVAILABLE_NOTE)
+    elif not _named_charge_on_record(intake["transaction_id"], transactions_text):
+        routing = _MANUAL_REVIEW
+        notes.append(_NAMED_MISSING_NOTE)
     elif classification == "duplicate_charge" and not second_charges:
         routing = _MANUAL_REVIEW
         notes.append(_ONE_CHARGE_NOTE)
@@ -586,7 +727,9 @@ def _rules_contract(
     return contract, [*notes, *_untrusted_notes(record, attachment_text)]
 
 
-def _instruction_escalation(statements: Sequence[str]) -> Escalation | None:
+def _instruction_escalation(
+    statements: Sequence[str], procedure_text: str
+) -> Escalation | None:
     """The escalation for a dispute detail given inside text addressed to the system.
 
     Each statement holding such text is cited by its Source ID line, so the reviewer
@@ -599,18 +742,117 @@ def _instruction_escalation(statements: Sequence[str]) -> Escalation | None:
     ]
     if not holders:
         return None
-    return {
-        "classification": "ambiguous",
-        "reason": _INSTRUCTION_REASON,
-        "citations": [
+    citations: list[Quote] = [
+        {
+            "claim": "instruction_text",
+            "source_id": _source_id(text),
+            "quote": _unique_line(text, _SOURCE_ID_LABEL),
+        }
+        for text in holders
+    ]
+    # No type can be read from text addressed to the system, so the procedure's list of
+    # supported types is the rule the case is routed under.
+    citations.extend(_no_type_escalation(procedure_text, _INSTRUCTION_REASON)["citations"])
+    return {"classification": "ambiguous", "reason": _INSTRUCTION_REASON, "citations": citations}
+
+
+_REPORTED_DATE_LABEL = "Reported date:"
+_NO_POLICY_NOTE = (
+    "No single policy version is effective on the reported date, so no deadline is "
+    "calculated. A person must choose the policy and review this case."
+)
+
+
+def _no_policy_contract(
+    record: WorkingRecord,
+    *,
+    intake_text: str,
+    attachment_text: str,
+    procedure_text: str,
+    transactions_text: str | None,
+    customer_texts: Sequence[str],
+    known: Sequence[str],
+) -> tuple[Contract, list[str]]:
+    """A complaint whose reported date no single policy version covers.
+
+    The type is read as for any complaint, but a deadline needs a policy, so the case goes
+    to a person: manual_review, deadline null, and policy_ids naming only the procedure.
+    The intake's reported-date line is cited as the reason. A reported date that is not
+    a calendar date is a missing fact, so it is null in the facts.
+    """
+    intake = record["intake"]
+    procedure_id = record["policy"]["procedure_id"]
+    if intake is None or procedure_id is None:
+        raise ContractError("the reported date selected no policy version")
+    try:
+        escalation = find_escalation(
+            intake_text, list(customer_texts), procedure_text, known, (_SERVICE, _DUPLICATE)
+        )
+    except EscalationError as error:
+        raise ContractError(str(error)) from error
+    if escalation is None:
+        escalation = _instruction_escalation([intake_text, *customer_texts], procedure_text)
+    if escalation is not None:
+        classification = escalation["classification"]
+    else:
+        classification = _classification(intake) or "ambiguous"
+    missing, questions = _missing_information(record, intake, classification, attachment_text)
+    procedure_source = _source_id(procedure_text)
+    escalation_citations: list[Citation] = [
+        {"claim": quote["claim"], "source_id": quote["source_id"], "quote": quote["quote"]}
+        for quote in ([] if escalation is None else escalation["citations"])
+    ]
+    # A supported type still rests on its procedure sentence, as in any draft.
+    type_citations: list[Citation] = []
+    if classification in _CLASSIFICATION_ANCHOR:
+        type_citations.append(
             {
-                "claim": "instruction_text",
-                "source_id": _source_id(text),
-                "quote": _unique_line(text, _SOURCE_ID_LABEL),
+                "claim": "classification",
+                "source_id": procedure_source,
+                "quote": _sentence(procedure_text, _CLASSIFICATION_ANCHOR[classification]),
             }
-            for text in holders
-        ],
+        )
+    citations: list[Citation] = [
+        _customer_evidence(intake, intake_text, known),
+        _attachment_citation(attachment_text, missing, escalated=True),
+        *_transaction_citations(intake["transaction_id"], transactions_text, procedure_text),
+        *escalation_citations,
+        *type_citations,
+        {
+            "claim": "no_policy_version",
+            "source_id": _source_id(intake_text),
+            "quote": _unique_line(intake_text, _REPORTED_DATE_LABEL),
+        },
+        {
+            "claim": "routing",
+            "source_id": procedure_source,
+            "quote": _unique_line(procedure_text, _ROUTING_RULE_ANCHOR),
+        },
+    ]
+    facts = _facts(intake, record.get("transactions", []))
+    try:
+        calendar_date = _day(intake["reported_date"])
+    except ValueError:
+        calendar_date = None
+    if calendar_date is None:
+        facts = {**facts, "reported_date": None}
+    contract: Contract = {
+        "case_id": record["case_id"],
+        "classification": classification,
+        "routing": _MANUAL_REVIEW,
+        "policy_ids": [procedure_id],
+        "facts": facts,
+        "missing_information": missing,
+        "deadline": None,
+        "citations": citations,
+        "follow_up_questions": questions,
+        "narrative": "",
     }
+    notes = [] if escalation is None else [escalation["reason"]]
+    notes.append(_NO_POLICY_NOTE)
+    if transactions_text is None:
+        notes.append(_UNAVAILABLE_NOTE)
+    return contract, [*notes, *_untrusted_notes(record, attachment_text)]
 
 
 def _escalated_contract(
@@ -721,7 +963,9 @@ def _attachment_citation(
         quote = amounts[0]
     elif _declares_missing(statuses):
         quote = statuses[0]
-    elif receipt_missing or escalated:
+    elif receipt_missing or escalated or not amounts:
+        # An attachment with no Amount line at all (an injection note, a letter) still
+        # names its source; the amount is never taken from it anyway.
         quote = _unique_line(attachment_text, _SOURCE_ID_LABEL)
     else:
         quote = _unique_line(attachment_text, _AMOUNT_LABEL)
@@ -794,6 +1038,12 @@ def _classification(intake: Intake) -> str | None:
     ):
         return "duplicate_charge"
     return None
+
+
+def _named_charge_on_record(transaction_id: str, transactions_text: str) -> bool:
+    """True when the transactions tool returned the charge the intake names."""
+    _source, charges = _tool_charges(transactions_text)
+    return any(charge.get("transaction_id") == transaction_id for charge in charges)
 
 
 def _two_problems(intake: Intake) -> bool:

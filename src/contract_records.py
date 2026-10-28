@@ -42,6 +42,7 @@ from src.api_models import MerchantToolPayload, TransactionToolPayload
 from src.build_records import build_merchant, build_transaction
 from src.contract import Contract, ContractError, assemble_draft
 from src.load_records import (
+    BankNotFound,
     BankReadError,
     BankUnavailable,
     CaseListError,
@@ -368,17 +369,19 @@ def _contract_record(
     intake = cast(Intake, record["intake"])
     version_id = record["policy"]["version_id"]
     procedure_id = record["policy"]["procedure_id"]
-    if version_id is None or procedure_id is None:
+    if procedure_id is None:
         raise ContractRecordError("the reported date selected no policy version")
     attachment_source = _attachment_source(intake["source_id"])
     consumed = {intake["source_id"], attachment_source}
-    customer_texts = _customer_statements(
+    customer_texts, other_documents = _customer_statements(
         data_dir, [source_id for source_id in documents if source_id not in consumed]
     )
     intake_text = _document(data_dir, "documents", intake["source_id"])
     attachment_text = _document(data_dir, "documents", attachment_source)
     procedure_text = _document(data_dir, "policies", procedure_id)
-    policy_text = _document(data_dir, "policies", version_id)
+    # No version covers the reported date: the case is drafted for a person under the
+    # procedure alone, with no deadline (see assemble_draft).
+    policy_text = None if version_id is None else _document(data_dir, "policies", version_id)
     transactions = _transactions(base_url, record["case_id"], retry)
     if transactions is None:
         enriched: WorkingRecord = {**record, "transactions": []}
@@ -408,6 +411,7 @@ def _contract_record(
             model_calls=calls,
             known_values=known,
             merchant_unavailable=merchant is None,
+            other_documents=other_documents,
         )
     except ContractError as error:
         raise ContractRecordError from error
@@ -510,6 +514,10 @@ def _read_tool(base_url: str, case_id: str, tool: str, retry: ToolRetry) -> byte
 
     try:
         return call_with_backoff(attempt, retry.breakers[tool], sleep=retry.sleep)
+    except BankNotFound:
+        # A tool with no record for the case answered, so it is not retried; it gave no
+        # data, which the procedure treats as an unavailable service, never as empty.
+        raise DependencyUnavailable from None
     except BankReadError as error:
         raise ContractRecordError from error
 
@@ -525,14 +533,16 @@ def _document(data_dir: Path, folder: str, source_id: str) -> str:
         raise ContractRecordError from error
 
 
-def _customer_statements(data_dir: Path, source_ids: list[str]) -> list[str]:
-    """The further listed documents, each of which must be a customer statement.
+def _customer_statements(data_dir: Path, source_ids: list[str]) -> tuple[list[str], list[str]]:
+    """The further listed documents: the customer statements, and the texts of the others.
 
-    A listed document that is missing, or whose heading does not mark it as
-    customer correspondence, is evidence this step cannot read, so the case is
-    refused instead of being drafted without it.
+    A listed document that is missing is evidence this step cannot read, so the case is
+    refused instead of being drafted without it. One that is present but whose heading
+    does not mark it as customer correspondence, such as a second receipt, is never read
+    as the customer's account; the draft names it so the reviewer checks it.
     """
     statements: list[str] = []
+    others: list[str] = []
     unread: list[str] = []
     for source_id in source_ids:
         try:
@@ -543,12 +553,12 @@ def _customer_statements(data_dir: Path, source_ids: list[str]) -> list[str]:
         if text.lstrip().lower().startswith(_CUSTOMER_HEADING):
             statements.append(text)
         else:
-            unread.append(source_id)
+            others.append(text)
     if unread:
         raise ContractRecordError(
             "the case names evidence this step cannot read: " + ", ".join(sorted(unread))
         )
-    return statements
+    return statements, others
 
 
 def _path(data_dir: Path, folder: str, source_id: str) -> Path:

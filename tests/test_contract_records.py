@@ -316,15 +316,33 @@ def test_a_failed_transaction_read_stops_the_case():
     assert seen == ["/v1/cases", TRANSACTIONS]
 
 
-def test_a_failed_merchant_read_stops_the_case():
+def test_a_merchant_tool_with_no_record_is_read_once_and_the_case_is_still_drafted():
+    # EDG-E14: a 404 is an answer, so it is not retried, and it gives no data, which the
+    # procedure treats as an unavailable service; the merchant record is never cited.
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES, statuses={MERCHANT: 404}) as (
         base_url,
         seen,
     ):
-        with pytest.raises(ContractRecordError):
-            load_contract_records(base_url, DEV)
+        [result] = load_contract_results(base_url, DEV)
 
+    contract = result["contract"]
     assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT]
+    assert (contract["classification"], contract["routing"]) == ("unauthorized", "ready_for_review")
+    assert "merchant record was not read" in contract["narrative"]
+
+
+def test_a_transactions_tool_with_no_record_routes_the_case_to_a_person():
+    # EDG-E06: no data from the transaction service is never an empty history.
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES, statuses={TRANSACTIONS: 404}) as (
+        base_url,
+        seen,
+    ):
+        [result] = load_contract_results(base_url, DEV)
+
+    contract = result["contract"]
+    assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT]
+    assert (contract["routing"], contract["deadline"]) == ("manual_review", "2026-10-31")
+    assert (contract["facts"]["amount"], contract["facts"]["currency"]) == (None, None)
 
 
 def test_a_transaction_body_without_an_amount_is_rejected():
@@ -421,11 +439,11 @@ def test_a_missing_attachment_file_stops_before_the_tools(tmp_path):
     assert seen == ["/v1/cases"]
 
 
-def test_an_attachment_without_an_amount_line_stops_after_the_tool_reads(tmp_path):
+def test_an_attachment_with_two_amount_lines_stops_after_the_tool_reads(tmp_path):
     dataset = tmp_path / "data"
     shutil.copytree(DEV, dataset)
     (dataset / "documents" / "CARD-D01-ATTACHMENT.md").write_text(
-        "Source ID: CARD-D01-ATTACHMENT\nMerchant: Morrow Supplies\n"
+        "Source ID: CARD-D01-ATTACHMENT\nAmount: 117 XCR\nAmount: 118 XCR\n"
     )
 
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, seen):
@@ -462,7 +480,7 @@ def test_the_reason_is_the_applications_own_message_when_there_is_one(tmp_path):
     dataset = tmp_path / "data"
     shutil.copytree(DEV, dataset)
     (dataset / "documents" / "CARD-D01-ATTACHMENT.md").write_text(
-        "Source ID: CARD-D01-ATTACHMENT\nMerchant: Morrow Supplies\n"
+        "Source ID: CARD-D01-ATTACHMENT\nAmount: 117 XCR\nAmount: 118 XCR\n"
     )
 
     with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, _seen):
@@ -698,7 +716,7 @@ def test_model_calls_are_kept_for_a_case_no_answer_could_type(tmp_path):
         .replace(
             "I found a card purchase at Morrow Supplies for 117 crowns. "
             "I do not recognize it and need help checking it.",
-            "The shop took my money two times for one order.",
+            "The shop took my money a second time for one order.",
         )
         .replace("Authorization: denied", "Authorization: confirmed")
     )
@@ -827,19 +845,29 @@ def test_a_listed_document_that_is_not_customer_correspondence_cannot_escalate(t
     )
     case = {**CARD_D01, "documents": [*CARD_D01["documents"], "CARD-D01-NOTE"]}
 
-    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, seen):
-        results = load_contract_results(base_url, dataset)
+    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, _seen):
+        [result] = load_contract_results(base_url, dataset)
 
-    assert results == [
-        {
-            "case_id": "CARD-D01",
-            "contract": None,
-            "error": "the case names evidence this step cannot read: CARD-D01-NOTE",
-            "narrative_meter": None,
-            "model_calls": [],
-            "meter_error": None,
-        }
-    ]
+    # The note is not customer correspondence, so its "Authorization: confirmed" is never
+    # read as the customer's account and cannot make a conflict. It is cited and named.
+    contract = result["contract"]
+    assert (contract["classification"], contract["routing"]) == ("unauthorized", "ready_for_review")
+    assert {
+        "claim": "customer_evidence",
+        "source_id": "CARD-D01-NOTE",
+        "quote": "Source ID: CARD-D01-NOTE",
+    } in contract["citations"]
+    assert "not read for the dispute: CARD-D01-NOTE" in contract["narrative"]
+
+
+def test_a_listed_document_that_is_missing_still_stops_the_case(tmp_path):
+    case = {**CARD_D01, "documents": [*CARD_D01["documents"], "CARD-D01-GONE"]}
+
+    with _bank({"cases": [case]}, TOOL_BODIES) as (base_url, seen):
+        [result] = load_contract_results(base_url, DEV)
+
+    assert result["contract"] is None
+    assert result["error"] == "the case names evidence this step cannot read: CARD-D01-GONE"
     assert seen == ["/v1/cases"]
 
 

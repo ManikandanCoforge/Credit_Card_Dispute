@@ -39,20 +39,25 @@ _RULE_CLAIMS = frozenset(
         "ambiguous_rule",
         "unsupported_rule",
         "transaction_service_unavailable",
+        "transaction_service_checked",
         "supported_classifications",
         "competing_classification",
+        "no_policy_version",
     }
 )
 """The rule claims that justify sending a case to a person.
 
 `transaction_service_unavailable` is the outage route: the procedure says to
 stop retrying and draft the case with null facts, so the citation that carries
-that sentence is the rule citation for a manual review.
+that sentence is the rule citation for a manual review. `transaction_service_checked`
+cites the tool body that answered without the named charge, which is why the case
+cannot be ready.
 
 `supported_classifications` cites the procedure's list of supported types for a
 complaint none of them fits, and `competing_classification` cites the two type
 rules that both apply to one complaint; either way no single type can be set,
-so the case goes to a person.
+so the case goes to a person. `no_policy_version` cites the reported date that no
+single policy version covers, so no deadline can be set.
 """
 
 _MANUAL_REVIEW_REQUIREMENT = "manual_review_rule"
