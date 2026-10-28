@@ -118,6 +118,7 @@ This CLI simulates a human boundary, not production identity. During assessment 
 - [ADR-002: Policy version selection](docs/decisions/ADR-002-policy-version-selection.md)
 - [ADR-003: Hybrid model questions](docs/decisions/ADR-003-hybrid-model-questions.md)
 - [ADR-004: One entry point for the loop](docs/decisions/ADR-004-one-entry-point-for-the-loop.md)
+- [ADR-005: The stack the assessment runs, and the deployment shape behind it](docs/decisions/ADR-005-stack-and-deployment.md), which also says that the AWS shape is target state, not the assessed deployment
 - [Runbook](docs/RUNBOOK.md)
 - [Limitations](docs/LIMITATIONS.md)
 - [Roadmap](docs/ROADMAP.md)
