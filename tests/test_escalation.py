@@ -502,6 +502,60 @@ def test_a_denial_that_is_not_taken_back_still_conflicts_with_a_confirmed_form(s
     assert denied and denied[0]["quote"] in statement
 
 
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "Rio Gym charged me twice and the classes were never delivered.",
+        "The shop charged me twice for one order. The order never arrived either.",
+    ],
+)
+def test_a_complaint_with_a_duplicate_and_an_undelivered_service_goes_to_a_person(statement):
+    # Before, the service check ran first and the case was drafted ready as a service
+    # complaint (EDG-E18). The procedure gives each problem its own type, so neither wins.
+    result = _assemble(_record(authorization="confirmed"), statement, authorization="confirmed")
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
+    competing = [c for c in result["citations"] if c["claim"] == "competing_classification"]
+    assert [c["quote"] for c in competing] == [
+        (
+            "Use duplicate_charge for a report of two charges for one purchase; retrieve both "
+            "transaction records."
+        ),
+        (
+            "Use service_not_received for an authorized purchase whose promised service was "
+            "not supplied."
+        ),
+    ]
+    assert all(c["quote"] in PROCEDURE_TEXT for c in competing)
+    assert "reports both a duplicate charge and a service" in result["narrative"]
+
+
+def test_two_problems_on_a_denied_form_are_still_unauthorized():
+    statement = "Rio Gym charged me twice and the classes were never delivered."
+
+    result = _assemble(_record(authorization="denied"), statement, authorization="denied")
+
+    assert result["classification"] == "unauthorized"
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "This is not a double charge. The classes were never delivered.",
+        # HLD-H02: "isn't" denies the duplicate as "is not" does.
+        "It isn't a double charge. The yoga classes I paid for were never delivered.",
+    ],
+)
+def test_a_denied_duplicate_beside_an_undelivered_service_is_one_problem(statement):
+    result = _assemble(_record(authorization="confirmed"), statement, authorization="confirmed")
+
+    assert result["classification"] == "service_not_received"
+
+
 def test_without_problems_to_name_a_denial_of_recognition_is_never_taken_back():
     statement = (
         "I didn't recognize the store at first, but I now remember buying from Tide Shop. "

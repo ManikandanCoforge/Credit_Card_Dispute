@@ -657,8 +657,13 @@ def test_a_call_to_customer_service_twice_is_not_a_duplicate_charge():
         "card. I authorized it."
     )
 
-    with pytest.raises(ContractError, match="no supported classification"):
-        _assemble_d04_like(_d04_like(statement, authorization="confirmed"))
+    result = _assemble_d04_like(_d04_like(statement, authorization="confirmed"))
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
 
 
 def test_absent_authorization_is_provisional_unauthorized_without_a_denial():
@@ -707,8 +712,13 @@ def test_an_unrequired_absent_field_is_not_questioned():
     ],
 )
 def test_a_denied_duplicate_is_not_a_duplicate_charge(statement):
-    with pytest.raises(ContractError, match="no supported classification"):
-        _assemble_d04_like(_d04_like(statement, authorization="confirmed"))
+    result = _assemble_d04_like(_d04_like(statement, authorization="confirmed"))
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
 
 
 def test_an_instruction_naming_a_duplicate_sends_the_case_to_a_person():

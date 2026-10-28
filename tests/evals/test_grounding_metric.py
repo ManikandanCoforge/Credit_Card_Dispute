@@ -129,7 +129,15 @@ def test_manual_review_without_rule_citation_fails_claim_sources() -> None:
     assert result[CLAIM_SOURCES].evidence["missing"] == ["manual_review_rule"]
 
 
-@pytest.mark.parametrize("claim", ["ambiguous_rule", "unsupported_rule"])
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "ambiguous_rule",
+        "unsupported_rule",
+        "supported_classifications",
+        "competing_classification",
+    ],
+)
 def test_manual_review_rule_citation_satisfies_claim_sources(claim: str) -> None:
     payload = contract(
         classification="unsupported",

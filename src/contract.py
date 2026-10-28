@@ -95,9 +95,11 @@ _DUPLICATE = re.compile(
     re.IGNORECASE,
 )
 # A denial of the duplicate itself is not a report of one. It is checked on the same
-# sentence as the cue, so "charged twice, not a double charge" stays reported.
+# sentence as the cue, so "charged twice, not a double charge" stays reported. "It isn't
+# a double charge" denies it as "it is not" does (HLD-H02).
 _NOT_DUPLICATE = re.compile(
-    r"\bnot (?:a |an )?(?:double|duplicate)\b|\bnot (?:charged )?(?:twice|two times|2 times)\b"
+    r"(?:\bnot|n't) (?:a |an )?(?:double|duplicate)\b"
+    r"|\bnot (?:charged )?(?:twice|two times|2 times)\b"
     r"|(?:\bnot|n't|\bnever)\s+(?:appear\w*|show\w*|listed|posted|go through|went through)"
     r"\b[^.!?]{0,30}\btwice\b"
     r"|\b(?:not|never|no)\b[^.!?]{0,25}\b(?:charged|billed|debited)\b[^.!?]{0,25}"
@@ -141,6 +143,22 @@ _MULTIPLE_PROBLEMS_ESCALATION: Escalation = {
 _NO_TYPE_REASON = (
     "Neither the rules nor the model could name a dispute type, so a person must classify "
     "the case."
+)
+# The rules-only path fails closed the same way: a complaint the rules cannot type is
+# drafted for a person, never left out of the submission.
+_NO_RULES_TYPE_REASON = (
+    "The rules could not name a dispute type from the customer's account, so a person must "
+    "classify the case."
+)
+_TWO_PROBLEMS_REASON = (
+    "The customer reports both a duplicate charge and a service that was not supplied. The "
+    "procedure gives each its own type, so no single type is set and a person decides."
+)
+# The merchant service did not answer within the procedure's three attempts. Its record is
+# never cited, so the draft keeps its routing; the reviewer is told it was not read.
+_MERCHANT_UNAVAILABLE_NOTE = (
+    "The merchant service did not answer within the procedure's three attempts, so the "
+    "merchant record was not read or checked for instructions."
 )
 _AUTHORIZATION_LABEL = "Authorization:"
 _AMBIGUOUS_RULE_ANCHOR = "If customer accounts conflict about authorization"
@@ -264,6 +282,7 @@ def assemble_draft(
     model: ModelClient | None = None,
     model_calls: list[ModelCall] | None = None,
     known_values: Sequence[str] = (),
+    merchant_unavailable: bool = False,
 ) -> tuple[Contract, NarrativeMeter]:
     """Return the contract object for one working record, and how its narrative was made.
 
@@ -287,6 +306,15 @@ def assemble_draft(
     a follow-up email. A cash withdrawal, or customer statements that conflict
     about authorization, escalate the complaint before it is classified: see
     src/escalation.py.
+
+    A complaint no rule can type, or one that reports both a duplicate charge and an
+    undelivered service, is drafted as ambiguous for manual_review with a null deadline.
+    It is never left unbuilt, because a case missing from the submission fails every
+    check.
+
+    merchant_unavailable is True when the merchant service did not answer within its
+    attempts. The merchant record is never cited, so routing is unchanged (assumption
+    Q5); the narrative tells the reviewer it was not read.
 
     Amount and currency are read from the transaction named on the intake, never
     from the attachment. A named transaction that the tool did not return leaves
@@ -327,6 +355,8 @@ def assemble_draft(
         calls=[] if model_calls is None else model_calls,
         known=known_values,
     )
+    if merchant_unavailable:
+        notes.append(_MERCHANT_UNAVAILABLE_NOTE)
     narrative, meter = draft_narrative(contract, notes, writer)
     return {**contract, "narrative": narrative}, meter
 
@@ -376,19 +406,52 @@ def _rules_contract(
     model_citations: list[Citation] = []
     provisional = False
     classification = _classification(intake)
+    if _two_problems(intake):
+        return _escalated_contract(
+            record,
+            intake,
+            _two_problems_escalation(procedure_text),
+            intake_text=intake_text,
+            attachment_text=attachment_text,
+            procedure_text=procedure_text,
+            policy_text=policy_text,
+            transactions_text=transactions_text,
+            known=known,
+            notes=notes,
+        )
     if classification is None:
-        # The rules found no type. A configured model may name one (ADR-003); without a
-        # usable answer the case stays unbuilt, as it is when no model is configured.
+        # The rules found no type. A configured model may name one (ADR-003). Without a
+        # usable answer the case still goes to a person: a case left out of the submission
+        # fails every check, and failing closed means manual review, not silence.
         lines = None if model is None else _model_lines(statements, known)
         if model is None or lines is None:
-            raise ContractError("the intake supports no supported classification")
-        answer, call, why = ask_dispute_type(model, lines)
+            return _escalated_contract(
+                record,
+                intake,
+                _no_type_escalation(procedure_text, _NO_RULES_TYPE_REASON),
+                intake_text=intake_text,
+                attachment_text=attachment_text,
+                procedure_text=procedure_text,
+                policy_text=policy_text,
+                transactions_text=transactions_text,
+                known=known,
+                notes=notes,
+            )
+        answer, call, _why = ask_dispute_type(model, lines)
         if call is not None:
             calls.append(call)
         if answer is None:
-            raise ContractError(
-                "the intake supports no supported classification, and the model gave no "
-                f"usable answer: {why}"
+            return _escalated_contract(
+                record,
+                intake,
+                _no_type_escalation(procedure_text, _NO_TYPE_REASON),
+                intake_text=intake_text,
+                attachment_text=attachment_text,
+                procedure_text=procedure_text,
+                policy_text=policy_text,
+                transactions_text=transactions_text,
+                known=known,
+                notes=notes,
             )
         if answer["type"] != "none":
             notes.append(
@@ -731,6 +794,54 @@ def _classification(intake: Intake) -> str | None:
     ):
         return "duplicate_charge"
     return None
+
+
+def _two_problems(intake: Intake) -> bool:
+    """True when the statement reports both an undelivered service and a duplicate charge.
+
+    The procedure gives each its own type, so neither may win by being checked first. A
+    denied or absent authorization is unauthorized whatever else the statement says, so
+    this is read only where the cues choose the type.
+    """
+    if intake["authorization"] in (_DENIED, _ABSENT):
+        return False
+    sentences = _account_sentences(intake["statement"])
+    return any(_SERVICE.search(sentence) for sentence in sentences) and any(
+        _DUPLICATE.search(sentence) and not _NOT_DUPLICATE.search(sentence)
+        for sentence in sentences
+    )
+
+
+def _two_problems_escalation(procedure_text: str) -> Escalation:
+    """Send a two-problem complaint to a person, citing the two type rules that both apply."""
+    procedure_source = _source_id(procedure_text)
+    return {
+        "classification": "ambiguous",
+        "reason": _TWO_PROBLEMS_REASON,
+        "citations": [
+            {
+                "claim": "competing_classification",
+                "source_id": procedure_source,
+                "quote": _sentence(procedure_text, _CLASSIFICATION_ANCHOR[kind]),
+            }
+            for kind in ("duplicate_charge", "service_not_received")
+        ],
+    }
+
+
+def _no_type_escalation(procedure_text: str, reason: str) -> Escalation:
+    """Send a complaint no type fits to a person, citing the procedure's supported types."""
+    return {
+        "classification": "ambiguous",
+        "reason": reason,
+        "citations": [
+            {
+                "claim": "supported_classifications",
+                "source_id": _source_id(procedure_text),
+                "quote": _sentence(procedure_text, _SUPPORTED_RULE_ANCHOR),
+            }
+        ],
+    }
 
 
 def _model_lines(statements: Sequence[str], known: Sequence[str]) -> list[StatementLine] | None:

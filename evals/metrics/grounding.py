@@ -6,8 +6,8 @@ Owned by the grounding metric. Deterministic checks only:
   exact substring of the source it names, every source id known.
 * `grounding.claim_sources` -- the routing claim is cited; a supported
   classification is cited; a non-null deadline is cited; a manual-review route
-  carries the rule citation that justified it (`ambiguous_rule` or
-  `unsupported_rule`).
+  carries the rule citation that justified it (`ambiguous_rule`,
+  `unsupported_rule`, or one of the others in `_RULE_CLAIMS`).
 """
 
 from __future__ import annotations
@@ -35,13 +35,24 @@ _ROUTING_CLAIM = "routing"
 _CLASSIFICATION_CLAIM = "classification"
 _MANUAL_REVIEW = "manual_review"
 _RULE_CLAIMS = frozenset(
-    {"ambiguous_rule", "unsupported_rule", "transaction_service_unavailable"}
+    {
+        "ambiguous_rule",
+        "unsupported_rule",
+        "transaction_service_unavailable",
+        "supported_classifications",
+        "competing_classification",
+    }
 )
 """The rule claims that justify sending a case to a person.
 
 `transaction_service_unavailable` is the outage route: the procedure says to
 stop retrying and draft the case with null facts, so the citation that carries
 that sentence is the rule citation for a manual review.
+
+`supported_classifications` cites the procedure's list of supported types for a
+complaint none of them fits, and `competing_classification` cites the two type
+rules that both apply to one complaint; either way no single type can be set,
+so the case goes to a person.
 """
 
 _MANUAL_REVIEW_REQUIREMENT = "manual_review_rule"

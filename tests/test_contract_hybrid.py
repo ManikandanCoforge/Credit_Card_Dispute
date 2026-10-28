@@ -100,9 +100,15 @@ YES = {"multiple_problems": True}
 @pytest.mark.parametrize(
     "statement", [TWO_TIMES, NOBODY_CAME, NEVER_SHOPPED, MACHINE_KEPT, QUOTED_LESS, VAGUE]
 )
-def test_without_a_model_the_rules_alone_cannot_type_these_complaints(statement):
-    with pytest.raises(ContractError, match="the intake supports no supported classification"):
-        _draft(statement)
+def test_without_a_model_a_complaint_the_rules_cannot_type_goes_to_a_person(statement):
+    # A case left out of the submission fails every check, so the rules fail closed: the
+    # complaint is drafted for manual review with no deadline, never dropped.
+    contract, _calls, sources = _draft(statement)
+
+    _assert_sent_to_a_person(contract)
+    assert "The rules could not name a dispute type" in contract["narrative"]
+    assert "supported_classifications" in [c["claim"] for c in contract["citations"]]
+    _assert_exact_quotes(contract, sources)
 
 
 def test_a_type_the_model_reads_is_drafted_by_the_rules_and_cited_to_its_line():
@@ -335,23 +341,17 @@ def test_a_model_that_cannot_tell_leaves_the_type_to_a_person():
 
 
 @pytest.mark.parametrize(
-    "answer, reason",
-    [
-        (None, "timeout"),
-        ({"type": "duplicate_charge"}, "the answer did not match the schema"),
-        (_type("duplicate_charge", "L3"), "the answer names L3, beyond the case's 1 lines"),
-    ],
+    "answer",
+    [None, {"type": "duplicate_charge"}, _type("duplicate_charge", "L3")],
+    ids=["timeout", "off schema", "line beyond the case"],
 )
-def test_no_usable_model_answer_leaves_the_case_unbuilt_and_keeps_the_call(answer, reason):
+def test_no_usable_model_answer_sends_the_case_to_a_person_and_keeps_the_call(answer):
     calls = []
 
-    with pytest.raises(ContractError) as stopped:
-        _draft(TWO_TIMES, _Model(answer), calls=calls)
+    contract, _calls, _sources = _draft(TWO_TIMES, _Model(answer), calls=calls)
 
-    assert str(stopped.value) == (
-        "the intake supports no supported classification, and the model gave no usable "
-        f"answer: {reason}"
-    )
+    _assert_sent_to_a_person(contract)
+    assert "Neither the rules nor the model could name a dispute type" in contract["narrative"]
     assert [(call["purpose"], call["answered"]) for call in calls] == [("dispute_type", False)]
 
 
@@ -363,7 +363,9 @@ def test_a_complaint_without_customer_lines_is_never_sent_to_the_model():
         "Reported date: 2026-10-01\nTransaction ID: TX-TEST\nAuthorization: confirmed\n"
     )
 
-    with pytest.raises(ContractError, match="usable answer: no customer statement lines"):
+    # With no statement there is nothing to quote as the customer's account, so the case
+    # still stops (docs/LIMITATIONS.md L19); the point here is that no model is asked.
+    with pytest.raises(ContractError, match="not an exact excerpt of the intake"):
         _draft("not supplied", model, intake_text=intake_text, calls=calls)
 
     assert model.asked == []
@@ -394,9 +396,11 @@ def test_a_complaint_without_customer_lines_is_never_sent_to_the_model():
 def test_a_complaint_with_instruction_text_is_never_sent_to_the_model(statement, followup):
     model = _Model(_type("duplicate_charge"))
 
-    with pytest.raises(ContractError, match="^the intake supports no supported classification$"):
-        _draft(statement, model, customer_texts=[] if followup is None else [followup])
+    contract, _calls, _sources = _draft(
+        statement, model, customer_texts=[] if followup is None else [followup]
+    )
 
+    _assert_sent_to_a_person(contract)
     assert model.asked == []
 
 
@@ -439,9 +443,11 @@ def test_a_filing_command_that_names_the_class_goes_to_a_person_with_no_model_ca
 def test_a_card_number_redaction_would_miss_keeps_the_model_away(statement, followup):
     model = _Model(_type("duplicate_charge"))
 
-    with pytest.raises(ContractError, match="^the intake supports no supported classification$"):
-        _draft(statement, model, customer_texts=[] if followup is None else [followup])
+    contract, _calls, _sources = _draft(
+        statement, model, customer_texts=[] if followup is None else [followup]
+    )
 
+    _assert_sent_to_a_person(contract)
     assert model.asked == []
 
 
@@ -631,6 +637,14 @@ def test_a_statement_longer_than_the_model_limit_is_decided_by_the_rules_alone()
 def _assert_exact_quotes(contract, sources):
     for citation in contract["citations"]:
         assert citation["quote"] in sources[citation["source_id"]]
+
+
+def _assert_sent_to_a_person(contract):
+    assert (contract["classification"], contract["routing"], contract["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
 
 
 def _draft(
