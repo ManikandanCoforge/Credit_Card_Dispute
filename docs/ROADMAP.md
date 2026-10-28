@@ -17,15 +17,15 @@ At this head the application can:
 - assemble the supported classifications (unauthorized, duplicate_charge, service_not_received), route conflicting and unsupported accounts to a person, and include missing-evidence drafts routed to request_information with one targeted question per absent field, with exact citations, a per-type deterministic deadline, and the template narrative
 - continue after a case-level failure and report the reason for the case that stopped
 - open a human review for each finished draft, create a record only after a person approves the unchanged draft, return the existing record for a duplicate redelivery, and refuse a changed draft
-- attempt all twelve dev cases and publish a scored run with per-case pass/fail, p50 and p95 read from the meter file, and measured cost: 11 of 12 in the published report from `3a747a5`, with CARD-D09 the only exception (`reports/scored-run.md`), and the report's Reads and retries section carries the per-case tool attempts and retries
+- attempt all twelve dev cases and publish a scored run with per-case pass/fail, p50 and p95 read from the meter file, and measured cost: 12 of 12 in the published report from `bb1ac87` (`reports/scored-run.md`), and the report's Reads and retries section carries the per-case tool attempts and retries
 - write one redacted meter line per case and refuse a restricted value in any meter field
 - run lint, mypy, Bandit, and pytest with a 100 percent line-coverage gate in CI
 
-CARD-D09's intake adds a delivery note that the parser joins to the customer's account, so the joined statement is not one exact excerpt of the intake and the contract refuses to build it; this is the COF-43 limit recorded at `docs/RED_TEAM.md:52` and enforced at `src/contract.py:1120-1121`.
+CARD-D09's intake adds a delivery note after the form fields. The parser used to join it to the customer's account, so the joined statement was not one exact excerpt of the intake and the contract refused to build it. The statement is now the customer's text before the form fields (COF-43), so CARD-D09 is built and passes. A statement that wraps across lines is still not built: that limit is recorded at `docs/RED_TEAM.md:52` and enforced at `src/contract.py:1120-1121`.
 
 ## Near term
 
-Target: complete the core contract and the create path for the supplied case types. This target is delivered on `e4b3e65`. The earlier near-term classification and follow-up items are closed by the integrated head: the scored run passes CARD-D05 (ambiguous) and CARD-D06 (unsupported), and CARD-D05 cites both its intake and its follow-up. The create path is closed by COF-42. The one residual, all twelve cases passing, is on the not-done list below.
+Target: complete the core contract and the create path for the supplied case types. This target is delivered on `e4b3e65`. The earlier near-term classification and follow-up items are closed by the integrated head: the scored run passes CARD-D05 (ambiguous) and CARD-D06 (unsupported), and CARD-D05 cites both its intake and its follow-up. The create path is closed by COF-42. The one residual, all twelve cases passing, is closed by COF-43's statement fix for CARD-D09.
 
 Delivered on this head:
 
@@ -33,7 +33,7 @@ Delivered on this head:
 |---|---|---|
 | COF-40 | Bounded retry and failure routing: at most three attempts, a doubling backoff with jitter, a per-tool circuit breaker, and a 5 s socket timeout; a persistent transaction outage routes the case to `manual_review` with null amount and currency, and a persistent merchant outage stops the case. | `14b1524`, `7ec4df4`, `f1e2bb4`, `653443c` |
 | COF-42 | Review gate and record creation: the runner submits each finished draft, a person approves the exact hash in a separate terminal, the runner creates only after approval, a changed draft is refused, a duplicate redelivery returns the existing record, and no module under `src/` can run the operator command. | `ef47e16`, `011a147`, `e44418c` |
-| COF-43 | Per-case meters: one redacted meter line per case, a restricted-value refusal, p50 and p95 read from the meter file, and the published report. | `022e74f`, `d1b4656`, `e082e91`, `3d62534`, `1a995f7` |
+| COF-43 | Per-case meters: one redacted meter line per case, a restricted-value refusal, p50 and p95 read from the meter file, and the published report. The intake statement is the customer's text before the form fields, so CARD-D09's redelivery is built. | `022e74f`, `d1b4656`, `e082e91`, `3d62534`, `1a995f7`, `4e92b8e` |
 
 ## Not done
 
@@ -44,7 +44,7 @@ These items are not delivered on this head.
 - turn on the optional model route: `ADR-003` lets a qualified model answer two closed questions on the classification gap, and it is off by default with no approved live run
 - update or close an existing record; this is blocked by Gate U
 - provide a UI or a production deployment
-- pass all twelve dev cases: CARD-D09 remains the only exception, proposed and pending pod agreement (COF-43)
+- quote a customer statement that wraps across lines: such a case is not built rather than drafted (`docs/RED_TEAM.md` row 17)
 - enforce the review rules through GitHub rulesets (issue #6); this is blocked on the private repository's plan, and the existing checks ruleset has enforcement disabled
 
 ## Sequencing gate: update and close
