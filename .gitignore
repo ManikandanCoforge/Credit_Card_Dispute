@@ -36,6 +36,17 @@ skills-lock.json
 htmlcov/
 dist/
 build/
+
+# demo deck: sources and final artifacts are tracked, build noise is not
+!docs/deck/build/
+docs/deck/build/node_modules/
+docs/deck/assets/_chrome/
+docs/deck/assets/_pipeline.svg.html
+docs/deck/handout/page.png
+docs/deck/review/_slides*.txt
+docs/deck/review/_sizes.json
+docs/deck/out/preview/
+docs/deck/review/render/
 *.egg-info/
 
 # editor and OS

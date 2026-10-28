@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars and edit. Every value here has a default, so the
+# file is optional.
+#
+# region             = "us-east-1"
+# name               = "ccd-poc"        # ALB and target group names must stay short
+# owner              = "Coforge FDE Pod"
+# cpu_architecture   = "X86_64"         # or ARM64 for Graviton pricing
+# task_cpu           = "512"            # 0.5 vCPU
+# task_memory        = "1024"
+# image_tag          = "poc"
+# desired_count      = 1
+# log_retention_days = 7
+#
+# Leave allowed_cidrs unset to allow only this workstation's public IP:
+# allowed_cidrs = ["203.0.113.10/32"]
+#
+# Non-default network, if you do not want the account's default VPC:
+# vpc_id     = "vpc-0123456789abcdef0"
+# subnet_ids = ["subnet-0aaa", "subnet-0bbb"]

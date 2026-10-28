@@ -1,0 +1,149 @@
+@page { size: A4; margin: 0; }
+
+:root{
+  --paper:#FBFAF7; --sand:#F3EFE6;
+  --line:#E2DDD2; --line2:#CFC7B8;
+  --ink:#12262E; --ink2:#2B454F; --muted:#68777D;
+  --teal:#0D6F6A;
+}
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; background:var(--paper); }
+body{
+  color:var(--ink);
+  font-family:"Segoe UI","Segoe UI Variable Text",Arial,sans-serif;
+  font-size:9.5pt; line-height:1.4;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  font-variant-numeric:tabular-nums;
+}
+.sheet{
+  width:210mm; height:296.6mm;
+  padding:14mm 14mm 15.5mm;
+  background:var(--paper);
+  overflow:hidden;
+  display:flex; flex-direction:column;
+  position:relative;
+}
+
+/* header chrome */
+.chrome{
+  display:flex; justify-content:space-between; align-items:baseline;
+  border-bottom:0.5pt solid var(--line);
+  padding-bottom:2.6mm;
+  font-family:Consolas,"Cascadia Mono",monospace;
+  font-size:8pt; letter-spacing:0.10em; text-transform:uppercase;
+}
+.chrome .mark{ color:var(--ink2); font-weight:700; }
+.chrome .meta{ color:var(--muted); letter-spacing:0.09em; }
+
+/* headline */
+h1{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:32pt; font-weight:400; line-height:1.04;
+  letter-spacing:-0.012em;
+  margin:5.6mm 0 0;
+}
+.lede{
+  font-size:10.5pt; line-height:1.45; color:var(--ink2);
+  margin:3.4mm 0 0; max-width:154mm;
+}
+
+/* section label: mono caps + hairline to the right edge */
+.sec{ margin-top:4.4mm; }
+.label{ display:flex; align-items:center; gap:3mm; }
+.label span{
+  font-family:Consolas,"Cascadia Mono",monospace;
+  font-size:8pt; letter-spacing:0.13em; text-transform:uppercase;
+  color:var(--teal); font-weight:700; white-space:nowrap;
+}
+.label i{ flex:1; height:0.5pt; background:var(--line); display:block; }
+
+/* the path */
+.stages{ display:grid; grid-template-columns:repeat(4,1fr); gap:4.6mm;
+  margin:2.4mm 0 0; padding:0; list-style:none; }
+.stage{ border-top:1.1pt solid var(--ink); padding-top:1.6mm; }
+.stage .no{ display:block; font-family:Consolas,monospace; font-size:8pt;
+  font-weight:700; letter-spacing:0.06em; color:var(--teal); }
+.stage h2{ font-size:9.7pt; font-weight:650; line-height:1.2;
+  margin:0.8mm 0 0.7mm; letter-spacing:-0.004em; }
+.stage p{ margin:0; font-size:8.4pt; line-height:1.34; color:var(--ink2); }
+
+/* proven today */
+.stats{ display:flex; justify-content:space-between; align-items:flex-start;
+  margin-top:2.8mm; padding-top:2.7mm; border-top:0.5pt solid var(--line); }
+.stat .n{ font-family:Georgia,serif; font-size:30pt; line-height:0.98;
+  letter-spacing:-0.022em; color:var(--ink); }
+.stat .k{ font-family:Consolas,"Cascadia Mono",monospace;
+  font-size:8pt; letter-spacing:0.07em; text-transform:uppercase;
+  color:var(--teal); font-weight:700; margin-top:1.8mm; white-space:nowrap; }
+.stat .s{ font-size:8pt; color:var(--muted); margin-top:0.7mm; white-space:nowrap; }
+.caveat{ margin:2.2mm 0 0; font-size:8.2pt; color:var(--muted); }
+
+/* not done, named */
+.limits{
+  background:var(--sand);
+  border-top:1.4pt solid var(--ink);
+  border-bottom:0.5pt solid var(--line2);
+  padding:2.8mm 4.6mm 3mm;
+  margin-top:4.8mm;
+}
+.limits-head{ display:flex; justify-content:space-between; align-items:baseline; }
+.band-label{
+  font-family:Consolas,monospace; font-size:8pt; font-weight:700;
+  letter-spacing:0.13em; text-transform:uppercase; color:var(--teal);
+}
+.band-note{
+  font-family:Consolas,monospace; font-size:8pt; letter-spacing:0.09em;
+  text-transform:uppercase; color:var(--ink2);
+}
+.cols{ display:grid; grid-template-columns:1.06fr 1fr; gap:6.4mm; margin-top:2mm; }
+.col-head{ display:flex; align-items:baseline; gap:2.4mm;
+  border-bottom:0.5pt solid var(--line2); padding-bottom:1.3mm; }
+.col-head .big{ font-family:Georgia,serif; font-size:19pt; line-height:0.9;
+  letter-spacing:-0.02em; }
+.col-head .cap{
+  font-family:Consolas,monospace; font-size:8pt; font-weight:700;
+  letter-spacing:0.1em; text-transform:uppercase; color:var(--ink2);
+}
+.col-head .right{ margin-left:auto; color:var(--muted); letter-spacing:0.08em; }
+.rows{ margin:0; padding:0; list-style:none; }
+.rows li{ display:grid; grid-template-columns:14mm 1fr auto; align-items:baseline;
+  gap:2mm; padding:1.1mm 0; border-bottom:0.5pt solid var(--line); }
+.rows li:last-child{ border-bottom:none; }
+.rows .id{ font-family:Consolas,monospace; font-size:8.4pt; font-weight:700; color:var(--ink); }
+.rows .why{ font-size:8.4pt; line-height:1.3; color:var(--ink2); }
+.rows .tk{ font-family:Consolas,monospace; font-size:8pt; color:var(--muted); }
+.rows.prs li{ grid-template-columns:12mm 1fr; }
+.col-note{ margin:1.3mm 0 0; font-size:8.2pt; line-height:1.3; color:var(--ink2); font-style:italic; }
+
+/* next 30 days */
+.moves{ margin:2.3mm 0 0; padding:0; list-style:none; }
+.moves li{ display:grid; grid-template-columns:11mm 1fr 17mm; align-items:baseline;
+  gap:2.4mm; padding:1.2mm 0; border-top:0.5pt solid var(--line); }
+.moves li:first-child{ border-top:0.5pt solid var(--line); }
+.moves .no{ font-family:Consolas,monospace; font-size:8.4pt; font-weight:700; color:var(--teal); }
+.moves .move{ font-size:8.8pt; line-height:1.34; color:var(--ink2); }
+.moves .move b{ color:var(--ink); font-weight:650; }
+.moves .dur{ text-align:right; font-family:Consolas,monospace; font-size:8pt;
+  letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); }
+
+/* the ask */
+.ask{ margin-top:4.2mm; padding-bottom:3.2mm; }
+.ask-body{ border-left:2.2pt solid var(--teal); padding-left:4.4mm; }
+.ask-body .label{ margin-bottom:1.8mm; }
+.asks{ margin:0; padding:0; list-style:none; }
+.asks li{ display:grid; grid-template-columns:5.4mm 1fr; align-items:baseline;
+  font-size:9.6pt; line-height:1.4; color:var(--ink); padding:0.2mm 0; }
+.asks .no{ font-family:Consolas,monospace; font-size:8pt; font-weight:700;
+  color:var(--ink2); }
+
+/* footer: one mono block */
+.foot{ margin-top:auto; border-top:0.5pt solid var(--line); padding-top:2.2mm;
+  font-family:Consolas,"Cascadia Mono",monospace; font-size:8pt;
+  color:var(--ink2); letter-spacing:0.02em; line-height:1.3; }
+.foot-grid{ display:grid; grid-template-columns:19.5mm 1fr; column-gap:3mm;
+  row-gap:0.2mm; margin:0; }
+.foot-grid dt{ color:var(--teal); font-weight:700; letter-spacing:0.1em;
+  text-transform:uppercase; white-space:nowrap; }
+.foot-grid dd{ margin:0; white-space:nowrap; }
+.foot-note{ margin:1.4mm 0 0; }

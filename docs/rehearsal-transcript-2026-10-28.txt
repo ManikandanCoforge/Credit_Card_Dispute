@@ -1,0 +1,80 @@
+Rehearsal transcript, 2026-10-28
+Commit: 8553bb36a05ba3b0b6c96b5dffb82aa96c6d7283
+Mock: http://127.0.0.1:8855, state .local/task-c/state.sqlite
+Dataset: data/dev
+This is an excerpt of the driver output. The long pending-review JSON is omitted; the full logs are under .local/task-c/ (gitignored).
+
+GET /health -> 200 {"status": "ok", "dataset": "card-disputes-dev", "fictional_training_only": true}
+GET /v1/cases -> 12 cases, CARD-D01 .. CARD-D12
+
+== CARD-D09 duplicate refusal ==
+
+[2026-10-28T03:14:14.792785+00:00] reset state: 0.132 s, exit 0
+stdout: Reset local mock state. Stop all clients before resetting.
+[2026-10-28T03:14:14.925205+00:00] submit first CARD-D09 review: 0.317 s, exit 0
+stdout: CARD-D09: review rev_b0326feb3073 pending (ready_for_review)
+draft: classification=duplicate_charge routing=ready_for_review deadline=2026-11-16 facts={'transaction_id': 'TX-D02', 'amount': 134, 'currency': 'XCR', 'reported_date': '2026-10-02'}
+citations: CARD-D09-ATTACHMENT, CARD-D09-INTAKE, CARD-D09-TRANSACTIONS, CARD-POLICY-V2, CARD-PROCEDURE-01
+[2026-10-28T03:14:15.249207+00:00] operator pending: 0.126 s, exit 0
+pending review_id: rev_b0326feb3073 status pending
+[2026-10-28T03:14:15.375080+00:00] approve first review: 0.133 s, exit 0
+stdout: approved
+[2026-10-28T03:14:15.508559+00:00] check first review: 0.261 s, exit 0
+stdout: CARD-D09: recorded as dispute-double-02
+records: 1 (dispute-double-02); duplicate_prevented: 0; forbidden_or_unapproved_or_unsupported: 0
+audit events: human_approved=1, record_created=1, review_requested=1, tool_read=2
+[2026-10-28T03:14:15.771117+00:00] submit second CARD-D09 review: 0.323 s, exit 0
+stdout: CARD-D09: review rev_1a81020c176b pending (ready_for_review)
+second review_id: rev_1a81020c176b
+[2026-10-28T03:14:16.101574+00:00] operator pending: 0.125 s, exit 0
+[2026-10-28T03:14:16.226251+00:00] approve second review: 0.128 s, exit 0
+stdout: approved
+direct POST /v1/records with new key CARD-D09:rev_1a81020c176b: 0.006 s, HTTP 409
+body: {"error": "duplicate_case", "existing_record_id": "dispute-double-02"}
+[2026-10-28T03:14:16.360428+00:00] check second review: 0.288 s, exit 0
+stdout: CARD-D09: already_recorded as dispute-double-02
+records: 1 (dispute-double-02); duplicate_prevented: 2; forbidden_or_unapproved_or_unsupported: 0
+audit events: duplicate_prevented=2, human_approved=2, record_created=1, review_requested=2, tool_read=4
+finished_utc: 2026-10-28T03:14:16.649541+00:00
+wall clock: 1.857 s for the whole path
+
+== Reviewer identity and self approval ==
+
+reviews columns: id, case_id, draft, hash, status, reviewer
+has requester or authenticated identity column: False
+approve rev_42993a214d10 as ken: 0.139 s, exit 0
+check rev_42993a214d10 as ken: 0.257 s, exit 0
+stdout: CARD-D09: recorded as dispute-double-02
+approve rev_f08dfb8003bd as mani: 0.133 s, exit 0
+check rev_f08dfb8003bd as mani: 0.255 s, exit 0
+stdout: CARD-D09: already_recorded as dispute-double-02
+approve rev_c578b92dedd3 as ken: 0.126 s, exit 0
+check rev_c578b92dedd3 as ken: 0.287 s, exit 0
+stdout: CARD-D09: already_recorded as dispute-double-02
+approved reviews by reviewer: ken=2, mani=1
+audit 2026-10-28T03:16:57.025840+00:00 human_approved CARD-D09 reviewer=ken review_id=rev_42993a214d10
+audit 2026-10-28T03:16:57.836493+00:00 human_approved CARD-D09 reviewer=mani review_id=rev_f08dfb8003bd
+audit 2026-10-28T03:16:58.640542+00:00 human_approved CARD-D09 reviewer=ken review_id=rev_c578b92dedd3
+The third approval was accepted. The runtime does not authenticate the reviewer and has no requester field, so it cannot refuse self approval.
+wall clock: 2.455 s for the three deliveries
+
+== Policy live-change drill, with revert and re-run ==
+
+[2026-10-28T03:20:59.042556+00:00] baseline CARD-D02: 0.320 s, exit 0
+stdout: CARD-D02: review rev_18b0187251aa pending (ready_for_review)
+draft: classification=duplicate_charge routing=ready_for_review deadline=2026-11-16
+original sha256: 3b8da9f85660eafdf37fe0a2ea60ab62f26e36a19c4d22620eb456571021b86c
+changed copy sha256: 553c4437e81b39e856b1fa7090b4eb003a760cbf1662253ba32689ce7b1d06fb
+[2026-10-28T03:20:59.386426+00:00] changed CARD-D02: 0.348 s, exit 0
+stdout: CARD-D02: review rev_11c4362b65f0 pending (ready_for_review)
+draft: classification=duplicate_charge routing=ready_for_review deadline=2026-11-01
+reverted copy sha256: 3b8da9f85660eafdf37fe0a2ea60ab62f26e36a19c4d22620eb456571021b86c
+checksum equal to data/dev: True
+[2026-10-28T03:20:59.774102+00:00] reverted CARD-D02: 0.331 s, exit 0
+stdout: CARD-D02: review rev_190d2214b0bb pending (ready_for_review)
+draft: classification=duplicate_charge routing=ready_for_review deadline=2026-11-16
+deadlines: baseline 2026-11-16, changed 2026-11-01, reverted 2026-11-16
+observable difference: True
+original result restored: True
+git status --porcelain showed only docs/DEMO_REHEARSAL.md and docs/RUNBOOK.md modified, no data file.
+finished_utc: 2026-10-28T03:21:00.111564+00:00

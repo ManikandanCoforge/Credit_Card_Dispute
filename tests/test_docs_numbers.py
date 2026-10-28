@@ -1,13 +1,15 @@
 """The committed scored run is the only source of the numbers the docs quote.
 
-README, the demo rehearsal numbers lock and the readable report all describe the
-same run, the one reports/scored-run.json records. This test reads that artifact
-and fails when a hand edit leaves a doc behind, naming the file, the number the
-doc states and the number the report holds.
+README, the demo rehearsal numbers lock, the readable report, the dev eval
+report and the deck's FACTS.md all describe the same run, the one
+reports/scored-run.json records. This test reads that artifact and fails when a
+hand edit leaves a doc behind, naming the file, the number the doc states and the
+number the report holds.
 """
 
 import json
 import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -194,3 +196,105 @@ def test_the_readable_report_quotes_the_json_report():
         report["generated_at"],
         report["generated_at"],
     )
+
+EVAL_REPORT = ROOT / "reports" / "eval-dev.md"
+DECK_FACTS = ROOT / "docs" / "deck" / "FACTS.md"
+DECK_OUT = ROOT / "docs" / "deck" / "out"
+
+
+def _matches(pattern, text, path, label):
+    match = re.search(pattern, text)
+    assert match, f"{_name(path)} does not state {label}"
+    return match
+
+
+def test_the_dev_eval_report_quotes_the_published_run():
+    report = _report()
+    text = _text(EVAL_REPORT)
+
+    match = _matches(
+        r"- Cases fully passed: \*\*(\d+)/(\d+)\*\*",
+        text,
+        EVAL_REPORT,
+        "Cases fully passed: **N/12**",
+    )
+    found = match.group(1) + "/" + match.group(2)
+    expected = f"{report['pass_count']}/{report['total_cases']}"
+    _expect(found == expected, EVAL_REPORT, "cases fully passed", found, expected)
+
+    match = _matches(
+        r"- Format errors: (\d+)", text, EVAL_REPORT, "Format errors: N"
+    )
+    expected = str(len(report["format_errors"]))
+    _expect(match.group(1) == expected, EVAL_REPORT, "format errors", match.group(1), expected)
+
+    match = _matches(r"- Commit: `([0-9a-f]+)`", text, EVAL_REPORT, "a commit")
+    assert re.fullmatch(r"[0-9a-f]{7,40}", match.group(1)), (
+        f"{_name(EVAL_REPORT)} cites {match.group(1)!r}, not a lowercase commit sha"
+    )
+
+
+def test_the_deck_facts_quote_the_published_run():
+    report = _report()
+    text = _text(DECK_FACTS)
+
+    match = _matches(
+        r"\*\*(\d+) / (\d+) dev cases pass\*\*",
+        text,
+        DECK_FACTS,
+        "**N / 12 dev cases pass**",
+    )
+    found = match.group(1) + " / " + match.group(2)
+    expected = f"{report['pass_count']} / {report['total_cases']}"
+    _expect(found == expected, DECK_FACTS, "dev cases passing", found, expected)
+
+    match = _matches(
+        r"\*\*(\d+) format errors\*\*", text, DECK_FACTS, "**N format errors**"
+    )
+    expected = str(len(report["format_errors"]))
+    _expect(match.group(1) == expected, DECK_FACTS, "format errors", match.group(1), expected)
+
+    for label, key in (("p50", "p50_latency_ms"), ("p95", "p95_latency_ms")):
+        match = _matches(
+            rf"\*\*{label} (\d+\.\d{{3}}) ms\*\*",
+            text,
+            DECK_FACTS,
+            f"**{label} N.NNN ms**",
+        )
+        expected = f"{report[key]:.3f}"
+        _expect(match.group(1) == expected, DECK_FACTS, label, match.group(1), expected)
+
+    match = _matches(
+        r"\*\*(\d+\.\d{2}) USD total and per case\*\*",
+        text,
+        DECK_FACTS,
+        "**N.NN USD total and per case**",
+    )
+    expected = f"{report['cost_per_case_usd']:.2f}"
+    _expect(match.group(1) == expected, DECK_FACTS, "cost per case", match.group(1), expected)
+
+
+def test_the_deck_artifacts_are_tracked_and_present():
+    for name in (
+        "lumen-dispute-copilot-2026-10-29.pdf",
+        "lumen-dispute-copilot-2026-10-29.pptx",
+        "lumen-dispute-copilot-leave-behind.pdf",
+    ):
+        artifact = DECK_OUT / name
+        assert artifact.is_file(), f"docs/deck/out/{name} is missing"
+        assert artifact.stat().st_size > 50_000, (
+            f"docs/deck/out/{name} is {artifact.stat().st_size} bytes, too small to be the built artifact"
+        )
+        relative = artifact.relative_to(ROOT).as_posix()
+        tracked = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", relative],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert tracked.returncode == 0, (
+            f"git does not track {relative}; a deck artifact in the checkout but not in the tree "
+            "is not part of the evidence pack"
+        )
+
