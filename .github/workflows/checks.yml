@@ -9,23 +9,34 @@ on:
 permissions:
   contents: read
 
+# A new run on the same ref cancels the old one: the gate is about the head
+# commit, so a superseded run has nothing left to prove.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # v10.1.0 has no "cache" input. enable-cache is the switch, and save-cache
+      # now keeps its default of true, so the first job to finish writes the uv
+      # cache; the later ones restore it and a repeat save is a non-fatal warning.
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           python-version: "3.12.13"
-          save-cache: false
+          enable-cache: true
       - run: uv sync --locked
       - run: uv run --locked mypy src tools evals
       - run: uv run --locked ruff check src tools evals
 
   bandit:
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -33,12 +44,13 @@ jobs:
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           python-version: "3.12.13"
-          save-cache: false
+          enable-cache: true
       - run: uv sync --locked
       - run: uv run --locked bandit -c pyproject.toml -r src tools evals
 
   pytest:
     runs-on: ubuntu-26.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -46,13 +58,14 @@ jobs:
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           python-version: "3.12.13"
-          save-cache: false
+          enable-cache: true
       - run: uv sync --locked
       # The coverage sources and the 100% gate are in pyproject.toml's addopts.
       - run: uv run --locked pytest
 
   env-files:
     runs-on: ubuntu-26.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -65,3 +78,24 @@ jobs:
             printf '%s\n' "$tracked"
             exit 1
           fi
+
+  # The only test that failed in the last week failed only on Windows:
+  # tests/test_observability.py read span rows ordered by start_time, and on
+  # Windows time.time_ns() advances in roughly 1 ms quanta, so rows written in
+  # the same tick came back in the wrong order. PR #76 fixed the test. A Linux
+  # runner cannot see that failure, so the suite also runs here.
+  pytest-windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          python-version: "3.12.13"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run --locked pytest
