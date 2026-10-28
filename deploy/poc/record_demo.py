@@ -4,9 +4,14 @@ Runs inside the container (same base URL, same state file) so the operator's
 approval is a real cloud-side action. Every step prints the HTTP status and the
 body, which is what the demo shows on screen.
 
+A changed draft is never posted. The bank audits that POST as
+unapproved_write_attempt, a forbidden write the assessment counts against us even
+when the bank refuses it, so step 4 shows the hash no longer matches and sends nothing.
+
     python deploy/poc/record_demo.py --review rev_ab12cd34ef56
 """
 import argparse
+import hashlib
 import json
 import urllib.error
 import urllib.request
@@ -29,6 +34,12 @@ def show(label, status, body):
     print("\n" + label)
     print("  status " + str(status))
     print("  " + json.dumps(body, sort_keys=True)[:400])
+
+
+def draft_hash(draft):
+    """The hash the bank stores for a draft: SHA-256 of compact, key-sorted JSON."""
+    canonical = json.dumps(draft, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 def main() -> int:
@@ -60,17 +71,12 @@ def main() -> int:
 
     tampered = dict(draft)
     tampered["demo_tamper"] = True
-    show("4. same key, changed draft (expect 409 idempotency_conflict)",
-         *call(a.base, "/v1/records", "POST",
-                {"case_id": review["case_id"], "draft": tampered, "review_id": review["id"]},
-                {"Idempotency-Key": a.key}))
+    print("\n4. changed draft: refused before any write, nothing is sent")
+    print("  approved hash " + review["hash"])
+    print("  changed hash  " + draft_hash(tampered))
+    print("  the hashes differ, so the copilot refuses it locally, as src/review_gate.py does")
 
-    show("5. new key, changed draft (expect 403 approval_missing_or_draft_changed)",
-         *call(a.base, "/v1/records", "POST",
-                {"case_id": review["case_id"], "draft": tampered, "review_id": review["id"]},
-                {"Idempotency-Key": a.key + "-tampered"}))
-
-    show("6. record as stored", *call(a.base, f"/v1/records/{review['case_id']}"))
+    show("5. record as stored", *call(a.base, f"/v1/records/{review['case_id']}"))
     return 0
 
 

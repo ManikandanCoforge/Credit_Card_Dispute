@@ -65,13 +65,14 @@ All twelve build. Classes and routing:
 
 ## D01, hand-walked (the demo spine)
 - Draft hash: `af65f68659d94274382d90d07417c94031d0c574722bd7b8850e7700ce13ebd4`. Reproduced by reading D01 from a fresh mock on 2026-10-28; the same hash appears in rehearsal runs 3 and 4 (docs/DEMO_REHEARSAL.md).
-- Rehearsal walk (runs 3 and 4, docs/DEMO_REHEARSAL.md): review requested -> 201 pending; the same submission -> 200 replay; one field changed -> 403 approval_missing_or_draft_changed; a second record for the same dispute -> 409 duplicate_case.
+- Rehearsal walk (runs 3 and 4, docs/DEMO_REHEARSAL.md): review requested -> pending; approved by the rehearsal driver acting as reviewer; `check` -> recorded as `dispute-d01`. CARD-D09's approved redelivery of CARD-D02 -> already recorded (409 duplicate_case, audit `duplicate_prevented`).
+- A changed draft is shown without a write: the runner refuses it locally (`src/review_gate.py:93-94`) and posts nothing. Never POST a changed draft in the demo: the mock audits that as `unapproved_write_attempt`.
 - Five audit rows move with D01: 2 tool_read, review_requested, human_approved, record_created.
-- Operator gate command: `python -m src.review_runner`. The agent must never approve its own draft.
+- Approval: a person runs `tools/runtime.py pending` and `approve` in their own terminal. `python -m src.review_runner submit` and `check` open the reviews and record the approved drafts. The agent must never approve its own draft.
 - D01 intake, exact: "I found a card purchase at Morrow Supplies for 117 crowns. I do not recognize it and need help checking it."
 
 ## Wiring truths on main (checked in src/)
-- `src/review_gate.py`: approval-bound draft hash, 403 on a changed draft, 409 duplicate_case; `src/review_runner.py` is the operator CLI.
+- `src/review_gate.py`: approval-bound draft hash; a changed draft is refused locally before any record POST; 409 duplicate_case. `src/review_runner.py` submits drafts and records the approved ones; it never approves.
 - `src/resilience.py` is wired through `ToolRetry` in `src/contract_records.py` and `src/review_runner.py`. Retries are real in the scored run (D07 4/2, D10 3/1).
 - `src/untrusted.py` exists on main: merchant and attachment text is evidence, never instructions; restricted values are redacted. `src/contract.py:182` defines `_INSTRUCTION_SENTENCE` and line 881 applies it.
 - `src/idempotency.py`: one record per idempotency key, unchanged since #61.

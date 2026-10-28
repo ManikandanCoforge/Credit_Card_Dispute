@@ -118,7 +118,7 @@ function s03_product(pres) {
   const gate = [
     ["sha256 of the draft", ["af65f686...ebd4"]],
     ["A human approves", ["201 pending review"]],
-    ["One record or none", ["403 changed draft", "409 duplicate_case"]],
+    ["One record or none", ["changed draft: refused, no write", "409 duplicate_case"]],
   ];
   gate.forEach((g, i) => {
     const y = 2.7 + i * 0.78;
@@ -127,7 +127,7 @@ function s03_product(pres) {
   });
   para(s, "A stop is an outcome, not an error: the contract prints the reason and no record is written.",
     M, 6.55, 12.09, { fs: 13.5, color: COLORS.ink2 });
-  notes(s, "Here is the object the pipeline produces. Ten keys, fixed before any prose exists: classification, route, facts from the transaction record, the deadline counted from the reported date, and six citations. The hash is what a human approves. If a field changes after approval, the server refuses the write with 403. That refusal is the gate working.");
+  notes(s, "Here is the object the pipeline produces. Ten keys, fixed before any prose exists: classification, route, facts from the transaction record, the deadline counted from the reported date, and six citations. The hash is what a human approves. If a field changes after approval, the runner refuses the draft before it sends anything, so no write is ever attempted. That refusal is the gate working.");
 }
 
 function s04_demo(pres) {
@@ -143,7 +143,7 @@ function s04_demo(pres) {
     { t: "STATUS", x: 10.6, w: 2.11, align: "right" },
   ]);
   const rows = [
-    ["D01", "Record from the draft.", "Review requested, hash bound, record written. 201, then a 200 replay; 403 on a changed field; 409 on a second record.", "ON MAIN", "green"],
+    ["D01", "Record from the draft.", "Hash bound, approved, record written: 201, then a 200 replay. A changed draft stops before any write; 409 on a second record.", "ON MAIN", "green"],
     ["D05", "Decide a contradiction.", "Both contradictory sources cited; route manual_review, no deadline. A decided outcome, not a guess.", "ON MAIN", "green"],
     ["D08", "Refuse an instruction.", "The instruction sentence is filtered, never read as the customer's account.", "ON MAIN", "green"],
     ["D10", "Retry a fault.", "One injected transaction failure. The ladder retries once: 3 attempts, 1 retry, 1.3 s.", "ON MAIN", "green"],
@@ -162,7 +162,7 @@ function s04_demo(pres) {
     { fs: 10, color: COLORS.muted });
   mono(s, "THE DEMO RUNS IN THE TERMINAL AND THE MOCK BANK, NOT IN THIS DECK.", M, 6.68, 12.09,
     { fs: 10, color: COLORS.muted, charSpacing: 1.2 });
-  notes(s, "Five cases, five outcomes, all on main. D01 walks the gate: draft, approval bound to the hash, then 403 and 409 when the key changes. D05 and D06 decide a contradiction by routing to manual review and citing both sources. D10 exercises the retry ladder on an injected 503: three attempts, one retry, a draft in 1.3 seconds. D09 is a redelivery of D02 and is deduplicated. D08 stores the instruction-shaped note as evidence and never obeys it.");
+  notes(s, "Five cases, five outcomes, all on main. D01 walks the gate: draft, approval bound to the hash, a changed draft stopped before any write, and 409 on a second record. D05 and D06 decide a contradiction by routing to manual review and citing both sources. D10 exercises the retry ladder on an injected 503: three attempts, one retry, a draft in 1.3 seconds. D09 is a redelivery of D02 and is deduplicated. D08 stores the instruction-shaped note as evidence and never obeys it.");
 }
 
 function s05_evidence(pres) {
@@ -256,7 +256,7 @@ function s09_limits(pres) {
   headline(s, "What is not done, and why.", { y: 1.1, w: 12.0, h: 0.7 });
   para(s, "One delivered band, four named gaps, and a short not-attempted list.", M, 1.88, 10.5, { fs: 15, color: COLORS.ink });
   mono(s, "ON MAIN  ·  12 OF 12 DEV CASES", M, 2.3, 6.0, { fs: 10, color: COLORS.teal, charSpacing: 1.2 });
-  para(s, "Every case builds. D05 and D06 route to manual review, D07 and D10 retry, D09 deduplicates. The review gate, the 403, the 409 and the record write are wired.",
+  para(s, "Every case builds. D05 and D06 route to manual review, D07 and D10 retry, D09 deduplicates. The review gate, the changed-draft refusal, the 409 and the record write are wired.",
     M, 2.52, 11.6, { fs: 13 });
   s.addShape("rect", { x: M, y: 3.05, w: 12.09, h: 2.4, fill: { color: COLORS.sand }, line: { color: COLORS.line, width: 0.75 } });
   mono(s, "NOT DELIVERED  ·  FOUR NAMED GAPS", M + 0.33, 3.24, 8.0,
@@ -279,7 +279,7 @@ function s09_limits(pres) {
     M, 6.18, 11.6, { fs: 13, h: 0.22 });
   mono(s, "DO NOT COUNT A GAP AS DELIVERED.", M, 6.62, 12.09,
     { fs: 10, color: COLORS.red, charSpacing: 1.2 });
-  notes(s, "One delivered band and one gap list. On main: all twelve cases, the record, the 403 and the 409, and a wired retry ladder. The gaps are named: reviewer identity is not started, the model route is merged but off with no approved live run, update and close are blocked by Gate U, and the wrapped statement has no line limit. Not attempted: a user interface, OCR, production identity, adjudication, and the deployment shape, which is one node, SQLite, and no reviewer identity.");
+  notes(s, "One delivered band and one gap list. On main: all twelve cases, the record, the changed-draft refusal and the 409, and a wired retry ladder. The gaps are named: reviewer identity is not started, the model route is merged but off with no approved live run, update and close are blocked by Gate U, and the wrapped statement has no line limit. Not attempted: a user interface, OCR, production identity, adjudication, and the deployment shape, which is one node, SQLite, and no reviewer identity.");
 }
 
 function s10_operations(pres) {
@@ -306,8 +306,8 @@ function s10_operations(pres) {
     "GET  /v1/cases            200",
     "POST /v1/reviews          201 pending",
     "POST same key             200 replay",
-    "changed field             403",
-    "   approval_missing_or_draft_changed",
+    "changed field             refused",
+    "   before any POST: nothing written",
     "second record             409 duplicate_case",
   ];
   code.forEach((c, i) => {
@@ -356,7 +356,7 @@ function s12_pod(pres) {
   headline(s, "Three people, one system,\ndefended line by line.", { y: 1.05, w: 11.8, h: 1.34 });
   para(s, "We built one path and three seams: the gate, the escalation, the retry.", M, 2.36, 11.5, { fs: 15, color: COLORS.ink });
   const cols = [
-    ["Kanit", "GATE AND EVIDENCE", "Idempotency. The approval bound to the draft hash, 403 and 409 live, and the evidence pack behind every number here.", "ASK KANIT", "What stops a changed draft from being written?"],
+    ["Kanit", "GATE AND EVIDENCE", "Idempotency. The approval bound to the draft hash, a changed draft stopped before any write, 409 live, and the evidence pack behind every number here.", "ASK KANIT", "What stops a changed draft from being written?"],
     ["Mani", "ESCALATION", "Merged in 52. A follow-up that contradicts the intake routes to manual review with both sources cited. That is D05 and D06.", "ASK MANI", "What happens when a follow-up names a document the read step cannot load?"],
     ["Zach", "RESILIENCE", "Retry and breaker around every tool read: merged and wired. D07 and D10 exercise the ladder in the scored run.", "ASK ZACH", "Why three attempts, and waits of one second then two?"],
   ];
