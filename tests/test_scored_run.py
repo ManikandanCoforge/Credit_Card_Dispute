@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from src.load_records import CaseListError
-from src.meters import latency_percentiles
+from src.meters import case_attempts, latency_percentiles
 from tools.runtime import create_server
 from tools.scored_run import (
     DETERMINISTIC_PATH,
@@ -169,6 +169,8 @@ def test_a_not_built_case_is_reported_with_its_reason_and_submitted_false():
                 "the case names evidence this step cannot read: CARD-D05-FOLLOWUP"
             ),
             "meter_error": None,
+            "tool_attempts": None,
+            "retry_count": None,
         }
     ]
 
@@ -469,6 +471,42 @@ def test_a_full_dev_run_against_the_mock_writes_four_artifacts_that_agree(
     assert f"p95 {report['p95_latency_ms']:.3f} ms" in printed[0]
     failing = [case["case_id"] for case in report["cases"] if not case["passed"]]
     assert [line.split(":")[0].strip() for line in printed[1:]] == failing
+
+
+def test_the_generated_report_records_the_reads_and_retries_that_were_made(
+    tmp_path,
+):
+    paths = _outputs(tmp_path)
+
+    with _mock(DEV, tmp_path) as base_url:
+        run_scored(base_url=base_url, data_dir=DEV, gold_path=GOLD, **_run(paths))
+
+    report = json.loads(paths["report_path"].read_text(encoding="utf-8"))
+    recorded = {
+        case["case_id"]: (case["tool_attempts"], case["retry_count"])
+        for case in report["cases"]
+    }
+    metered = {
+        case_id: (row["tool_attempts"], row["retry_count"])
+        for case_id, row in case_attempts(paths["case_meter_path"]).items()
+    }
+    committed = {
+        case_id: (row["tool_attempts"], row["retry_count"])
+        for case_id, row in case_attempts(
+            ROOT / "reports" / "meters.jsonl"
+        ).items()
+    }
+    expected = {"CARD-D07": (4, 2), "CARD-D10": (3, 1)}
+    for case_id in recorded:
+        expected.setdefault(case_id, (2, 0))
+
+    assert recorded == metered == committed == expected
+
+    markdown = paths["markdown_path"].read_text(encoding="utf-8")
+    assert "## Reads and retries" in markdown
+    assert "| CARD-D07 | 4 | 2 | - |" in markdown
+    assert "| CARD-D10 | 3 | 1 | - |" in markdown
+    assert "| CARD-D01 | 2 | 0 | - |" in markdown
 
 
 def test_a_failing_case_is_printed_with_its_checks_and_the_run_exits_1(
@@ -826,6 +864,27 @@ def test_a_refused_meter_line_is_named_in_the_report(tmp_path):
     markdown = render_markdown(report, meter_rows(reports))
     assert "CARD-D01" in markdown
     assert "MeterLeak" in markdown
+    assert "## Reads and retries" in markdown
+    assert "| CARD-D01 | - | - | MeterLeak |" in markdown
+
+
+def test_a_case_with_no_meter_line_renders_a_dash_in_the_reads_table():
+    reports = [_case("CARD-D01", duration=1.0)]
+    report = assemble_report(
+        reports,
+        _evaluation([]),
+        generated_at="2026-10-27T00:00:00Z",
+        git_commit="abc123",
+        git_dirty=False,
+        base_url="http://127.0.0.1:8899",
+        dataset_name="card-disputes-dev",
+        latencies={"p50": 1, "p95": 1},
+    )
+
+    markdown = render_markdown(report, meter_rows(reports))
+
+    assert "## Reads and retries" in markdown
+    assert "| CARD-D01 | - | - | - |" in markdown
 
 
 def test_the_committed_report_matches_its_meters_and_markdown():

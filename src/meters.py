@@ -23,6 +23,13 @@ class LatencyPercentiles(TypedDict):
     p95: int | None
 
 
+class CaseAttempts(TypedDict):
+    """The tool attempts and retries one case's meter line recorded."""
+
+    tool_attempts: int
+    retry_count: int
+
+
 class MeterLeak(Exception):
     """The meter line would have contained evidence text or a restricted value."""
 
@@ -75,6 +82,27 @@ def latency_percentiles(path: Path) -> LatencyPercentiles:
     if not latencies:
         return {"p50": None, "p95": None}
     return {"p50": _nearest_rank(latencies, 50), "p95": _nearest_rank(latencies, 95)}
+
+
+def case_attempts(path: Path) -> dict[str, CaseAttempts]:
+    """Return each case's tool attempts and retries from the meter file.
+
+    Args:
+        path: The redacted meter file the run wrote.
+
+    Returns:
+        A mapping from case id to its recorded tool_attempts and retry_count.
+        A case with no line is absent, so the caller can show it as unknown
+        instead of inventing a count.
+    """
+    attempts: dict[str, CaseAttempts] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        attempts[row["case_id"]] = {
+            "tool_attempts": int(row["tool_attempts"]),
+            "retry_count": int(row["retry_count"]),
+        }
+    return attempts
 
 
 def _reject_leaks(line: dict[str, object]) -> None:

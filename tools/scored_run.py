@@ -49,7 +49,12 @@ from src.contract_records import (
     contract_case_plans,
 )
 from src.load_records import BankReadError
-from src.meters import LatencyPercentiles, latency_percentiles
+from src.meters import (
+    CaseAttempts,
+    LatencyPercentiles,
+    case_attempts,
+    latency_percentiles,
+)
 from tools.evaluate import evaluate
 
 EXPECTED_CASES = 12
@@ -103,6 +108,8 @@ class CaseReport(TypedDict):
     failed_checks: list[str]
     error: str | None
     meter_error: str | None
+    tool_attempts: int | None
+    retry_count: int | None
 
 
 class MeterRow(TypedDict):
@@ -199,13 +206,23 @@ def measure_cases(
 
 
 def build_case_reports(
-    measured: Sequence[MeasuredCase], evaluation: Mapping[str, Any]
+    measured: Sequence[MeasuredCase],
+    evaluation: Mapping[str, Any],
+    *,
+    attempts: Mapping[str, CaseAttempts] | None = None,
 ) -> list[CaseReport]:
     """Merge measured durations with the evaluator's per-case checks.
 
     A case that could not be built has no submission, so the evaluator records
     the single failed check "submitted"; its error reason is kept beside it. A
     case the evaluator did not mention is a failure, never a silent pass.
+
+    Args:
+        measured: Each case's timed result.
+        evaluation: The evaluator's per-case checks for the submission.
+        attempts: The meter file's tool-attempt and retry counts per case, or
+            None when the caller has no meter file. A case with no line keeps
+            None, so the report shows a dash instead of inventing a count.
     """
     evaluated = {case["case_id"]: case for case in evaluation["cases"]}
     reports: list[CaseReport] = []
@@ -217,6 +234,7 @@ def build_case_reports(
         else:
             checks = result["checks"]
             passed = bool(result["passed"])
+        recorded = None if attempts is None else attempts.get(case["case_id"])
         reports.append(
             {
                 "case_id": case["case_id"],
@@ -226,6 +244,10 @@ def build_case_reports(
                 "failed_checks": failed_checks(checks),
                 "error": case["error"],
                 "meter_error": case.get("meter_error"),
+                "tool_attempts": (
+                    None if recorded is None else recorded["tool_attempts"]
+                ),
+                "retry_count": None if recorded is None else recorded["retry_count"],
             }
         )
     return reports
@@ -452,6 +474,36 @@ def render_markdown(
             for case in refused
         ]
 
+    lines += [
+        "",
+        "## Reads and retries",
+        "",
+        (
+            "Attempts and retries are read from the run's own meter file "
+            f"`{meter_path}`. A case with no meter line shows a dash."
+        ),
+        "",
+        "| Case | Tool attempts | Retries | Meter error |",
+        "|---|---|---|---|",
+    ]
+    for case in report["cases"]:
+        lines.append(
+            f"| {_md_cell(case['case_id'])} | "
+            f"{_count(case.get('tool_attempts'))} | "
+            f"{_count(case.get('retry_count'))} | "
+            f"{_md_cell(case.get('meter_error') or '-')} |"
+        )
+    retried = [case["case_id"] for case in report["cases"] if case.get("retry_count")]
+    lines.append("")
+    if retried:
+        lines.append(
+            "Every case except "
+            + ", ".join(_md_cell(case_id) for case_id in retried)
+            + " reads each tool once; those are the only rows with a retry."
+        )
+    else:
+        lines.append("Every case reads each tool once and no case retried a read.")
+
     failing = [case for case in report["cases"] if not case["passed"]]
     lines += [
         "",
@@ -585,6 +637,11 @@ def render_markdown(
 def _fmt_ms(value: float | None) -> str:
     """A millisecond value with three decimals, or a dash when nothing ran."""
     return "-" if value is None else f"{value:.3f} ms"
+
+
+def _count(value: int | None) -> str:
+    """A recorded count, or a dash when the case wrote no meter line."""
+    return "-" if value is None else str(value)
 
 
 def _bool(value: bool) -> str:
@@ -721,7 +778,8 @@ def run_scored(
     ]
     _write_json(submission_path, submissions)
     evaluation = evaluate(dataset, gold, submissions)
-    case_reports = build_case_reports(measured, evaluation)
+    attempts = case_attempts(destination)
+    case_reports = build_case_reports(measured, evaluation, attempts=attempts)
     meters = meter_rows(case_reports)
     report = assemble_report(
         case_reports,
