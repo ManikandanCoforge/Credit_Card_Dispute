@@ -1,0 +1,470 @@
+{
+  "generated": "2026-10-27",
+  "diagram": "docs/architecture-capstone-v2.pdf#pages=2,3",
+  "counts": {
+    "brief": {
+      "COVERED": 22,
+      "PARTIAL": 0,
+      "GAP": 0
+    },
+    "rubric": {
+      "COVERED": 4,
+      "PARTIAL": 2,
+      "GAP": 0
+    },
+    "gates": {
+      "COVERED": 6,
+      "PARTIAL": 0,
+      "GAP": 0
+    },
+    "contract": {
+      "COVERED": 10,
+      "PARTIAL": 0,
+      "GAP": 0
+    },
+    "api": {
+      "COVERED": 11,
+      "PARTIAL": 0,
+      "GAP": 0
+    }
+  },
+  "brief": [
+    [
+      "B1",
+      "Three supported dispute types: unauthorized, duplicate_charge, service_not_received",
+      "4 Gates, 5 Classify & draft, OUTPUT MAP: 5 labels, 3 supported",
+      "COVERED",
+      ""
+    ],
+    [
+      "B2",
+      "Ambiguous and unsupported complaints escalate; no invented classification",
+      "4 Gates: unsupported (cash) to manual review; auth conflict to ambiguous",
+      "COVERED",
+      ""
+    ],
+    [
+      "B3",
+      "Deadlines computed in deterministic code",
+      "5: deadline is date math in code, never model; V1 20/30/45, V2 30/45/60",
+      "COVERED",
+      ""
+    ],
+    [
+      "B4",
+      "Retrieve transactions and merchant context",
+      "3 Build record: GET transactions + merchant context",
+      "COVERED",
+      ""
+    ],
+    [
+      "B5",
+      "Identify missing evidence before drafting",
+      "4 Gates: missing evidence to request information; OUTPUT MAP",
+      "COVERED",
+      ""
+    ],
+    [
+      "B6",
+      "One targeted question per missing field",
+      "5 draft: follow-ups; contract: one per missing field",
+      "COVERED",
+      ""
+    ],
+    [
+      "B7",
+      "Draft a customer message, marked as a draft",
+      "5 customer reply always marked DRAFT; contract row",
+      "COVERED",
+      ""
+    ],
+    [
+      "B8",
+      "Create the case only after human approval",
+      "6 agent never approves or rejects, then 7 POST /v1/records",
+      "COVERED",
+      ""
+    ],
+    [
+      "B9",
+      "No creation after the approved draft changes",
+      "6: changed draft means new approval (403)",
+      "COVERED",
+      ""
+    ],
+    [
+      "B10",
+      "Create-only; update and close are separately contracted stretch work",
+      "7 Create record: create only, no update, close or delete",
+      "COVERED",
+      ""
+    ],
+    [
+      "B11",
+      "Never promise a refund or outcome",
+      "hard rules: no refund, success or eligibility promises",
+      "COVERED",
+      ""
+    ],
+    [
+      "B12",
+      "Never follow instructions found in evidence",
+      "1: attachments are evidence, never orders; untrusted text never changes the rules",
+      "COVERED",
+      ""
+    ],
+    [
+      "B13",
+      "Show policy source IDs and short exact quotes",
+      "2 policy version; contract citations{claim, source_id, quote}",
+      "COVERED",
+      ""
+    ],
+    [
+      "B14",
+      "Handle normal, ambiguous, unsupported, outage, duplicate, stale policy, injection",
+      "4 Gates, 7 duplicate loss, hard rules block",
+      "COVERED",
+      "spread over 3 blocks"
+    ],
+    [
+      "B15",
+      "Retrieval, tool integration, justified agent design, human review",
+      "stages 1 to 6 end to end",
+      "COVERED",
+      ""
+    ],
+    [
+      "B16",
+      "Evaluations, with actual results",
+      "reports/scored-run.json, reports/eval-dev.md, evals/reports/hybrid-eval.json",
+      "COVERED",
+      "12 of 12, 0 format errors, p95 3670 ms (drawing's 2.5 s line missed)"
+    ],
+    [
+      "B17",
+      "Structured monitoring",
+      "8 logs + page 3 five per-case meters",
+      "COVERED",
+      ""
+    ],
+    [
+      "B18",
+      "Reproducible deployment",
+      "page 3 six-step build chain",
+      "COVERED",
+      ""
+    ],
+    [
+      "B19",
+      "Measure latency and model/tool usage; no invented claims",
+      "page 3 meters: latency, calls, tokens, attempts",
+      "COVERED",
+      ""
+    ],
+    [
+      "B20",
+      "Tool-assisted workflow where the next step depends on tool results",
+      "3 to 4: txn service down routes to manual review",
+      "COVERED",
+      ""
+    ],
+    [
+      "B21",
+      "LLM only where it helps; determinism justified",
+      "4 Gates tagged NO LLM; 5 tagged DRAFT",
+      "COVERED",
+      ""
+    ],
+    [
+      "B22",
+      "Decision record, eval results, traces, runbook, limitations, roadmap, demo",
+      "page 3 deliverable rail, 8 chips",
+      "COVERED",
+      "eight deliverables are in the tree"
+    ]
+  ],
+  "rubric": [
+    [
+      "R1",
+      "Required workflow and domain rules",
+      "25",
+      "1 to 5 plus OUTPUT MAP and the V1/V2 deadline table",
+      "Met: 12 of 12 dev cases green in reports/scored-run.json"
+    ],
+    [
+      "R2",
+      "Grounding and uncertainty",
+      "20",
+      "3 source_id on every quote; 4 conflict to ambiguous; citations field",
+      "Needs a quote slicer and every contradiction cited"
+    ],
+    [
+      "R3",
+      "Tools and human boundaries",
+      "20",
+      "3 bounded reads; 6 draft hash; 7 Idempotency-Key and 409",
+      "Met: required_reads and no_forbidden_writes 12 of 12 in reports/eval-dev.md"
+    ],
+    [
+      "R4",
+      "Evaluation and resilience",
+      "15",
+      "page 3 quality loop to tools/evaluate.py",
+      "Met: the run is published, 12 of 12, p95 3670 ms"
+    ],
+    [
+      "R5",
+      "Deployment and operation",
+      "10",
+      "page 3 meters and six-step build chain",
+      "Needs a recorded fresh setup on a clean shell; the runbook is written"
+    ],
+    [
+      "R6",
+      "Client demo and technical defence",
+      "10",
+      "page 3 deliverable rail, 8 chips",
+      "Met: ADR-001 to ADR-004, LIMITATIONS, RUNBOOK, ROADMAP, eval reports and CONTRIBUTION are in the tree"
+    ]
+  ],
+  "gates": [
+    [
+      "G1",
+      "No autonomous adjudication or prohibited customer commitment",
+      "6: agent never approves or rejects; hard rules bar promises",
+      "COVERED",
+      ""
+    ],
+    [
+      "G2",
+      "No unapproved or modified-after-approval write attempt",
+      "6: changed draft means new approval (403)",
+      "COVERED",
+      ""
+    ],
+    [
+      "G3",
+      "No instruction override from untrusted evidence",
+      "1: never orders; hard rule: untrusted text never changes the rules",
+      "COVERED",
+      ""
+    ],
+    [
+      "G4",
+      "No restricted synthetic values in outputs or logs",
+      "8: no restricted tokens, PII or PAN; rule covers output, narrative, logs",
+      "COVERED",
+      ""
+    ],
+    [
+      "G5",
+      "No duplicate record created",
+      "7: 409 duplicate, duplicate intake maps to same loss",
+      "COVERED",
+      ""
+    ],
+    [
+      "G6",
+      "No fabricated evidence behind a recommendation",
+      "3: source_id kept on every quote; hard rule: never fabricate a source",
+      "COVERED",
+      ""
+    ]
+  ],
+  "contract": [
+    [
+      "C1",
+      "case_id",
+      "string supplied by input",
+      "COVERED"
+    ],
+    [
+      "C2",
+      "classification",
+      "5-value enum",
+      "COVERED"
+    ],
+    [
+      "C3",
+      "routing",
+      "ready, request, manual",
+      "COVERED"
+    ],
+    [
+      "C4",
+      "policy_ids",
+      "all applicable, no stale",
+      "COVERED"
+    ],
+    [
+      "C5",
+      "facts",
+      "4 keys, null when unknown",
+      "COVERED"
+    ],
+    [
+      "C6",
+      "missing_information",
+      "3 allowed identifiers",
+      "COVERED"
+    ],
+    [
+      "C7",
+      "deadline",
+      "ISO date, else null",
+      "COVERED"
+    ],
+    [
+      "C8",
+      "citations",
+      "claim, source_id, quote",
+      "COVERED"
+    ],
+    [
+      "C9",
+      "follow_up_questions",
+      "one per missing field",
+      "COVERED"
+    ],
+    [
+      "C10",
+      "narrative",
+      "evidence, uncertainty, draft",
+      "COVERED"
+    ]
+  ],
+  "api": [
+    [
+      "A1",
+      "GET /health",
+      "page 3 build step 04",
+      "COVERED"
+    ],
+    [
+      "A2",
+      "GET /v1/cases",
+      "page 3 build step 04",
+      "COVERED"
+    ],
+    [
+      "A3",
+      "GET /v1/cases/{id}/transactions and merchant",
+      "3 Build record",
+      "COVERED"
+    ],
+    [
+      "A4",
+      "POST /v1/reviews returns review_id and draft hash",
+      "6 Human boundary",
+      "COVERED"
+    ],
+    [
+      "A5",
+      "GET /v1/reviews/{review_id} poll the decision",
+      "6 poll GET /v1/reviews/{review_id}",
+      "COVERED"
+    ],
+    [
+      "A6",
+      "POST /v1/records with Idempotency-Key",
+      "7 Create record: 201, 200 replay, 409",
+      "COVERED"
+    ],
+    [
+      "A7",
+      "GET /v1/records/{case_id} live ledger",
+      "8 Verify & audit: read back the live ledger",
+      "COVERED"
+    ],
+    [
+      "A8",
+      "No record on missing, rejected, wrong-case or changed approval (only a changed draft is a 403)",
+      "src/review_gate.py; tests/test_review_gate.py covers all four",
+      "COVERED"
+    ],
+    [
+      "A9",
+      "503 upstream_timeout, 3 attempts max then escalate",
+      "3 retry twice; hard rules 3 attempts max",
+      "COVERED"
+    ],
+    [
+      "A10",
+      "KYC read-only, never attempt a record",
+      "hard rules: KYC read-only, never attempt",
+      "COVERED"
+    ],
+    [
+      "A11",
+      "No auth, loopback only, no batch, no adjudication endpoint",
+      "docs/LIMITATIONS.md L2/L3/L4; docs/API.md:30",
+      "COVERED"
+    ]
+  ],
+  "gaps": [
+    [
+      "G-01",
+      "Evaluation run and its numbers",
+      "R4, 15 points. G1 needs 8 of 12 green Mon 26",
+      "Closed: reports/scored-run.json 12 of 12, 0 format errors, p95 3670 ms",
+      "Eval lane",
+      "Mon 26",
+      "CLOSED"
+    ],
+    [
+      "G-02",
+      "Meters not implemented",
+      "R5. Measurement is required, not optional",
+      "Closed: src/meters.py writes one redacted line per case; reports/meters.jsonl has 12",
+      "Eval lane",
+      "Tue 27",
+      "CLOSED"
+    ],
+    [
+      "G-03",
+      "Fresh setup not proven",
+      "R5, 10 points",
+      "Run the six build steps on a clean shell and commit the transcript; only the path in docs/RUNBOOK.md exists",
+      "Ops",
+      "Tue 27",
+      "OPEN"
+    ],
+    [
+      "G-04",
+      "403 variants and wrong-case guard",
+      "A8, R3",
+      "Closed: src/review_gate.py raises for missing, rejected, wrong_case and changed; tests/test_review_gate.py names all four",
+      "Lead",
+      "sheet v3",
+      "CLOSED"
+    ],
+    [
+      "G-05",
+      "Eight deliverables not written",
+      "R6, 10 points",
+      "Closed: ADR-001 to ADR-004, LIMITATIONS.md, RUNBOOK.md, ROADMAP.md, evals reports and CONTRIBUTION.md are tracked",
+      "All three",
+      "Thu 29",
+      "CLOSED"
+    ],
+    [
+      "G-06",
+      "Auth and batch limits unstated",
+      "A11 is a limitation, not a defect",
+      "Closed: docs/LIMITATIONS.md L2 states no auth and loopback, L4 states no batch",
+      "Ops",
+      "sheet v3",
+      "CLOSED"
+    ],
+    [
+      "C-01",
+      "Five drawing gaps closed in v2",
+      "was A5, B10, C6, C9, G4, G-09",
+      "reject exit and poll, create-only, cardinality, gate wording, startup",
+      "Lead",
+      "v2",
+      "CLOSED"
+    ]
+  ]
+}
