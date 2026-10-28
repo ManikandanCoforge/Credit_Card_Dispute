@@ -50,9 +50,9 @@ with its own fault counters, so the loop gives each run a fresh state file at
 | Per-case verdicts | see the table below; all twelve build | a fresh mock with a fresh state on port 8794, 2026-10-28, plus the published run |
 | D01 draft hash | `af65f68659d94274382d90d07417c94031d0c574722bd7b8850e7700ce13ebd4` | reproduced from a fresh mock 2026-10-28; same hash in rehearsal runs 3 and 4 (`docs/DEMO_REHEARSAL.md`) |
 | D01 audit walk | 5 rows: 2 `tool_read`, `review_requested`, `human_approved`, `record_created` | rehearsal runs 3 and 4 |
-| 403 on changed draft | `403 {"error":"approval_missing_or_draft_changed"}` | rehearsal runs 3 and 4; code in `src/review_gate.py` |
-| 409 on duplicate case | `409 {"error":"duplicate_case","existing_record_id":"dispute-d01"}` | rehearsal runs 3 and 4; code in `src/review_gate.py` |
-| Review gate CLI | `python -m src.review_runner` | operator step; the agent must never approve its own draft |
+| Changed draft | refused before any write: `src/review_gate.py` raises a local 403 "changed" and posts nothing | `src/review_gate.py:93-94`, `tests/test_review_gate.py`. Never staged with a POST: the mock audits a changed-draft POST as `unapproved_write_attempt` |
+| 409 on duplicate case | `409 {"error":"duplicate_case","existing_record_id":"dispute-double-02"}` | rehearsal runs 3 and 4, CARD-D09's approved redelivery of CARD-D02; code in `src/review_gate.py` |
+| Review runner | `python -m src.review_runner submit` and `check` open the reviews and record approved drafts; a person approves with `tools/runtime.py approve` | the agent must never approve its own draft |
 | Retry wiring | `ToolRetry` in `src/contract_records.py:170,254` and `src/review_runner.py:77`; real in the scored run (D07 4/2, D10 3/1) | source and meter rows |
 | Model boundary | ADR-001, accepted 2026-10-25: a model may write prose only; class, route, facts, citations, deadline stay in code | `docs/decisions/ADR-001-model-narrative-boundary.md` |
 | Model route status | ADR-003 merged (`186c8e9`), **off by default**, no approved live run, cost and latency at volume not measured | `docs/decisions/ADR-003-hybrid-model-questions.md`; published run has 0 calls |
@@ -94,9 +94,9 @@ with its own fault counters, so the loop gives each run a fresh state file at
    2 retries at 3670.626 ms, D10 needs 3 attempts and 1 retry at 1290.001 ms.
 4. Every meter row records 0 model calls, 0 tokens and 0.00 USD; the shipped path
    is the deterministic template.
-5. A record can only be created from the exact approved draft: a changed draft
-   returns 403 `approval_missing_or_draft_changed`, and a second record for the
-   same case returns 409 `duplicate_case`, both verified in rehearsal.
+5. A record can only be created from the exact approved draft: the runner refuses
+   a changed draft before it sends anything, and a second record for the same
+   dispute returns 409 `duplicate_case`, verified in rehearsal with CARD-D09.
 6. Approval binds to a sha256 of the canonical draft: the clean D01 walk produced
    `af65f68659d94274382d90d07417c94031d0c574722bd7b8850e7700ce13ebd4` and
    exactly 5 audit rows.

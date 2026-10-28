@@ -326,6 +326,208 @@ def test_a_follow_up_that_reveals_a_cash_withdrawal_escalates():
     assert escalation["citations"][0]["source_id"] == "TEST-FOLLOWUP"
 
 
+@pytest.mark.parametrize(
+    "followup_text",
+    [
+        "Please withdraw my complaint. I found the receipt in my email.",
+        "I no longer want to dispute this charge; my partner made it.",
+        "Please cancel this dispute, the shop has sorted it out.",
+        "I would like to withdraw my complaint.",
+        "I would really like to withdraw my complaint.",
+        "Could you please withdraw my complaint?",
+        "Please withdraw my complaint if possible.",
+        "I am not sure, but please withdraw my complaint.",
+        "I may have been wrong, so please withdraw my complaint.",
+        "Would you cancel my dispute, please?",
+        "I'd like to drop my claim.",
+        "Please withdraw my complaint; if you need anything else, call me.",
+    ],
+)
+def test_a_follow_up_that_withdraws_the_complaint_is_ambiguous(followup_text):
+    followup = f"# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\n{followup_text}\n"
+
+    escalation = find_escalation(
+        _intake("I do not recognize this charge.", authorization="denied"), [followup], PROCEDURE_TEXT
+    )
+
+    assert escalation is not None and escalation["classification"] == "ambiguous"
+    assert escalation["reason"].startswith("The customer withdrew the complaint in TEST-FOLLOWUP.")
+    withdrawn = [c for c in escalation["citations"] if c["claim"] == "complaint_withdrawn"]
+    assert [c["source_id"] for c in withdrawn] == ["TEST-FOLLOWUP"]
+    assert withdrawn[0]["quote"] in followup
+    assert escalation["citations"][-1]["claim"] == "ambiguous_rule"
+
+
+@pytest.mark.parametrize(
+    "followup_text",
+    [
+        "I may withdraw my complaint if the shop refunds me.",
+        "I could cancel my dispute if needed.",
+        "If the shop refunds me, I will withdraw my complaint.",
+        "I would withdraw my complaint, but the shop still has not refunded me.",
+        "Please do not withdraw my complaint.",
+        "I do not want to withdraw my complaint.",
+        "I won't drop my claim.",
+    ],
+)
+def test_a_hypothetical_or_negated_withdrawal_has_not_withdrawn_anything(followup_text):
+    """Kanit's #91 review: a conditional is not a withdrawal yet, and nor is a refusal."""
+    followup = f"# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\n{followup_text}\n"
+
+    escalation = find_escalation(
+        _intake("I do not recognize this charge.", authorization="denied"), [followup], PROCEDURE_TEXT
+    )
+
+    assert escalation is None
+
+
+def test_a_withdrawn_complaint_goes_to_a_person_without_a_deadline():
+    followup = "# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\nPlease withdraw my complaint.\n"
+
+    result = _assemble(_record(), statement="I do not recognize this charge.", customer_texts=[followup])
+
+    assert (result["classification"], result["routing"], result["deadline"]) == (
+        "ambiguous",
+        "manual_review",
+        None,
+    )
+    assert "Please withdraw my complaint." in [c["quote"] for c in result["citations"]]
+
+
+def test_cancelling_something_other_than_the_complaint_is_not_a_withdrawal():
+    followup = (
+        "# Customer follow-up email\n\nSource ID: TEST-FOLLOWUP\n\n"
+        "I also want to cancel my subscription.\n"
+    )
+
+    escalation = find_escalation(
+        _intake("I do not recognize this charge.", authorization="denied"), [followup], PROCEDURE_TEXT
+    )
+
+    assert escalation is None
+
+
+def test_a_withdrawal_is_read_only_from_a_later_statement():
+    intake = _intake(
+        "I may withdraw my complaint if the shop refunds me. I do not recognize it.",
+        authorization="denied",
+    )
+
+    assert find_escalation(intake, [], PROCEDURE_TEXT) is None
+
+
+@pytest.mark.parametrize(
+    ("statement", "classification"),
+    [
+        (
+            (
+                "I didn't recognize the store at first, but I now remember buying from Tide Shop. "
+                "The order never arrived."
+            ),
+            "service_not_received",
+        ),
+        (
+            (
+                "I thought I didn't recognize this payment, but it turns out it was my order, "
+                "which never arrived."
+            ),
+            "service_not_received",
+        ),
+        (
+            (
+                "I didn't recognise Nova Tech until I checked my email. I did buy the headphones, "
+                "but they were never delivered."
+            ),
+            "service_not_received",
+        ),
+        (
+            "I didn't recognize the charge, but it was my order after all, and it never arrived.",
+            "service_not_received",
+        ),
+        (
+            "I didn't recognize it at first, but it was mine. It was charged twice.",
+            "duplicate_charge",
+        ),
+        (
+            (
+                "At first I didn't recognize the charge, but now I remember it was my gym. "
+                "Fern Gym charged me twice."
+            ),
+            "duplicate_charge",
+        ),
+    ],
+)
+def test_a_denial_of_recognition_the_customer_takes_back_does_not_conflict(
+    statement, classification
+):
+    result = _assemble(_record(authorization="confirmed"), statement, authorization="confirmed")
+
+    assert result["classification"] == classification
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "I do not recognize this charge, and I still don't after checking my receipts.",
+        "I didn't recognize the merchant name at first, and I still don't think I made it.",
+        "I did not authorize it, but it turns out my son used my card.",
+        # Kanit's #91 review: none of these recognises the purchase, so the denial stands.
+        "I didn't recognize this charge, but it turns out it was charged twice.",
+        "I didn't recognize this charge. I did buy a coffee there last week, but this one is not mine.",
+        "I didn't recognize the charge, but I now remember I already called you about it.",
+        # Recognition without a problem to dispute instead does not take the denial back.
+        "I didn't recognize the charge, but it turns out it was my order.",
+        "I didn't recognize this charge; it turns out it was my card number that was stolen.",
+        (
+            "I didn't recognize this charge; it turns out it was my card number that was stolen. "
+            "The order never arrived."
+        ),
+        "I didn't recognize the charge, but it turns out it was my son.",
+        "I don't recognize this charge; after all, I have never shopped there.",
+        "I don't recognize this charge. After all, I was abroad that week.",
+        "I don't recognize this charge after all my checks.",
+        "I didn't recognize this charge, and none of it was mine.",
+        "I do not recognize the charge. I did pay for my groceries in cash that day.",
+        "I do not recognise this purchase. I did buy from that shop once, years ago.",
+        # A problem without recognition, or recognition the customer contradicts.
+        "I don't recognize this charge. The parcel I ordered elsewhere never arrived either.",
+        "I didn't recognize it, then I remembered buying there in May, but this charge is not mine.",
+    ],
+)
+def test_a_denial_that_is_not_taken_back_still_conflicts_with_a_confirmed_form(statement):
+    result = _assemble(_record(authorization="confirmed"), statement, authorization="confirmed")
+
+    assert (result["classification"], result["routing"]) == ("ambiguous", "manual_review")
+    denied = [c for c in result["citations"] if c["claim"] == "authorization_denied"]
+    assert denied and denied[0]["quote"] in statement
+
+
+def test_without_problems_to_name_a_denial_of_recognition_is_never_taken_back():
+    statement = (
+        "I didn't recognize the store at first, but I now remember buying from Tide Shop. "
+        "The order never arrived."
+    )
+
+    escalation = find_escalation(_intake(statement, authorization="confirmed"), [], PROCEDURE_TEXT)
+
+    assert escalation is not None and escalation["classification"] == "ambiguous"
+
+
+def test_a_taken_back_denial_with_an_undelivered_order_is_drafted_as_service():
+    record = _record(authorization="confirmed")
+
+    result = _assemble(
+        record,
+        statement=(
+            "I didn't recognize the store at first, but I now remember buying from Tide Shop. "
+            "The problem is the order never arrived."
+        ),
+        authorization="confirmed",
+    )
+
+    assert (result["classification"], result["routing"]) == ("service_not_received", "ready_for_review")
+
+
 def test_an_escalated_case_with_no_single_amount_line_is_still_drafted():
     attachment = "# Purchase supporting material\n\nSource ID: TEST-ATTACHMENT\n"
 

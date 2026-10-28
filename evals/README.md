@@ -82,16 +82,16 @@ Everything in this folder supports [ADR-003](../docs/decisions/ADR-003-hybrid-mo
 
 ### Latest deterministic results
 
-Offline suite, five primary evals, commit `1338540` (the main HEAD the runs were made on), 2026-10-28 UTC. Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
+Offline suite, five primary evals, 2026-10-28 UTC: holdout at commit `f3ee194`, after the COF-39 escalation fixes, and stress at `1338540`, whose result those fixes do not change (measured). Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
 
 | Suite | Cases | Fully passed | Failing cases | Artifact |
 |---|---|---|---|---|
-| `holdout` | 8 | 3 | `HLD-H01`, `HLD-H05`, `HLD-H06`, `HLD-H07`, `HLD-H08` | [`eval-holdout.md`](reports/eval-holdout.md) |
+| `holdout` | 8 | 4 | `HLD-H05`, `HLD-H06`, `HLD-H07`, `HLD-H08` | [`eval-holdout.md`](reports/eval-holdout.md) |
 | `stress` | 16 | 4 | `STR-P03`, `STR-P05` to `STR-P12`, `STR-P13`, `STR-P14`, `STR-P15` | [`eval-stress.md`](reports/eval-stress.md) |
 
-The supplied bank evaluator scores the same cases higher with recorded model answers: 4 of 8 holdout and 16 of 16 stress in `reports/hybrid-eval.json`. Its rules-alone row uses that evaluator too (3 of 8 and 5 of 16), not these five evals, so the two tables are not one progression: the offline suite also requires a manual-review-rule citation, which is why `STR-P13` fails here and not there. `synth` is not rerun here; its rows are in the hybrid report.
+The supplied bank evaluator scores the same cases higher with recorded model answers: 5 of 8 holdout and 16 of 16 stress in `reports/hybrid-eval.json`. Its rules-alone row uses that evaluator too (4 of 8 and 5 of 16), not these five evals, so the two tables are not one progression: the offline suite also requires a manual-review-rule citation, which is why `STR-P13` fails here and not there. `synth` is not rerun here; its rows are in the hybrid report.
 
-The failures are those numbers, not the counts alone. HLD-H01 is routed `manual_review` where the gold expects `service_not_received`. HLD-H05 stops at intake with `expected exactly one 'Amount:' line in the source`, and HLD-H06 to HLD-H08 stop because the intake supports no supported classification. On stress, STR-P03 and STR-P05 to STR-P12 and STR-P14 stop for the same reason, STR-P13 misses the manual-review-rule citation, and STR-P15 is typed as a duplicate where the gold expects an ambiguous escalation. The artifacts carry every failing check with its evidence.
+The failures are those numbers, not the counts alone. HLD-H05 stops at intake with `expected exactly one 'Amount:' line in the source`, and HLD-H06 to HLD-H08 stop because the intake supports no supported classification. On stress, STR-P03 and STR-P05 to STR-P12 and STR-P14 stop for the same reason, STR-P13 misses the manual-review-rule citation, and STR-P15 is typed as a duplicate where the gold expects an ambiguous escalation. The artifacts carry every failing check with its evidence.
 
 Reproduce both runs from the repository root:
 
@@ -126,9 +126,9 @@ They come from the copilot's registered Week 10 runs of 25 October, one trace pe
 In the current evaluation this code asks 51 questions. Ten of them were not asked in that run, so they have no recording and replay as no answer:
 
 - 3 dispute-type questions: SYN-S03, HLD-H07 and HLD-H08
-- 7 two-problem questions: CARD-D08, CARD-D10, SYN-S14, SYN-S17, SYN-S20, SYN-S24 and SYN-S25
+- 7 two-problem questions: CARD-D08, CARD-D10, SYN-S14, SYN-S17, SYN-S24, SYN-S25 and HLD-H01
 
-CARD-D10 and SYN-S14 are asked now because the tool reads retry (COF-40): in the recorded runs a tool fault stopped both cases before any question.
+CARD-D10 and SYN-S14 are asked now because the tool reads retry (COF-40): in the recorded runs a tool fault stopped both cases before any question. HLD-H01 is asked now because its taken-back denial no longer escalates (COF-39), and SYN-S20 is no longer asked because its withdrawal escalates before any question.
 
 Each line holds three things:
 
@@ -167,9 +167,9 @@ Results on 2026-10-28 UTC:
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
 | dev (12) | 12 | 12 | 0 → 0 | 7 | 705 / 174 |
-| synth (31) | 19 | 23 | 3 → 3 | 23 | 3,528 / 572 |
+| synth (31) | 20 | 24 | 2 → 2 | 22 | 3,528 / 572 |
 | stress (16) | 5 | 16 | 1 → 0 | 16 | 5,585 / 647 |
-| holdout (8) | 3 | 4 | 0 → 0 | 5 | 747 / 133 |
-| Total (67) | 39 | 55 | 4 → 3 | 51 | 10,565 / 1,526 |
+| holdout (8) | 4 | 5 | 0 → 0 | 6 | 747 / 133 |
+| Total (67) | 41 | 57 | 3 → 2 | 51 | 10,565 / 1,526 |
 
 Rerunning the replay command above on this tree reproduces the table exactly, and the checked-in report is that output. ADR-003 explains the cases that still fail. The token counts are Luna's own counts for these exact prompts, recorded on 25 October.

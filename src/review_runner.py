@@ -62,6 +62,13 @@ class JournalEntry(TypedDict):
     reason: str | None
 
 
+_STATUSES = frozenset({"pending", "recorded", "already_recorded", "rejected", "refused"})
+
+
+class JournalError(ValueError):
+    """The file parses as JSON but is not a journal this runner wrote."""
+
+
 def submit_drafts(
     base_url: str,
     data_dir: str | Path,
@@ -140,10 +147,27 @@ def read_journal(path: Path) -> list[JournalEntry]:
 
     Raises:
         FileNotFoundError: The file does not exist, so no review was opened.
-        json.JSONDecodeError: The file is not a journal this runner wrote.
+        UnicodeDecodeError: The file is not UTF-8 text.
+        json.JSONDecodeError: The file is not JSON.
+        JournalError: The file is JSON but not a journal: not a list, or an entry
+            without every journal field, string ids, a draft and a known status. It
+            is raised before any review is read, so check never rewrites such a file.
     """
-    entries: list[JournalEntry] = json.loads(path.read_text(encoding="utf-8"))
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, list) or not all(_is_entry(item) for item in document):
+        raise JournalError(f"{path} is not a review journal this runner wrote")
+    entries: list[JournalEntry] = document
     return entries
+
+
+def _is_entry(item: object) -> bool:
+    return (
+        isinstance(item, dict)
+        and set(JournalEntry.__annotations__) <= item.keys()
+        and all(isinstance(item[key], str) for key in ("case_id", "review_id", "draft_hash"))
+        and isinstance(item["draft"], dict)
+        and item["status"] in _STATUSES
+    )
 
 
 def write_journal(path: Path, entries: Sequence[JournalEntry]) -> None:
@@ -210,7 +234,15 @@ def _submit(args: argparse.Namespace) -> None:
 
 
 def _check_journal(args: argparse.Namespace) -> None:
-    entries = check_reviews(args.base_url, read_journal(args.journal), wait_seconds=args.wait)
+    try:
+        journal = read_journal(args.journal)
+    except FileNotFoundError:
+        sys.stderr.write(f"no review journal at {args.journal}: run submit first\n")
+        raise SystemExit(1) from None
+    except (UnicodeDecodeError, json.JSONDecodeError, JournalError):
+        sys.stderr.write(f"{args.journal} is not a review journal this runner wrote\n")
+        raise SystemExit(1) from None
+    entries = check_reviews(args.base_url, journal, wait_seconds=args.wait)
     write_journal(args.journal, entries)
     for entry in entries:
         sys.stdout.write(f"{entry['case_id']}: {_outcome(entry)}\n")

@@ -364,6 +364,64 @@ def test_submit_reports_a_review_it_could_not_open(tmp_path, capsys, monkeypatch
     assert capsys.readouterr().err == "a review could not be opened: submit_failed\n"
 
 
+def test_check_without_a_journal_says_to_submit_first(tmp_path, capsys):
+    journal = tmp_path / "reviews.json"
+
+    with pytest.raises(SystemExit) as stopped:
+        main(["check", "--journal", str(journal), "--wait", "0"])
+
+    assert stopped.value.code == 1
+    assert capsys.readouterr().err == f"no review journal at {journal}: run submit first\n"
+
+
+_ENTRY = {
+    "case_id": "CARD-D01",
+    "review_id": "rev_1",
+    "draft_hash": "abc",
+    "draft": {},
+    "status": "pending",
+    "record_id": None,
+    "reason": None,
+}
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "not a journal",
+        # Kanit's #91 review: valid JSON of the wrong shape was rewritten to [] or crashed.
+        "{}",
+        "[1, 2]",
+        json.dumps([{key: value for key, value in _ENTRY.items() if key != "status"}]),
+        json.dumps([{**_ENTRY, "status": "approved"}]),
+        json.dumps([{**_ENTRY, "draft": "not a draft"}]),
+    ],
+)
+def test_check_refuses_a_file_that_is_not_a_journal_and_leaves_it_alone(content, tmp_path, capsys):
+    journal = tmp_path / "reviews.json"
+    journal.write_text(content, encoding="utf-8")
+
+    with pytest.raises(SystemExit) as stopped:
+        main(["check", "--journal", str(journal), "--wait", "0"])
+
+    assert stopped.value.code == 1
+    assert capsys.readouterr().err == f"{journal} is not a review journal this runner wrote\n"
+    assert journal.read_text(encoding="utf-8") == content
+
+
+def test_check_refuses_a_journal_that_is_not_utf8(tmp_path, capsys):
+    journal = tmp_path / "reviews.json"
+    raw = b"\xff\xfe\x00"
+    journal.write_bytes(raw)
+
+    with pytest.raises(SystemExit) as stopped:
+        main(["check", "--journal", str(journal), "--wait", "0"])
+
+    assert stopped.value.code == 1
+    assert capsys.readouterr().err == f"{journal} is not a review journal this runner wrote\n"
+    assert journal.read_bytes() == raw
+
+
 def test_running_the_module_checks_the_default_journal(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     write_journal(tmp_path / "reports" / "reviews.json", [])
