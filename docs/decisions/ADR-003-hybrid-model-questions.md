@@ -108,20 +108,22 @@ Three limits of this evidence matter:
 
 ## Measured result
 
-Run on 2026-10-27 with `tools/hybrid_eval.py`, this repository's code and the unmodified mock and bank evaluator. GPT-6 Luna's recorded answers were replayed from `evals/recordings/gpt-6-luna.jsonl`.
+Run on 2026-10-28 UTC with `tools/hybrid_eval.py`, this repository's code with the tool reads retried (COF-40) and CARD-D09's statement read from before the form fields (COF-43), and the unmodified mock and bank evaluator. GPT-6 Luna's recorded answers were replayed from `evals/recordings/gpt-6-luna.jsonl`.
 
-Eight of the 48 questions had no recording, because the copilot's run never asked them, and each counted as no answer:
+Ten of the 51 questions had no recording, because the copilot's run never asked them, and each counted as no answer:
 
 - 3 dispute-type questions: `SYN-S03`, `HLD-H07` and `HLD-H08`
-- 5 two-problem questions: `CARD-D08`, `SYN-S17`, `SYN-S20`, `SYN-S24` and `SYN-S25`
+- 7 two-problem questions: `CARD-D08`, `CARD-D10`, `SYN-S14`, `SYN-S17`, `SYN-S20`, `SYN-S24` and `SYN-S25`
+
+`CARD-D10` and `SYN-S14` are asked now because the tool reads retry: in the recorded runs a tool fault stopped both cases before any question. `CARD-D09` is asked now because it is built, and its question had a recording.
 
 | Suite | Rules alone | Hybrid | Wrong drafts marked ready (rules → hybrid) | Model calls | Tokens in / out |
 |---|---|---|---|---|---|
-| dev (12) | 9 | 9 | 0 → 0 | 5 | 544 / 132 |
-| synth (31) | 16 | 20 | 3 → 3 | 22 | 3,528 / 572 |
+| dev (12) | 12 | 12 | 0 → 0 | 7 | 705 / 174 |
+| synth (31) | 19 | 23 | 3 → 3 | 23 | 3,528 / 572 |
 | stress (16) | 5 | 16 | 1 → 0 | 16 | 5,585 / 647 |
 | holdout (8) | 3 | 4 | 0 → 0 | 5 | 747 / 133 |
-| Total (67) | 33 | 49 | 4 → 3 | 48 | 10,404 / 1,484 |
+| Total (67) | 39 | 55 | 4 → 3 | 51 | 10,565 / 1,526 |
 
 The three wrong ready drafts left in synth need rule changes outside this record:
 
@@ -131,18 +133,17 @@ The three wrong ready drafts left in synth need rule changes outside this record
 
 None of their two-problem questions had a recording, so this run does not show how the model would have answered them.
 
-The hybrid still does not build 13 cases. Three are the gap cases with no recorded answer: `SYN-S03`, `HLD-H07` and `HLD-H08`. The other 10 fail for reasons outside this record:
+The hybrid still does not build 7 cases. Three are the gap cases with no recorded answer: `SYN-S03`, `HLD-H07` and `HLD-H08`. The other 4 fail for reasons outside this record:
 
-- 6 hit a tool fault, which was not retried in this run (bounded retry is now in COF-40 on the integrated head).
+- 1 stops because the merchant service stays unavailable after three attempts (`SYN-S18`). A transaction outage is drafted for manual review instead (COF-40).
 - 2 have no policy version for their reported date.
 - 1 has an attachment without exactly one Amount line (`HLD-H05`).
-- 1 is `CARD-D09`, whose intake statement is not a single exact excerpt.
 
 ## Rejected alternatives
 
 ### Add more phrasings to the rules
 
-Every new paraphrase needs a code change, and hidden cases change the wording by design. The rules alone pass 33 of 67, and each pattern added for one case risks a false match on another, such as "I called twice".
+Every new paraphrase needs a code change, and hidden cases change the wording by design. The rules alone pass 39 of 67, and each pattern added for one case risks a false match on another, such as "I called twice".
 
 ### Let the model classify every case and route it
 
