@@ -9,6 +9,7 @@ import json
 import re
 import runpy
 import shutil
+import sqlite3
 import sys
 import threading
 from contextlib import contextmanager
@@ -20,13 +21,16 @@ import pytest
 from src import contract_records
 from src.contract_records import (
     ContractRecordError,
+    ToolRetry,
     load_contract_records,
     load_contract_results,
     main,
 )
+from src.load_records import BankReadError, BankUnavailable
 from src.meters import MeterLeak
 from src.model_clients import request_key
 from src.model_cue import MULTI_SCHEMA, MULTI_SYSTEM, evidence, statement_lines
+from tools.runtime import create_server
 
 ROOT = Path(__file__).resolve().parents[1]
 DEV = ROOT / "data" / "dev"
@@ -981,7 +985,7 @@ def test_a_merchant_body_without_a_token_and_an_intake_without_a_reference_still
 
 
 class _refusing_connection:
-    def __init__(self, host, port):
+    def __init__(self, host, port, timeout=None):
         assert (host, port) == ("127.0.0.1", 8765)
 
     def request(self, method, path):
@@ -1128,8 +1132,11 @@ class _Model:
 
 
 @contextmanager
-def _bank(case_list, tool_bodies, statuses=None):
+def _bank(case_list, tool_bodies, statuses=None, timeouts=None):
+    """A fake bank. timeouts maps a path to how many reads fail as the mock's upstream
+    timeout does (a 503 marked retryable) before it answers, or "always"."""
     statuses = {} if statuses is None else statuses
+    timeouts = {} if timeouts is None else timeouts
     seen = []
 
     class Handler(BaseHTTPRequestHandler):
@@ -1141,6 +1148,10 @@ def _bank(case_list, tool_bodies, statuses=None):
             status = statuses.get(self.path)
             if status is not None:
                 self._send(status, {"error": "failed"})
+                return
+            failures = timeouts.get(self.path)
+            if failures == "always" or (failures is not None and seen.count(self.path) <= failures):
+                self._send(503, {"error": "upstream_timeout", "retryable": True})
                 return
             body = tool_bodies.get(self.path)
             if body is None:
@@ -1199,3 +1210,255 @@ def test_a_case_that_names_evidence_this_step_cannot_read_is_not_built():
         }
     ]
     assert seen == ["/v1/cases"]
+
+
+def _retry():
+    """A ToolRetry that records each wait instead of sleeping."""
+    waits = []
+    return ToolRetry(sleep=waits.append), waits
+
+
+def _merchant_body(case_id):
+    return {
+        **TOOL_BODIES[MERCHANT],
+        "source_id": f"{case_id}-MERCHANT",
+        "private_token": f"SYNTHETIC-PRIVATE-{case_id}",
+    }
+
+
+def test_a_retryable_timeout_is_read_again_and_the_case_is_built():
+    retry, waits = _retry()
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES, timeouts={TRANSACTIONS: 1}) as (
+        base_url,
+        seen,
+    ):
+        [result] = load_contract_results(base_url, DEV, retry=retry)
+
+    assert result["contract"] == CARD_D01_CONTRACT
+    assert seen == ["/v1/cases", TRANSACTIONS, TRANSACTIONS, MERCHANT]
+    assert len(waits) == 1
+    assert 1 <= waits[0] < 2
+
+
+def test_a_tool_that_answers_on_the_third_attempt_is_built_after_two_waits():
+    retry, waits = _retry()
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES, timeouts={TRANSACTIONS: 2}) as (
+        base_url,
+        seen,
+    ):
+        [result] = load_contract_results(base_url, DEV, retry=retry)
+
+    # The successful read is the one that is built: a retry is not a second case.
+    assert result["contract"] == CARD_D01_CONTRACT
+    assert result["error"] is None
+    assert seen == ["/v1/cases", TRANSACTIONS, TRANSACTIONS, TRANSACTIONS, MERCHANT]
+    assert [int(wait) for wait in waits] == [1, 2]
+
+
+def test_a_permanent_failure_ends_the_retry_without_a_further_read(monkeypatch):
+    retry, waits = _retry()
+    reads = []
+
+    def fail_once_then_give_up(base_url, path):
+        reads.append(path)
+        if len(reads) == 1:
+            raise BankUnavailable
+        raise BankReadError
+
+    monkeypatch.setattr("src.contract_records.read_body", fail_once_then_give_up)
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES) as (base_url, seen):
+        [result] = load_contract_results(base_url, DEV, retry=retry)
+
+    # A transient failure is tried once more; the permanent one is not retried, and
+    # the case stops before the merchant service is touched.
+    assert reads == [TRANSACTIONS, TRANSACTIONS]
+    assert [int(wait) for wait in waits] == [1]
+    assert result["contract"] is None
+    assert result["error"] == "BankReadError"
+    assert seen == ["/v1/cases"]
+
+
+def test_a_transaction_service_that_never_answers_is_read_three_times_and_sent_to_a_person():
+    retry, waits = _retry()
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES, timeouts={TRANSACTIONS: "always"}) as (
+        base_url,
+        seen,
+    ):
+        [result] = load_contract_results(base_url, DEV, retry=retry)
+
+    contract = result["contract"]
+    assert result["error"] is None
+    assert seen == ["/v1/cases", TRANSACTIONS, TRANSACTIONS, TRANSACTIONS, MERCHANT]
+    assert [int(wait) for wait in waits] == [1, 2]
+    # CARD-PROCEDURE-01: route to manual_review, both facts null, and the deadline is
+    # still calculated for a supported classification (2026-10-01 plus 30 days).
+    assert contract["classification"] == "unauthorized"
+    assert contract["routing"] == "manual_review"
+    assert contract["facts"] == {
+        "transaction_id": "TX-D01",
+        "amount": None,
+        "currency": None,
+        "reported_date": "2026-10-01",
+    }
+    assert contract["deadline"] == "2026-10-31"
+    assert contract["missing_information"] == []
+    sources = {citation["source_id"] for citation in contract["citations"]}
+    assert "CARD-D01-TRANSACTIONS" not in sources
+    assert [
+        citation["quote"]
+        for citation in contract["citations"]
+        if citation["claim"] == "transaction_service_unavailable"
+    ] == [
+        (
+            "Retry a transient failure at most twice\n"
+            "(three total attempts); on persistent failure stop and route to manual_review."
+        ),
+        "If that service remains unavailable, both facts are null.",
+    ]
+    assert "did not answer within the procedure's three attempts" in contract["narrative"]
+
+
+def test_a_merchant_service_that_never_answers_stops_only_that_case():
+    retry, _waits = _retry()
+
+    with _bank({"cases": [CARD_D01]}, TOOL_BODIES, timeouts={MERCHANT: "always"}) as (
+        base_url,
+        seen,
+    ):
+        results = load_contract_results(base_url, DEV, retry=retry)
+
+    assert results == [
+        {
+            "case_id": "CARD-D01",
+            "contract": None,
+            "error": "the merchant service was unavailable",
+            "narrative_meter": None,
+            "model_calls": [],
+            "meter_error": None,
+        }
+    ]
+    assert seen == ["/v1/cases", TRANSACTIONS, MERCHANT, MERCHANT, MERCHANT]
+
+
+def test_three_complaints_in_a_row_that_use_every_attempt_open_the_breaker():
+    cases = [CARD_D01, CARD_D11, CARD_D04, CARD_D12]
+    case_ids = [case["case_id"] for case in cases]
+    tool_bodies = {f"/v1/cases/{case_id}/merchant": _merchant_body(case_id) for case_id in case_ids}
+    timeouts = {f"/v1/cases/{case_id}/transactions": "always" for case_id in case_ids}
+    retry, _waits = _retry()
+
+    with _bank({"cases": cases}, tool_bodies, timeouts=timeouts) as (base_url, seen):
+        results = load_contract_results(base_url, DEV, retry=retry)
+
+    assert [seen.count(f"/v1/cases/{case_id}/transactions") for case_id in case_ids] == [
+        3,
+        3,
+        3,
+        0,
+    ]
+    assert retry.breakers["transactions"].state == "open"
+    # The open breaker is the same unknown history: every case still goes to a person.
+    assert [result["contract"]["routing"] for result in results] == ["manual_review"] * 4
+    assert [result["contract"]["deadline"] for result in results] == [
+        "2026-10-31",
+        "2026-09-20",
+        "2026-10-31",
+        "2026-12-03",
+    ]
+    # Manual review outranks the missing fields, which are still listed.
+    assert results[2]["contract"]["missing_information"] == ["authorization_confirmation"]
+    assert any(
+        citation["quote"].startswith("Manual review takes precedence")
+        for citation in results[2]["contract"]["citations"]
+    )
+
+
+def test_an_escalated_case_with_an_unavailable_transaction_service_cites_no_tool_body():
+    card_d05 = {
+        "case_id": "CARD-D05",
+        "intake_source": "CARD-D05-INTAKE",
+        "documents": ["CARD-D05-INTAKE", "CARD-D05-ATTACHMENT", "CARD-D05-FOLLOWUP"],
+    }
+    retry, _waits = _retry()
+
+    with _bank(
+        {"cases": [card_d05]},
+        {"/v1/cases/CARD-D05/merchant": _merchant_body("CARD-D05")},
+        timeouts={"/v1/cases/CARD-D05/transactions": "always"},
+    ) as (base_url, _seen):
+        [result] = load_contract_results(base_url, DEV, retry=retry)
+
+    contract = result["contract"]
+    assert contract["classification"] == "ambiguous"
+    assert contract["routing"] == "manual_review"
+    assert contract["deadline"] is None
+    assert contract["facts"]["amount"] is None
+    assert "CARD-D05-TRANSACTIONS" not in {c["source_id"] for c in contract["citations"]}
+    assert "did not answer within the procedure's three attempts" in contract["narrative"]
+
+
+@contextmanager
+def _mock(tmp_path):
+    """The bank's own mock service on the dev dataset, with its audit in a fresh state."""
+    state = tmp_path / "mock.sqlite"
+    server = create_server(DEV, state, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    try:
+        yield f"http://{host}:{port}", state
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+
+def _tool_reads(state):
+    """Each (case, tool) the mock audited, with its (attempt, status) pairs in order."""
+    db = sqlite3.connect(state)
+    try:
+        rows = db.execute(
+            "SELECT case_id, detail FROM audit WHERE event = 'tool_read' ORDER BY seq"
+        ).fetchall()
+    finally:
+        db.close()
+    reads = {}
+    for case_id, detail in rows:
+        read = json.loads(detail)
+        reads.setdefault((case_id, read["tool"]), []).append((read["attempt"], read["status"]))
+    return reads
+
+
+def test_against_the_mock_d07_is_read_three_times_d10_twice_and_every_other_read_once(
+    tmp_path,
+):
+    retry, waits = _retry()
+    gold = json.loads((ROOT / "feedback" / "dev_gold.json").read_text(encoding="utf-8"))
+
+    with _mock(tmp_path) as (base_url, state):
+        results = {
+            result["case_id"]: result
+            for result in load_contract_results(base_url, DEV, retry=retry)
+        }
+        reads = _tool_reads(state)
+
+    assert reads.pop(("CARD-D07", "transactions")) == [(1, 503), (2, 503), (3, 503)]
+    assert reads.pop(("CARD-D10", "transactions")) == [(1, 503), (2, 200)]
+    assert reads
+    assert all(attempts == [(1, 200)] for attempts in reads.values())
+    assert len(waits) == 3
+    for case_id in ("CARD-D07", "CARD-D10"):
+        contract = results[case_id]["contract"]
+        expected = gold[case_id]
+        assert contract["classification"] in expected["classification"]
+        assert contract["routing"] in expected["routing"]
+        assert contract["policy_ids"] == expected["policy_ids"]
+        assert contract["facts"] == expected["facts"]
+        assert contract["missing_information"] == expected["missing_information"]
+        assert contract["deadline"] == expected["deadline"]
+    d07 = results["CARD-D07"]["contract"]
+    assert "CARD-D07-TRANSACTIONS" not in {citation["source_id"] for citation in d07["citations"]}

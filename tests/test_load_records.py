@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -7,7 +8,13 @@ from pathlib import Path
 import pytest
 
 from src.app import prepare_complaints
-from src.load_records import CaseListError, load_complaint_records
+from src.load_records import (
+    BankReadError,
+    BankUnavailable,
+    CaseListError,
+    load_complaint_records,
+    read_body,
+)
 
 DEV = Path(__file__).resolve().parents[1] / "data" / "dev"
 
@@ -216,7 +223,7 @@ def test_url_without_a_port_uses_the_default_port(
     seen = {}
 
     class Probe:
-        def __init__(self, host, bound_port):
+        def __init__(self, host, bound_port, timeout=None):
             seen["host"] = host
             seen["port"] = bound_port
 
@@ -234,6 +241,82 @@ def test_url_without_a_port_uses_the_default_port(
         load_complaint_records(base_url, dataset)
 
     assert seen == {"host": "127.0.0.1", "port": port}
+
+
+@pytest.mark.parametrize(
+    ("status", "body", "retryable"),
+    [
+        (503, {"error": "upstream_timeout", "retryable": True}, True),
+        (503, {"error": "upstream_timeout", "retryable": False}, False),
+        (503, {"error": "failed"}, False),
+        (503, ["retryable"], False),
+        (500, {"error": "upstream_timeout", "retryable": True}, False),
+    ],
+)
+def test_only_a_503_marked_retryable_is_a_read_a_later_attempt_may_answer(status, body, retryable):
+    with _bank(body, status=status) as base_url, pytest.raises(BankReadError) as raised:
+        read_body(base_url, "/v1/cases")
+
+    assert isinstance(raised.value, BankUnavailable) is retryable
+
+
+def test_a_503_whose_body_is_not_json_is_not_retryable(monkeypatch):
+    class Response:
+        status = 503
+
+        def read(self):
+            return b"Service Unavailable"
+
+    class Gateway:
+        def __init__(self, host, port, timeout=None):
+            return
+
+        def request(self, method, path):
+            return
+
+        def getresponse(self):
+            return Response()
+
+        def close(self):
+            return
+
+    monkeypatch.setattr("src.load_records.HTTPConnection", Gateway)
+
+    with pytest.raises(BankReadError) as raised:
+        read_body("http://127.0.0.1:8765", "/v1/cases")
+
+    assert not isinstance(raised.value, BankUnavailable)
+
+
+def test_a_dropped_connection_is_a_read_a_later_attempt_may_answer():
+    with pytest.raises(BankUnavailable):
+        read_body(_closed_bank(), "/v1/cases")
+
+
+def test_a_bank_that_never_answers_is_a_read_a_later_attempt_may_answer():
+    release = threading.Event()
+
+    class Silent(BaseHTTPRequestHandler):
+        def do_GET(self):
+            release.wait(timeout=5)
+
+        def log_message(self, format, *args):
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Silent)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    started = time.monotonic()
+    try:
+        with pytest.raises(BankUnavailable):
+            read_body(f"http://{host}:{port}", "/v1/cases", timeout=0.2)
+        assert time.monotonic() - started < 2.0
+    finally:
+        release.set()
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
 
 
 def _closed_bank():

@@ -120,6 +120,14 @@ _ONE_CHARGE_NOTE = (
     "Only one charge for this purchase is on record, and the procedure asks for both "
     "transaction records, so a person must find the second charge before this draft is used."
 )
+# The transaction service did not answer within the procedure's three attempts.
+_RETRY_RULE_ANCHOR = "Retry a transient failure"
+_UNAVAILABLE_FACTS_ANCHOR = "If that service remains unavailable"
+_UNAVAILABLE_NOTE = (
+    "The transaction service did not answer within the procedure's three attempts, so "
+    "amount and currency are unknown, not zero, and no transaction record is cited. "
+    "A person must review this case."
+)
 # The hybrid's escalations (ADR-003). A model answer can send a case to a person; it never
 # makes a case ready by itself.
 _MULTIPLE_PROBLEMS_ESCALATION: Escalation = {
@@ -224,7 +232,7 @@ def assemble_contract(
     attachment_text: str,
     procedure_text: str,
     policy_text: str,
-    transactions_text: str,
+    transactions_text: str | None,
     customer_texts: Sequence[str] = (),
 ) -> Contract:
     """Return the contract object for one working record, with the template narrative.
@@ -250,7 +258,7 @@ def assemble_draft(
     attachment_text: str,
     procedure_text: str,
     policy_text: str,
-    transactions_text: str,
+    transactions_text: str | None,
     customer_texts: Sequence[str] = (),
     writer: ProseWriter | None = None,
     model: ModelClient | None = None,
@@ -287,6 +295,10 @@ def assemble_draft(
     transactions_text is the transactions tool body as the evaluator stores it:
     json.dumps(body, sort_keys=True). The named charge is cited from it as one
     sorted JSON object, so the amount and currency are tied to that transaction.
+    transactions_text is None when the transaction service stayed unavailable after
+    its attempts. Then amount and currency are null, no transactions source is cited
+    (none was read), the procedure's retry and null-facts sentences are cited instead,
+    and the case routes to manual_review with its deadline still calculated.
 
     The deadline is the reported date plus the policy's per-type day count, with the
     reported day as day zero. It is calculated for a supported classification even
@@ -326,7 +338,7 @@ def _rules_contract(
     attachment_text: str,
     procedure_text: str,
     policy_text: str,
-    transactions_text: str,
+    transactions_text: str | None,
     customer_texts: Sequence[str],
     model: ModelClient | None,
     calls: list[ModelCall],
@@ -358,13 +370,6 @@ def _rules_contract(
             transactions_text=transactions_text,
             known=known,
         )
-    escalated = {
-        "intake_text": intake_text,
-        "attachment_text": attachment_text,
-        "procedure_text": procedure_text,
-        "policy_text": policy_text,
-        "transactions_text": transactions_text,
-    }
     notes: list[str] = []
     model_citations: list[Citation] = []
     provisional = False
@@ -391,7 +396,16 @@ def _rules_contract(
         model_escalation = _model_escalation(answer, intake, statements, procedure_text, known)
         if model_escalation is not None:
             return _escalated_contract(
-                record, intake, model_escalation, **escalated, known=known, notes=notes
+                record,
+                intake,
+                model_escalation,
+                intake_text=intake_text,
+                attachment_text=attachment_text,
+                procedure_text=procedure_text,
+                policy_text=policy_text,
+                transactions_text=transactions_text,
+                known=known,
+                notes=notes,
             )
         classification = answer["type"]
         model_citations.append(
@@ -426,16 +440,19 @@ def _rules_contract(
         _other_charge_citations(
             intake["statement"], intake["transaction_id"], transactions_text
         )
-        if classification == "duplicate_charge"
+        if classification == "duplicate_charge" and transactions_text is not None
         else []
     )
-    if classification == "duplicate_charge" and not second_charges:
+    if transactions_text is None:
+        routing = _MANUAL_REVIEW
+        notes.append(_UNAVAILABLE_NOTE)
+    elif classification == "duplicate_charge" and not second_charges:
         routing = _MANUAL_REVIEW
         notes.append(_ONE_CHARGE_NOTE)
     citations: list[Citation] = [
         _customer_evidence(intake, intake_text, known),
         _attachment_citation(attachment_text, missing_information),
-        _transaction_citation(intake["transaction_id"], transactions_text),
+        *_transaction_citations(intake["transaction_id"], transactions_text, procedure_text),
         *second_charges,
         *model_citations,
         {
@@ -454,6 +471,14 @@ def _rules_contract(
             "quote": deadline_quote,
         },
     ]
+    if transactions_text is None and missing_information:
+        citations.append(
+            {
+                "claim": "routing",
+                "source_id": procedure_source,
+                "quote": _sentence(procedure_text, _PRECEDENCE_RULE_ANCHOR),
+            }
+        )
     contract: Contract = {
         "case_id": record["case_id"],
         "classification": classification,
@@ -482,7 +507,16 @@ def _rules_contract(
             if multiple:
                 escalation = {**_MULTIPLE_PROBLEMS_ESCALATION, "citations": [*model_citations]}
                 return _escalated_contract(
-                    record, intake, escalation, **escalated, known=known, notes=notes
+                    record,
+                    intake,
+                    escalation,
+                    intake_text=intake_text,
+                    attachment_text=attachment_text,
+                    procedure_text=procedure_text,
+                    policy_text=policy_text,
+                    transactions_text=transactions_text,
+                    known=known,
+                    notes=notes,
                 )
     return contract, [*notes, *_untrusted_notes(record, attachment_text)]
 
@@ -523,7 +557,7 @@ def _escalated_contract(
     attachment_text: str,
     procedure_text: str,
     policy_text: str,
-    transactions_text: str,
+    transactions_text: str | None,
     known: Sequence[str],
     notes: Sequence[str] = (),
 ) -> tuple[Contract, list[str]]:
@@ -533,7 +567,8 @@ def _escalated_contract(
     transaction citation are kept, because the escalation does not skip the
     work. The missing fields this classification requires are still listed,
     each with one question, because manual review outranks missing-information
-    routing without hiding it.
+    routing without hiding it. An unavailable transaction service is cited and
+    noted the same way as for a supported classification.
     """
     version_id = record["policy"]["version_id"]
     procedure_id = record["policy"]["procedure_id"]
@@ -551,7 +586,7 @@ def _escalated_contract(
     citations: list[Citation] = [
         _customer_evidence(intake, intake_text, known),
         _attachment_citation(attachment_text, missing, escalated=True),
-        _transaction_citation(intake["transaction_id"], transactions_text),
+        *_transaction_citations(intake["transaction_id"], transactions_text, procedure_text),
         *escalation_citations,
         {
             "claim": "routing",
@@ -589,7 +624,13 @@ def _escalated_contract(
         "follow_up_questions": questions,
         "narrative": "",
     }
-    return contract, [escalation["reason"], *notes, *_untrusted_notes(record, attachment_text)]
+    unavailable = [_UNAVAILABLE_NOTE] if transactions_text is None else []
+    return contract, [
+        escalation["reason"],
+        *notes,
+        *unavailable,
+        *_untrusted_notes(record, attachment_text),
+    ]
 
 
 def _attachment_citation(
@@ -989,6 +1030,27 @@ def _facts(intake: Intake, transactions: list[Transaction]) -> Facts:
 _TRANSACTION_ROW_KEYS = frozenset(
     {"transaction_id", "amount", "currency", "merchant_id", "posted_date"}
 )
+
+
+def _transaction_citations(
+    transaction_id: str, transactions_text: str | None, procedure_text: str
+) -> list[Citation]:
+    """The named charge from the tool body, or, when the service stayed unavailable, the
+    procedure sentences that say to stop retrying and leave amount and currency null.
+
+    No transactions source is cited for an unavailable service, because none was read.
+    """
+    if transactions_text is not None:
+        return [_transaction_citation(transaction_id, transactions_text)]
+    procedure_source = _source_id(procedure_text)
+    return [
+        {
+            "claim": "transaction_service_unavailable",
+            "source_id": procedure_source,
+            "quote": _sentence(procedure_text, anchor),
+        }
+        for anchor in (_RETRY_RULE_ANCHOR, _UNAVAILABLE_FACTS_ANCHOR)
+    ]
 
 
 def _transaction_citation(transaction_id: str, transactions_text: str) -> Citation:

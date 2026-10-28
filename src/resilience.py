@@ -5,8 +5,8 @@ wait is 2**attempt seconds plus a fraction of a second of jitter: 1s, then
 2s, then 4s, and so on. With three attempts the waits are about 1s, then
 about 2s.
 
-Not wired into the case runner yet. When it is, keep one breaker per tool for
-the whole run. The breaker counts complaints that used all three attempts. It
+src/contract_records.py calls this for both tool reads and keeps one breaker
+per tool for the whole run. The breaker counts complaints that used all three attempts. It
 opens after three such complaints in a row, and any answered read resets that
 count. After the cooldown, one probe is allowed. AttemptsExhausted and
 CircuitOpen are the signals a caller uses to keep amount and currency unknown

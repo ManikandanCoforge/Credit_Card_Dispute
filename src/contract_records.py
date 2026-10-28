@@ -10,13 +10,18 @@ load_contract_results
     read every other listed document: a customer statement is kept, anything else refuses the case
     read the intake, attachment, procedure and policy documents
     GET /v1/cases/{case_id}/transactions and /v1/cases/{case_id}/merchant
+      a retryable failure is tried again, up to three attempts in all
     assemble_draft: the rules, with a configured model's two closed questions
       (ADR-003), then the narrative (template, or a configured writer)
 
-Both tool reads go through the mock service, which audits each one. A failed
-read stops the case: an outage is never treated as an empty transaction history.
-A stopped case does not stop the others: load_contract_results keeps going and
-reports the reason for each case it could not build.
+Both tool reads go through the mock service, which audits each attempt. A
+retryable failure (a dropped connection, or a 503 marked retryable) is tried
+again with src/resilience.py, one breaker per tool for the whole run. Any other
+failed read stops the case. A transaction service that stays unavailable is not
+an empty history: the case is drafted for manual_review with amount and currency
+null. A merchant service that stays unavailable stops the case. A stopped case
+does not stop the others: load_contract_results keeps going and reports the
+reason for each case it could not build.
 """
 
 import json
@@ -24,6 +29,7 @@ import os
 import re
 import sys
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict, cast
@@ -36,6 +42,7 @@ from src.build_records import build_merchant, build_transaction
 from src.contract import Contract, ContractError, assemble_draft
 from src.load_records import (
     BankReadError,
+    BankUnavailable,
     CaseListError,
     load_cases,
     read_body,
@@ -52,8 +59,16 @@ from src.models import (
     WorkingRecord,
 )
 from src.narrative import NarrativeMeter, ProseWriter
+from src.resilience import (
+    CircuitBreaker,
+    DependencyUnavailable,
+    TransientFailure,
+    call_with_backoff,
+)
 from src.untrusted import RestrictedValueError, guard
 
+_TOOLS = ("transactions", "merchant")
+_MERCHANT_UNAVAILABLE = "the merchant service was unavailable"
 # The case list names an intake and an attachment that share one prefix.
 _INTAKE_SUFFIX = "-INTAKE"
 _ATTACHMENT_SUFFIX = "-ATTACHMENT"
@@ -91,6 +106,22 @@ class CasePlan(TypedDict):
     documents: list[str]
 
 
+class ToolRetry:
+    """How one run retries the two tool reads: a breaker per tool, and the wait between tries.
+
+    A run keeps one ToolRetry for all its cases, so each breaker counts the complaints
+    in a row that used every attempt. sleep is None for time.sleep; a test passes its own.
+    tool_attempts and retry_count are running totals over the whole run; a case's meter
+    line records the difference across that case's build.
+    """
+
+    def __init__(self, sleep: Callable[[float], None] | None = None) -> None:
+        self.breakers = {tool: CircuitBreaker() for tool in _TOOLS}
+        self.sleep = sleep
+        self.tool_attempts = 0
+        self.retry_count = 0
+
+
 def contract_case_plans(base_url: str, data_dir: str | Path) -> list[CasePlan]:
     """Read the case list and pair each working record with its named evidence.
 
@@ -112,6 +143,7 @@ def build_contract_result(
     base_url: str,
     data_dir: str | Path,
     writer: ProseWriter | None = None,
+    retry: ToolRetry | None = None,
     model: ModelClient | None = None,
     *,
     meter_path: Path | None = None,
@@ -120,20 +152,24 @@ def build_contract_result(
 
     The reason is one of this application's own messages or an exception class
     name, never text from a payload or document. writer, when given, may reword the
-    narrative; see src/narrative.py. model, when given, may answer the hybrid's two
-    closed questions (ADR-003); its calls are kept even when the case is not built,
-    because they were still made.
+    narrative; see src/narrative.py. retry is the run's ToolRetry; without one, this
+    case gets its own. model, when given, may answer the hybrid's two closed
+    questions (ADR-003); its calls are kept even when the case is not built, because
+    they were still made.
 
     When meter_path is set, one meter line is appended for this case after it
-    finishes, including a case that stops. A line that would carry a restricted
-    value is refused: the case keeps its result and meter_error names "MeterLeak",
-    so one refused line never stops the run.
+    finishes, including a case that stops. The line counts the tool attempts and
+    the retries this case made. A line that would carry a restricted value is
+    refused: the case keeps its result and meter_error names "MeterLeak", so one
+    refused line never stops the run.
     """
     started_at = datetime.now(UTC)
     started = time.perf_counter()
-    tally = {"tool_attempts": 0, "retry_count": 0}
     case_id = plan["record"]["case_id"]
     calls: list[ModelCall] = []
+    retry = ToolRetry() if retry is None else retry
+    attempts_before = retry.tool_attempts
+    retries_before = retry.retry_count
     try:
         contract, meter = _contract_record(
             plan["record"],
@@ -141,9 +177,9 @@ def build_contract_result(
             Path(data_dir),
             plan["documents"],
             writer,
+            retry,
             model,
             calls,
-            tally,
         )
     except ContractRecordError as error:
         result: ContractResult = {
@@ -177,8 +213,8 @@ def build_contract_result(
                 + (0 if narrative is None else narrative["model_calls"]),
                 input_tokens=sum(call["input_tokens"] or 0 for call in calls),
                 output_tokens=sum(call["output_tokens"] or 0 for call in calls),
-                tool_attempts=tally["tool_attempts"],
-                retry_count=tally["retry_count"],
+                tool_attempts=retry.tool_attempts - attempts_before,
+                retry_count=retry.retry_count - retries_before,
             )
         except MeterLeak:
             result["meter_error"] = "MeterLeak"
@@ -189,6 +225,7 @@ def load_contract_results(
     base_url: str,
     data_dir: str | Path,
     writer: ProseWriter | None = None,
+    retry: ToolRetry | None = None,
     model: ModelClient | None = None,
     *,
     meter_path: Path | None = None,
@@ -202,20 +239,28 @@ def load_contract_results(
     A case list that cannot be read leaves the previous meter file alone.
 
     writer, when given, may reword each narrative; see src/narrative.py. Each
-    built case carries its narrative meter (path, latency, model calls). model,
-    when given, may answer the hybrid's questions, and each result lists the calls
-    made for its case. The meter line records every model call made for the case
-    (the hybrid's and the narrative writer's) and sums their input and output
-    tokens, counting a call that reported no count as 0. A meter line that would
-    carry a restricted value is skipped for that case, and its result carries
-    "MeterLeak" in meter_error.
+    built case carries its narrative meter (path, latency, model calls). Every case
+    shares one ToolRetry, retry or a new one. model, when given, may answer the
+    hybrid's questions, and each result lists the calls made for its case.
+
+    The meter line records every model call made for the case (the hybrid's and the
+    narrative writer's) and sums their input and output tokens, counting a call that
+    reported no count as 0. A meter line that would carry a restricted value is
+    skipped for that case, and its result carries "MeterLeak" in meter_error.
     """
     data_dir = Path(data_dir)
     plans = contract_case_plans(base_url, data_dir)
     _prepare_meter_file(meter_path)
+    shared = ToolRetry() if retry is None else retry
     return [
         build_contract_result(
-            plan, base_url, data_dir, writer, model, meter_path=meter_path
+            plan,
+            base_url,
+            data_dir,
+            writer,
+            retry=shared,
+            model=model,
+            meter_path=meter_path,
         )
         for plan in plans
     ]
@@ -303,9 +348,9 @@ def _contract_record(
     data_dir: Path,
     documents: list[str],
     writer: ProseWriter | None,
+    retry: ToolRetry,
     model: ModelClient | None,
     calls: list[ModelCall],
-    tally: dict[str, int],
 ) -> tuple[Contract, NarrativeMeter]:
     """Read the evidence and the tools for one case, then assemble its contract.
 
@@ -313,6 +358,10 @@ def _contract_record(
     intake and the attachment, a listed customer statement, such as a follow-up
     email, is read and passed on. Any other listed source is refused rather than
     ignored, so evidence can never be silently left out of the draft.
+
+    A transaction service that is still unavailable after its attempts leaves the
+    record with no transactions and no tool text; assemble_draft then routes the
+    case to manual_review with amount and currency null.
     """
     # load_complaint_records always stores an intake object, even for a document
     # it could not read, so a record reaching this runner always has one.
@@ -330,9 +379,14 @@ def _contract_record(
     attachment_text = _document(data_dir, "documents", attachment_source)
     procedure_text = _document(data_dir, "policies", procedure_id)
     policy_text = _document(data_dir, "policies", version_id)
-    transactions, transactions_text = _transactions(base_url, record["case_id"], tally)
-    enriched = build_transaction(record, transactions)
-    merchant, private_token = _merchant(base_url, record["case_id"], tally)
+    transactions = _transactions(base_url, record["case_id"], retry)
+    if transactions is None:
+        enriched: WorkingRecord = {**record, "transactions": []}
+        transactions_text = None
+    else:
+        tool, transactions_text = transactions
+        enriched = build_transaction(record, tool)
+    merchant, private_token = _merchant(base_url, record["case_id"], retry)
     enriched = build_merchant(enriched, merchant)
     # The drafting and the output guard use the same known values, so a sentence holding
     # one is cited by its Source ID line instead of being quoted and then refused.
@@ -361,13 +415,18 @@ def _contract_record(
 
 
 def _transactions(
-    base_url: str, case_id: str, tally: dict[str, int]
-) -> tuple[TransactionTool, str]:
+    base_url: str, case_id: str, retry: ToolRetry
+) -> tuple[TransactionTool, str] | None:
     """The transactions tool body, validated, and its text with sorted keys.
 
-    The sorted text is the form the evaluator quotes tool bodies from.
+    The sorted text is the form the evaluator quotes tool bodies from. None means the
+    service did not answer within its attempts, or its breaker is open: the history is
+    unknown, which is never the same as an empty one.
     """
-    raw = _read_tool(base_url, case_id, "transactions", tally)
+    try:
+        raw = _read_tool(base_url, case_id, "transactions", retry)
+    except DependencyUnavailable:
+        return None
     try:
         payload = TransactionToolPayload.model_validate_json(raw)
     except ValidationError as error:
@@ -386,17 +445,19 @@ def _transactions(
     return tool, json.dumps(json.loads(raw), sort_keys=True)
 
 
-def _merchant(
-    base_url: str, case_id: str, tally: dict[str, int]
-) -> tuple[MerchantTool, str]:
+def _merchant(base_url: str, case_id: str, retry: ToolRetry) -> tuple[MerchantTool, str]:
     """The merchant tool body, and its private token for the restricted-value guard.
 
-    The private token is never copied into the merchant record.
+    The private token is never copied into the merchant record. A merchant service
+    that does not answer within its attempts stops the case: the procedure says to
+    retrieve merchant context, and gives no way to draft without it.
     """
     try:
-        payload = MerchantToolPayload.model_validate_json(
-            _read_tool(base_url, case_id, "merchant", tally)
-        )
+        raw = _read_tool(base_url, case_id, "merchant", retry)
+    except DependencyUnavailable:
+        raise ContractRecordError(_MERCHANT_UNAVAILABLE) from None
+    try:
+        payload = MerchantToolPayload.model_validate_json(raw)
     except ValidationError as error:
         raise ContractRecordError from error
     token = (payload.model_extra or {}).get("private_token")
@@ -417,11 +478,31 @@ def _customer_reference(intake_text: str) -> str:
     return ""
 
 
-def _read_tool(base_url: str, case_id: str, tool: str, tally: dict[str, int]) -> bytes:
-    """One observed tool read. Any failure is an error, never an empty result."""
-    tally["tool_attempts"] += 1
+def _read_tool(base_url: str, case_id: str, tool: str, retry: ToolRetry) -> bytes:
+    """One tool read, tried again after a retryable failure, up to three attempts in all.
+
+    Every attempt is a separate observed request and counts toward the run's
+    tool_attempts; each try after the first counts toward retry_count. Any other
+    failure stops the case at once: it is an error, never an empty result.
+    DependencyUnavailable, when every attempt failed or the tool's breaker is open,
+    is left to the caller.
+    """
+    path = f"/v1/cases/{quote(case_id, safe='')}/{tool}"
+    attempts = 0
+
+    def attempt() -> bytes:
+        nonlocal attempts
+        attempts += 1
+        retry.tool_attempts += 1
+        if attempts > 1:
+            retry.retry_count += 1
+        try:
+            return read_body(base_url, path)
+        except BankUnavailable as error:
+            raise TransientFailure from error
+
     try:
-        return read_body(base_url, f"/v1/cases/{quote(case_id, safe='')}/{tool}")
+        return call_with_backoff(attempt, retry.breakers[tool], sleep=retry.sleep)
     except BankReadError as error:
         raise ContractRecordError from error
 

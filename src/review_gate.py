@@ -5,8 +5,9 @@ wait, and it does not poll. A later check reads that review once. An
 approval is the alert to create the case, and that check performs the
 record post. The idempotency key is the case id and the review id, one key
 per approved draft. A rejection returns the draft and creates nothing.
-This module never runs the operator command. Bounded polling, and calling
-this from the case runner, are a later change.
+This module never runs the operator command: src.review_runner waits for
+the decision and calls this check on each poll. No record is written unless the
+bank holds a human approval of the unchanged draft.
 """
 
 import hashlib

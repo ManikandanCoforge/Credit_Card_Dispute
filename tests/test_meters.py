@@ -6,7 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from src.meters import MeterLeak, latency_percentiles, record_case_meter
+from src.meters import (
+    MeterLeak,
+    case_attempts,
+    latency_percentiles,
+    record_case_meter,
+)
 
 
 def test_one_case_appends_one_meter_line_with_every_field(tmp_path: Path) -> None:
@@ -286,3 +291,38 @@ def test_a_restricted_value_is_refused_and_the_file_stays_unchanged(tmp_path: Pa
             retry_count=0,
         )
     assert path.read_text(encoding="utf-8") == before
+
+
+def test_case_attempts_are_read_per_case(tmp_path: Path) -> None:
+    path = tmp_path / "meters.jsonl"
+    for case_id, tool_attempts, retry_count in (
+        ("CARD-D01", 2, 0),
+        ("CARD-D07", 4, 2),
+        ("CARD-D10", 3, 1),
+    ):
+        record_case_meter(
+            path,
+            case_id=case_id,
+            route="ready_for_review",
+            started_at=datetime(2026, 10, 26, 21, 46, 1, tzinfo=UTC),
+            latency_ms=10,
+            model_calls=0,
+            input_tokens=0,
+            output_tokens=0,
+            tool_attempts=tool_attempts,
+            retry_count=retry_count,
+        )
+
+    assert case_attempts(path) == {
+        "CARD-D01": {"tool_attempts": 2, "retry_count": 0},
+        "CARD-D07": {"tool_attempts": 4, "retry_count": 2},
+        "CARD-D10": {"tool_attempts": 3, "retry_count": 1},
+    }
+
+
+def test_case_attempts_of_an_empty_meter_file_is_empty(tmp_path: Path) -> None:
+    path = tmp_path / "meters.jsonl"
+    path.write_text("", encoding="utf-8")
+
+    assert case_attempts(path) == {}
+

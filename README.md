@@ -82,7 +82,9 @@ uv run --locked python tools/scored_run.py
 
 It reads the mock at `http://127.0.0.1:8765` by default. It writes `submissions/scored-run.json`, replaces the committed `reports/scored-run.*`, and writes `reports/meters.jsonl` beside them, so commit those files only when you mean to publish a new run. Use `--case-meters` to put the meter file elsewhere, for example during a trial run. If the mock is not running, it writes nothing and exits 1. The report's Reproduce section has the full commands, with a state file of its own.
 
-Measured on 2026-10-27 across all twelve dev cases from a clean tree at commit `ac13f99`: 9 of 12 passed with 0 format errors. These numbers move as the open PRs land, so regenerate them with the command above rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the p50 and p95 latency read from the meter file, the cost, and the reproduction commands. A case whose meter line is refused is named in the report and has no line in `reports/meters.jsonl`; if a restricted value ever reaches that file, the run is refused and the message names the file and the case. The three failures are proposed exceptions, pending pod agreement: CARD-D07 and CARD-D10 need the tool-read retry (COF-40), and CARD-D09 is COF-43.
+Measured on 2026-10-27 across all twelve dev cases from a clean tree at commit `dfd90c1`: 11 of 12 passed with 0 format errors, with p50 30 ms and p95 4846 ms over the redacted meter lines, at 0.00 USD per case and 0.00 USD total (0 model calls, 0 tokens). These numbers move as the open PRs land, so regenerate them with the command above rather than quoting them. See [reports/scored-run.md](reports/scored-run.md) for the per-case results, the exact failed checks, the latency percentiles read from the meter file, the cost, and the reproduction commands. The run writes one redacted meter line per case to `reports/meters.jsonl`; a case whose meter line is refused is named in the report and has no line in that file, and if a restricted value ever reaches the file, the run is refused and the message names the file and the case. The p95 is D07's 4.8 s: its transaction service never answers, so the run waits 1 s and then 2 s, plus jitter, between its three attempts, and the audit shows three reads (503, 503, 503); its meter line counts four tool attempts and two retries. D10's read times out once and is answered on its second attempt, so its meter line shows three attempts and one retry (1.4 s), and every other tool is read once. The one failure, D09, is a proposed exception tied to COF-43, pending pod agreement.
+
+The published run was taken on a scratch mock at `127.0.0.1:8792` because 8765 held a stale server; it is the same mock started from this tree on a fresh state. The Reproduce section keeps the default port and the same commands.
 
 ## Hybrid model (optional)
 
@@ -117,7 +119,13 @@ Claude Haiku 5.5 on Microsoft Foundry has to be qualified and registered first. 
 
 ## Human approval and recovery
 
-Start review with `POST /v1/reviews`. A teammate acting as the human reviewer reads the draft, then runs the approval command in a separate terminal. Your agent must never invoke this operator command.
+Open the reviews from the application. `submit` sends each finished draft to `POST /v1/reviews`, every case unless you name some with `--case`. It keeps each review id and draft hash with its draft in `reports/reviews.json`:
+
+```sh
+uv run --locked python -m src.review_runner submit --case CARD-D01
+```
+
+A teammate acting as the human reviewer reads the draft, then runs the approval command in a separate terminal. Your agent must never invoke this operator command.
 
 ```sh
 uv run --locked python tools/runtime.py pending
@@ -125,7 +133,13 @@ uv run --locked python tools/runtime.py approve REVIEW_ID --reviewer reviewer-na
 uv run --locked python tools/runtime.py audit > reports/audit.json
 ```
 
-Replace REVIEW_ID with the returned identifier. In Windows PowerShell 5.1, write the audit with `| Out-File -Encoding ascii reports/audit.json` instead of `>`. To reject, use `reject` with the same arguments. For a fresh run, stop clients and use `uv run --locked python tools/runtime.py reset --confirm`.
+Then record the approved drafts. `check` reads each pending review every 2 seconds until all are decided or `--wait` seconds have passed. It creates a record only for an approved, unchanged draft, keyed `case_id:review_id`, and exits 1 while any review is pending or refused. A rejected draft goes back with no record, and running `check` again never creates a second record:
+
+```sh
+uv run --locked python -m src.review_runner check --wait 120
+```
+
+Replace REVIEW_ID with the returned identifier. Create `reports/` before redirecting the audit. In Windows PowerShell 5.1, write the audit with `| Out-File -Encoding ascii reports/audit.json` instead of `>`. To reject, use `reject` with the same arguments. For a fresh run, stop clients and use `uv run --locked python tools/runtime.py reset --confirm`.
 This CLI simulates a human boundary, not production identity. During assessment the assessor controls approval and state. Do not expose the service to the public internet.
 
 ## Defence pack
