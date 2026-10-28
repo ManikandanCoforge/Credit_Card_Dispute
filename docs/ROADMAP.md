@@ -33,7 +33,7 @@ Delivered on this head:
 |---|---|---|
 | COF-40 | Bounded retry and failure routing: at most three attempts, a doubling backoff with jitter, a per-tool circuit breaker, and a 5 s socket timeout; a persistent transaction outage routes the case to `manual_review` with null amount and currency, and a persistent merchant outage stops the case. | `14b1524`, `7ec4df4`, `f1e2bb4`, `653443c` |
 | COF-42 | Review gate and record creation: the runner submits each finished draft, a person approves the exact hash in a separate terminal, the runner creates only after approval, a changed draft is refused, a duplicate redelivery returns the existing record, and no module under `src/` can run the operator command. | `ef47e16`, `011a147`, `e44418c` |
-| COF-43 | Per-case meters: one redacted meter line per case, a restricted-value refusal, p50 and p95 read from the meter file, and the published report. The intake statement is the customer's text before the form fields, so CARD-D09's redelivery is built. | `022e74f`, `d1b4656`, `e082e91`, `3d62534`, `1a995f7`, `4e92b8e` |
+| COF-43 | Per-case meters: one redacted meter line per case, a restricted-value refusal, p50 and p95 read from the meter file, and the published report. The intake statement is the customer's text before the form fields, so CARD-D09's redelivery is built. | `022e74f`, `d1b4656`, `e082e91`, `3d62534`, `1a995f7` |
 
 ## Not done
 

@@ -127,7 +127,7 @@ def test_the_rehearsal_numbers_lock_quotes_the_report():
     cases = _lock_row(text, "Failing cases")
     if failing:
         expected = f"{failing} only"
-        _expect(cases.startswith(expected), REHEARSAL, "failing cases", cases, expected)
+        _expect(cases == expected, REHEARSAL, "failing cases", cases, expected)
     else:
         _expect(cases == "None", REHEARSAL, "failing cases", cases, "None")
 
