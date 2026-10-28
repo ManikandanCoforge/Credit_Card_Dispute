@@ -361,7 +361,20 @@ def test_a_model_that_cannot_tell_leaves_the_type_to_a_person():
     assert contract["classification"] == "ambiguous"
     assert contract["routing"] == "manual_review"
     assert contract["deadline"] is None
-    assert [c["claim"] for c in contract["citations"]] == _BASE_CLAIMS
+    expected_claims = [
+        *_BASE_CLAIMS[:3],
+        "supported_classifications",
+        *_BASE_CLAIMS[3:],
+    ]
+    assert [c["claim"] for c in contract["citations"]] == expected_claims
+    assert contract["citations"][3] == {
+        "claim": "supported_classifications",
+        "source_id": "CARD-PROCEDURE-01",
+        "quote": (
+            "Supported classifications: unauthorized, duplicate_charge, "
+            "service_not_received."
+        ),
+    }
     assert (
         "Neither the rules nor the model could name a dispute type, so a person must "
         "classify the case."
