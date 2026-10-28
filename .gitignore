@@ -9,6 +9,15 @@ reports/*
 !reports/meters.jsonl
 *.sqlite
 
+# local scratch: the tests fall back to the checkout when tempfile cannot use
+# TEMP, which on Windows it often cannot
+.local/
+.pack/
+.pack-open-prs.json
+pytest-of-mannk/
+tmp*/
+eval-mock-*/
+
 # local agent-skills config
 AGENTS.md
 docs/agents/

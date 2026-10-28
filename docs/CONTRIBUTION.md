@@ -2,6 +2,8 @@
 
 Three people, three lanes from the pod operating plan. Each person owns exactly one live-change module for the defence and can explain one end-to-end case without notes.
 
+The repository's rules now live next to this file, not in a scratch directory: `CONTRIBUTING.md` at the root has the branch, commit, gate and review rules, `.github/PULL_REQUEST_TEMPLATE.md` is the pull request body, and `.github/CODEOWNERS` names the reviewer for each path. This file is the lane table they point at.
+
 | Person | GitHub | Pod lane | Live-change module | What they can demo | What they can change live |
 |---|---|---|---|---|---|
 | Ken | `kenmann01` | Lead: scope, interfaces, rules engine, integration | `src/contract.py`: rules contract and assembly | Build the `CARD-D01` contract from the supplied text: classification, routing, six exact citations, deadline 2026-10-31, and the template narrative. | Change a citation claim and its expectation in a scratch branch, then show the new contract and the focused test result. |
@@ -27,6 +29,15 @@ Ownership is accountability for the module, not exclusive authorship. The substa
 ## Review and demo rules
 
 - One person owns one live-change module. A change that crosses modules still needs the owner's review.
-- Every change needs one approval. No direct pushes to `main`.
+- Every change needs one approval, and a "changes requested" blocks the merge. No direct pushes to `main`.
+- The reviewer for a path is named in `.github/CODEOWNERS`. That file asks for review; it does not enforce it, because this repository's plan refuses rulesets (the API answers 403).
 - Each person can demo their module on the running system, not from slides.
 - The shared normal case is `CARD-D01`. Each owner can also explain the case that exercises their module, including the failure or escalation path.
+
+## On Windows
+
+The machine the pod develops on is Windows, and three details cost time if they are not known:
+
+- Set `PYTHONUTF8=1` before running anything. Some files are read with the default encoding, which is not UTF-8 on Windows.
+- The shell is Git Bash. Native programs such as `git`, `python` and `rg` want `C:/...` style paths, not `/c/...`.
+- Do not order rows by `time.time_ns()` in a test. On Windows that clock advances in roughly 1 ms quanta, so calls made in a row can return the same value. PR #76 fixed `tests/test_observability.py` to read span rows by name instead, and `.github/workflows/checks.yml` runs the suite on `windows-latest` so the failure cannot come back unnoticed.

@@ -45,7 +45,7 @@ These items are not delivered on this head.
 - update or close an existing record; this is blocked by Gate U
 - provide a UI or a production deployment
 - pass all twelve dev cases: CARD-D09 remains the only exception, proposed and pending pod agreement (COF-43)
-- enforce the review rules through GitHub rulesets (issue #6); this is blocked on the private repository's plan, and the existing checks ruleset has enforcement disabled
+- enforce the review rules through GitHub rulesets; this is blocked on the private repository's plan (the API answers 403), so owners and required reviews stay advisory
 
 ## Sequencing gate: update and close
 
