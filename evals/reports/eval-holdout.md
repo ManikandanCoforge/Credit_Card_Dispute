@@ -1,10 +1,10 @@
 # Evaluation report - holdout
 
-- Commit: `8a915e0`
+- Commit: `f3ee194`
 - Data: `evals/fixtures/holdout/data`
 - Gold: `evals/fixtures/holdout/gold.json`
-- Generated: 2026-10-28T03:49:38+00:00
-- Cases fully passed: **3/8**
+- Generated: 2026-10-28T14:25:13+00:00
+- Cases fully passed: **4/8**
 - Format errors: 0
 
 ## Metrics
@@ -12,12 +12,12 @@
 | Metric | Passed | n | Rate |
 | --- | ---: | ---: | ---: |
 | `conformance.submitted` | 4 | 8 | 50.0% |
-| `conformance.classification` | 3 | 8 | 37.5% |
-| `conformance.routing` | 3 | 8 | 37.5% |
+| `conformance.classification` | 4 | 8 | 50.0% |
+| `conformance.routing` | 4 | 8 | 50.0% |
 | `conformance.policy_selection` | 4 | 8 | 50.0% |
 | `conformance.facts` | 4 | 8 | 50.0% |
 | `conformance.missing_information` | 4 | 8 | 50.0% |
-| `conformance.deadline` | 3 | 8 | 37.5% |
+| `conformance.deadline` | 4 | 8 | 50.0% |
 | `conformance.citations_valid` | 4 | 8 | 50.0% |
 | `conformance.required_evidence` | 4 | 8 | 50.0% |
 | `conformance.narrative_present` | 4 | 8 | 50.0% |
@@ -29,29 +29,21 @@
 | `tools.no_forbidden_writes` | 8 | 8 | 100.0% |
 | `tools.retry_bound` | 8 | 8 | 100.0% |
 | `tools.no_extra_reads` | 8 | 8 | 100.0% |
-| `escalation.route_correct` | 3 | 8 | 37.5% |
-| `escalation.class_correct` | 3 | 8 | 37.5% |
+| `escalation.route_correct` | 4 | 8 | 50.0% |
+| `escalation.class_correct` | 4 | 8 | 50.0% |
 | `pii.restricted_values` | 8 | 8 | 100.0% |
 | `pii.synthetic_patterns` | 8 | 8 | 100.0% |
 
 ## Escalation
 
-- Normal cases routed normally: 3/4
+- Normal cases routed normally: 4/4
 - Correct escalations: 0/0
 - Missed escalations: none
-- False escalations: HLD-H01
+- False escalations: none
 - Request-information routes: 0/0
 - Not built: HLD-H05, HLD-H06, HLD-H07, HLD-H08
 
 ## Failures
-
-### HLD-H01
-
-- `conformance.classification` - HLD-H01 fails the supplied evaluator sub-check classification
-- `conformance.routing` - HLD-H01 fails the supplied evaluator sub-check routing
-- `conformance.deadline` - HLD-H01 fails the supplied evaluator sub-check deadline
-- `escalation.route_correct` - routing 'manual_review' is not one of ['ready_for_review']
-- `escalation.class_correct` - classification 'ambiguous' is not one of ['service_not_received']
 
 ### HLD-H05 - not built: expected exactly one 'Amount:' line in the source
 

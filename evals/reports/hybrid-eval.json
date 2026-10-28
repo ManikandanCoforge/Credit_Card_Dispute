@@ -35,7 +35,7 @@
     {
       "suite": "synth",
       "rules": {
-        "passed": 19,
+        "passed": 20,
         "total": 31,
         "failed": {
           "SYN-S03": [
@@ -61,12 +61,6 @@
           ],
           "SYN-S18": [
             "submitted"
-          ],
-          "SYN-S20": [
-            "classification",
-            "deadline",
-            "required_evidence",
-            "routing"
           ],
           "SYN-S24": [
             "classification",
@@ -94,10 +88,9 @@
         },
         "wrong_ready": [
           "SYN-S17",
-          "SYN-S20",
           "SYN-S24"
         ],
-        "manual_review": 5,
+        "manual_review": 6,
         "not_built": [
           "SYN-S03",
           "SYN-S04",
@@ -115,7 +108,7 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 23,
+        "passed": 24,
         "total": 31,
         "failed": {
           "SYN-S03": [
@@ -132,12 +125,6 @@
           ],
           "SYN-S18": [
             "submitted"
-          ],
-          "SYN-S20": [
-            "classification",
-            "deadline",
-            "required_evidence",
-            "routing"
           ],
           "SYN-S24": [
             "classification",
@@ -158,10 +145,9 @@
         },
         "wrong_ready": [
           "SYN-S17",
-          "SYN-S20",
           "SYN-S24"
         ],
-        "manual_review": 7,
+        "manual_review": 8,
         "not_built": [
           "SYN-S03",
           "SYN-S11",
@@ -169,7 +155,7 @@
           "SYN-S18"
         ],
         "format_errors": [],
-        "model_calls": 23,
+        "model_calls": 22,
         "model_answers": 17,
         "input_tokens": 3528,
         "output_tokens": 572
@@ -269,14 +255,9 @@
     {
       "suite": "holdout",
       "rules": {
-        "passed": 3,
+        "passed": 4,
         "total": 8,
         "failed": {
-          "HLD-H01": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
           "HLD-H05": [
             "submitted"
           ],
@@ -297,7 +278,7 @@
           "HLD-H08": "the intake supports no supported classification"
         },
         "wrong_ready": [],
-        "manual_review": 1,
+        "manual_review": 0,
         "not_built": [
           "HLD-H05",
           "HLD-H06",
@@ -311,14 +292,9 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 4,
+        "passed": 5,
         "total": 8,
         "failed": {
-          "HLD-H01": [
-            "classification",
-            "deadline",
-            "routing"
-          ],
           "HLD-H05": [
             "submitted"
           ],
@@ -335,14 +311,14 @@
           "HLD-H08": "the intake supports no supported classification, and the model gave no usable answer: no_recording"
         },
         "wrong_ready": [],
-        "manual_review": 2,
+        "manual_review": 1,
         "not_built": [
           "HLD-H05",
           "HLD-H07",
           "HLD-H08"
         ],
         "format_errors": [],
-        "model_calls": 5,
+        "model_calls": 6,
         "model_answers": 3,
         "input_tokens": 747,
         "output_tokens": 133
