@@ -4,31 +4,13 @@
     {
       "suite": "dev",
       "rules": {
-        "passed": 9,
+        "passed": 12,
         "total": 12,
-        "failed": {
-          "CARD-D07": [
-            "submitted"
-          ],
-          "CARD-D09": [
-            "submitted"
-          ],
-          "CARD-D10": [
-            "submitted"
-          ]
-        },
-        "not_built_reasons": {
-          "CARD-D07": "BankReadError",
-          "CARD-D09": "the intake statement is not an exact excerpt of the intake",
-          "CARD-D10": "BankReadError"
-        },
+        "failed": {},
+        "not_built_reasons": {},
         "wrong_ready": [],
-        "manual_review": 2,
-        "not_built": [
-          "CARD-D07",
-          "CARD-D09",
-          "CARD-D10"
-        ],
+        "manual_review": 3,
+        "not_built": [],
         "format_errors": [],
         "model_calls": 0,
         "model_answers": 0,
@@ -36,42 +18,24 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 9,
+        "passed": 12,
         "total": 12,
-        "failed": {
-          "CARD-D07": [
-            "submitted"
-          ],
-          "CARD-D09": [
-            "submitted"
-          ],
-          "CARD-D10": [
-            "submitted"
-          ]
-        },
-        "not_built_reasons": {
-          "CARD-D07": "BankReadError",
-          "CARD-D09": "the intake statement is not an exact excerpt of the intake",
-          "CARD-D10": "BankReadError"
-        },
+        "failed": {},
+        "not_built_reasons": {},
         "wrong_ready": [],
-        "manual_review": 2,
-        "not_built": [
-          "CARD-D07",
-          "CARD-D09",
-          "CARD-D10"
-        ],
+        "manual_review": 3,
+        "not_built": [],
         "format_errors": [],
-        "model_calls": 5,
-        "model_answers": 4,
-        "input_tokens": 544,
-        "output_tokens": 132
+        "model_calls": 7,
+        "model_answers": 5,
+        "input_tokens": 705,
+        "output_tokens": 174
       }
     },
     {
       "suite": "synth",
       "rules": {
-        "passed": 16,
+        "passed": 19,
         "total": 31,
         "failed": {
           "SYN-S03": [
@@ -90,15 +54,6 @@
             "submitted"
           ],
           "SYN-S13": [
-            "submitted"
-          ],
-          "SYN-S14": [
-            "submitted"
-          ],
-          "SYN-S15": [
-            "submitted"
-          ],
-          "SYN-S16": [
             "submitted"
           ],
           "SYN-S17": [
@@ -134,10 +89,7 @@
           "SYN-S07": "the intake supports no supported classification",
           "SYN-S11": "the reported date selected no policy version",
           "SYN-S13": "the reported date selected no policy version",
-          "SYN-S14": "BankReadError",
-          "SYN-S15": "BankReadError",
-          "SYN-S16": "BankReadError",
-          "SYN-S18": "BankReadError",
+          "SYN-S18": "the merchant service was unavailable",
           "SYN-S31": "the intake supports no supported classification"
         },
         "wrong_ready": [
@@ -145,7 +97,7 @@
           "SYN-S20",
           "SYN-S24"
         ],
-        "manual_review": 3,
+        "manual_review": 5,
         "not_built": [
           "SYN-S03",
           "SYN-S04",
@@ -153,9 +105,6 @@
           "SYN-S07",
           "SYN-S11",
           "SYN-S13",
-          "SYN-S14",
-          "SYN-S15",
-          "SYN-S16",
           "SYN-S18",
           "SYN-S31"
         ],
@@ -166,7 +115,7 @@
         "output_tokens": 0
       },
       "hybrid": {
-        "passed": 20,
+        "passed": 23,
         "total": 31,
         "failed": {
           "SYN-S03": [
@@ -176,15 +125,6 @@
             "submitted"
           ],
           "SYN-S13": [
-            "submitted"
-          ],
-          "SYN-S14": [
-            "submitted"
-          ],
-          "SYN-S15": [
-            "submitted"
-          ],
-          "SYN-S16": [
             "submitted"
           ],
           "SYN-S17": [
@@ -214,28 +154,22 @@
           "SYN-S03": "the intake supports no supported classification, and the model gave no usable answer: no_recording",
           "SYN-S11": "the reported date selected no policy version",
           "SYN-S13": "the reported date selected no policy version",
-          "SYN-S14": "BankReadError",
-          "SYN-S15": "BankReadError",
-          "SYN-S16": "BankReadError",
-          "SYN-S18": "BankReadError"
+          "SYN-S18": "the merchant service was unavailable"
         },
         "wrong_ready": [
           "SYN-S17",
           "SYN-S20",
           "SYN-S24"
         ],
-        "manual_review": 5,
+        "manual_review": 7,
         "not_built": [
           "SYN-S03",
           "SYN-S11",
           "SYN-S13",
-          "SYN-S14",
-          "SYN-S15",
-          "SYN-S16",
           "SYN-S18"
         ],
         "format_errors": [],
-        "model_calls": 22,
+        "model_calls": 23,
         "model_answers": 17,
         "input_tokens": 3528,
         "output_tokens": 572
