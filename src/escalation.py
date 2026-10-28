@@ -16,10 +16,13 @@ authorize this") is read for its value, so a complaint written as a form keeps
 its cue. Headings are not read.
 
 A later customer statement that withdraws the complaint ("Please withdraw my
-complaint") is a conflicting account under the second rule: the case goes to a
-person, who decides whether the complaint stands. A denial of recognition that the
-customer takes back ("I didn't recognize the store at first, but I now remember
-buying there") is not a denial, so it does not conflict with a confirmed form.
+complaint", "Could you cancel my dispute?") goes to a person under the second rule, who
+decides whether the complaint stands; a hypothetical one ("I may withdraw it if they
+refund me") or a negated one ("Please do not withdraw my complaint") does not. A denial
+of recognition that the customer takes back, by recognising the purchase and naming what
+went wrong with it ("I didn't recognize the store at first, but I now remember buying
+there. The order never arrived."), is not a denial, so it does not conflict with a
+confirmed form.
 
 unsupported is checked first. Both routes are manual_review with a null
 deadline, so the order only decides which class is reported.
@@ -66,22 +69,56 @@ _CONFIRMS = re.compile(
     re.IGNORECASE,
 )
 # A denial of recognition, which the customer can take back later in the same sentence
-# or the next one. A denial of authorization is never taken back this way: "I did not
+# or the next one. Taking it back needs two things: recognising the purchase ("it turns
+# out it was my order", "I now remember buying from Tide Shop", "I did buy the
+# headphones") and naming a problem the caller classifies, such as a delivery that never
+# came or a charge taken twice. Recognition alone does not take a denial back ("it turns
+# out it was my card number that was stolen"), and neither does a problem alone ("it
+# turns out it was charged twice"). Remembering something else is not recognition ("I
+# now remember I already called you"), "after all" alone is not ("after all, I have never
+# shopped there"), and a contrast that keeps the denial ("but this one is not mine")
+# cancels the retraction. A denial of authorization is never taken back: "I did not
 # authorize it, but it turns out my son used my card" still denies.
 _RECOGNITION_DENIAL = re.compile(r"(?:do not|don't|did not|didn't) recogni[sz]e", re.IGNORECASE)
-_TAKEN_BACK = re.compile(
-    r"\b(?:now|later|then)\b[^.!?]{0,20}\b(?:remember|recogni[sz]e|realis|realiz)"
-    r"|\bturns? out\b|\bafter all\b|\b(?:it|this|that) (?:was|is) mine\b"
+_RECOGNISES = re.compile(
+    r"\bturns? out\b[^.!?]{0,20}\b(?:it|this|that) (?:was|is) (?:my|mine)\b"
+    r"|\b(?:now|later|then)\b[^.!?]{0,20}\b(?:remember|recall)\w*\s+"
+    r"(?:buying|ordering|paying|booking|it was (?:my|mine))\b"
+    r"|\b(?:it|this|that) (?:was|is) mine\b"
+    r"|\b(?:it|this|that) (?:was|is) my\b[^.!?]{0,30}\bafter all\b"
     r"|\bI did (?:buy|make|order|purchase|book|pay)\b",
     re.IGNORECASE,
 )
+_STILL_DENIED = re.compile(
+    r"\b(?:not|isn't|wasn't) mine\b|\bnot (?:this|that) one\b"
+    r"|\bstill (?:do not|don't|did not|didn't)\b"
+    r"|\b(?:do not|don't|did not|didn't) (?:recogni[sz]e|make|authori[sz]e)\b"
+    r"|\bnever (?:made|authori[sz]ed)\b",
+    re.IGNORECASE,
+)
 # A later statement that withdraws the complaint. "Cancel my subscription" is not one:
-# the thing withdrawn has to be the complaint, the dispute or the claim.
+# the thing withdrawn has to be the complaint, the dispute or the claim. A polite request
+# withdraws it ("Could you withdraw my complaint?", "Please cancel my dispute if
+# possible", "I would like to withdraw my complaint"). A hypothetical has not withdrawn
+# anything yet: the customer's own "may", "might", "could" or "would" before the
+# withdrawal ("I may withdraw my complaint"), or a condition on how the complaint ends
+# ("I will drop the claim if the shop refunds me"). Nor has a negation within the three
+# words before it ("Please do not withdraw my complaint", "I don't want to withdraw my
+# complaint"); a comma ends that reach, so "I am not sure, but please withdraw my
+# complaint" withdraws it.
 _WITHDRAWS = re.compile(
     r"\b(?:withdraw|cancel|drop)\s+(?:my|the|this)\s+(?:complaint|dispute|claim)\b"
     r"|\bno longer (?:want to )?dispute\b",
     re.IGNORECASE,
 )
+_HYPOTHETICAL = re.compile(
+    r"\b(?:I|we)\s+(?:may|might|could|would)\b(?!\s+like\b)(?:\s+\w+){0,2}?\s+"
+    r"(?:withdraw|cancel|drop)\b"
+    r"|\b(?:if|unless)\b[^.!?]*"
+    r"\b(?:refund|repa(?:y|id)|reimburs|credit|resolv|sort|fix|replac|deliver|arriv)\w*",
+    re.IGNORECASE,
+)
+_NEGATED_BEFORE = re.compile(r"(?:\b(?:not|never)|n't)(?:\s+\w+){0,3}\s*$", re.IGNORECASE)
 # A leading form label such as "Transaction type:" or "Note:". Its value is still read.
 _LABEL = re.compile(r"^[A-Z][A-Za-z ]*:\s*")
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
@@ -108,11 +145,14 @@ def find_escalation(
     customer_texts: list[str],
     procedure_text: str,
     known: Sequence[str] = (),
+    problems: Sequence[re.Pattern[str]] = (),
 ) -> Escalation | None:
     """Return the escalation for this complaint, or None when the procedure gives none.
 
     Every returned citation is an exact single-line excerpt of its source. A sentence
     holding a restricted value, a known one included, is cited by its Source ID line.
+    problems match a problem the caller classifies, such as a delivery that never came;
+    a denial of recognition is taken back only beside one, so without them none is.
     """
     statements = [intake_text, *customer_texts]
     for text in statements:
@@ -136,7 +176,7 @@ def find_escalation(
     denials: list[Quote] = []
     confirmations: list[Quote] = []
     for text in statements:
-        denied, confirmed = _stances(text)
+        denied, confirmed = _stances(text, problems)
         if denied is not None:
             denials.append(
                 {
@@ -168,9 +208,9 @@ def find_escalation(
         return {
             "classification": "ambiguous",
             "reason": (
-                "A later customer statement withdraws the complaint, so the customer's "
-                f"accounts conflict. Withdrawn in {_joined(withdrawals)}. The withdrawal is "
-                "cited, and this draft does not decide whether the complaint stands."
+                f"The customer withdrew the complaint in {_joined(withdrawals)}. The "
+                "withdrawal is cited, and a person decides whether the complaint stands; "
+                "this draft does not."
             ),
             "citations": [
                 *denials,
@@ -209,12 +249,17 @@ def _cash_sentence(text: str) -> str | None:
 def _withdrawal_sentence(text: str) -> str | None:
     """The first sentence of a later customer statement that withdraws the complaint."""
     for sentence in _prose_sentences(text):
-        if _WITHDRAWS.search(sentence):
+        if _HYPOTHETICAL.search(sentence):
+            continue
+        if any(
+            not _NEGATED_BEFORE.search(sentence[: match.start()])
+            for match in _WITHDRAWS.finditer(sentence)
+        ):
             return sentence
     return None
 
 
-def _stances(text: str) -> tuple[str | None, str | None]:
+def _stances(text: str, problems: Sequence[re.Pattern[str]]) -> tuple[str | None, str | None]:
     """The first quote that denies and the first that confirms authorization, if any.
 
     A sentence can hold both ("I did not authorize it, but I made this purchase
@@ -234,22 +279,28 @@ def _stances(text: str) -> tuple[str | None, str | None]:
         sentences = _sentences(line)
         for index, sentence in enumerate(sentences):
             later = " ".join(sentences[index + 1 : index + 2])
-            if denied is None and _denies(sentence, later):
+            if denied is None and _denies(sentence, later, problems):
                 denied = sentence
             if _CONFIRMS.search(sentence) and confirmed is None:
                 confirmed = sentence
     return denied, confirmed
 
 
-def _denies(sentence: str, later: str) -> bool:
+def _denies(sentence: str, later: str, problems: Sequence[re.Pattern[str]]) -> bool:
     """True when the sentence holds a denial the customer does not take back.
 
     A denial of recognition is taken back when the rest of its sentence, or the next
-    sentence on the line, says the customer recognizes the charge after all.
+    sentence on the line, says the customer recognises the purchase and names one of
+    the problems, and nothing there keeps the denial ("but this one is not mine").
     """
     for denial in _DENIES.finditer(sentence):
         rest = f"{sentence[denial.end() :]} {later}"
-        if not (_RECOGNITION_DENIAL.match(denial.group(0)) and _TAKEN_BACK.search(rest)):
+        taken_back = (
+            _RECOGNISES.search(rest)
+            and any(problem.search(rest) for problem in problems)
+            and not _STILL_DENIED.search(rest)
+        )
+        if not (_RECOGNITION_DENIAL.match(denial.group(0)) and taken_back):
             return True
     return False
 

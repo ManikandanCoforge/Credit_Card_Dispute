@@ -349,7 +349,9 @@ def _rules_contract(
     if intake is None:
         raise ContractError("the working record has no intake")
     try:
-        escalation = find_escalation(intake_text, list(customer_texts), procedure_text, known)
+        escalation = find_escalation(
+            intake_text, list(customer_texts), procedure_text, known, (_SERVICE, _DUPLICATE)
+        )
     except EscalationError as error:
         raise ContractError(str(error)) from error
     # Text addressed to the system is never read for a cue, and dropping it must not
