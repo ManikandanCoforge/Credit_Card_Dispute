@@ -11,8 +11,9 @@ scored run left no readable report.
   python -m src.run_loop
 
 The scored run's JSON meter rows are written beside its report, named after the
-report with a -meters suffix, so a trial run into a temporary directory leaves the
-committed artifacts alone.
+report with a -meters suffix. The defaults are the committed paths, so a trial run
+passes --report, --case-meters, --markdown and --submission to point all four at a
+scratch directory and leave the committed artifacts alone.
 """
 
 import argparse
@@ -37,19 +38,29 @@ SCORED_RUN = ROOT / "tools" / "scored_run.py"
 class RunningProcess(Protocol):
     """The part of a child process the loop uses: ask, stop, and wait for it."""
 
-    def poll(self) -> int | None: ...
+    def poll(self) -> int | None:
+        """Return the exit status, or None while the child is still running."""
+        ...
 
-    def terminate(self) -> None: ...
+    def terminate(self) -> None:
+        """Ask the child to stop, the way SIGTERM does."""
+        ...
 
-    def kill(self) -> None: ...
+    def kill(self) -> None:
+        """Stop the child at once, the way SIGKILL does."""
+        ...
 
-    def wait(self, timeout: float) -> int: ...
+    def wait(self, timeout: float) -> int:
+        """Block until the child exits or the timeout expires, and return its status."""
+        ...
 
 
 class ProcessRunner(Protocol):
     """Start one child process and hand back a handle to it."""
 
-    def start(self, argv: Sequence[str]) -> RunningProcess: ...
+    def start(self, argv: Sequence[str]) -> RunningProcess:
+        """Start one child for a fixed argv and return it running."""
+        ...
 
 
 class _PopenProcess:
@@ -86,7 +97,9 @@ class SubprocessRunner:
 class HealthProbe(Protocol):
     """Report whether the mock answers GET /health before the deadline."""
 
-    def wait_ready(self, base_url: str, timeout: float) -> bool: ...
+    def wait_ready(self, base_url: str, timeout: float) -> bool:
+        """Return True once GET /health answers, or False when the timeout expires."""
+        ...
 
 
 class HttpHealthProbe:
@@ -299,21 +312,25 @@ def _run_scored(
 
 
 def _read_report(path: Path) -> tuple[int, int, float | None, float | None]:
-    """Read the pass count, case count and latencies the scored run published."""
+    """Read the pass count, case count and latencies, or raise LoopError naming the path."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
+        passed = int(data["pass_count"])
+        total = int(data["total_cases"])
+    except (OSError, TypeError, ValueError, KeyError) as error:
         raise LoopError(
             f"the scored run did not write a readable report at {path}: {error}"
         ) from error
     p50 = data.get("p50_latency_ms")
     p95 = data.get("p95_latency_ms")
-    return (
-        int(data["pass_count"]),
-        int(data["total_cases"]),
-        None if p50 is None else float(p50),
-        None if p95 is None else float(p95),
-    )
+    try:
+        p50_ms = None if p50 is None else float(p50)
+        p95_ms = None if p95 is None else float(p95)
+    except (TypeError, ValueError) as error:
+        raise LoopError(
+            f"the scored run did not write a readable report at {path}: {error}"
+        ) from error
+    return passed, total, p50_ms, p95_ms
 
 
 def _format_ms(value: float | None) -> str:
@@ -330,11 +347,12 @@ def _display_path(path: Path) -> str:
 
 
 def _summary_line(result: LoopResult) -> str:
-    """The one line a completed loop prints: cases, latencies and the report."""
+    """The one line a completed loop prints: cases, latencies, report and meters."""
     return (
         f"{result.passed} / {result.total} cases passed; "
         f"p50 {_format_ms(result.p50_ms)} ms; p95 {_format_ms(result.p95_ms)} ms; "
-        f"report {_display_path(result.report_path)}"
+        f"report {_display_path(result.report_path)}; "
+        f"meters {_display_path(result.meter_path)}"
     )
 
 

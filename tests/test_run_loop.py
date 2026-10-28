@@ -13,7 +13,6 @@ import runpy
 import subprocess
 import sys
 from pathlib import Path
-from urllib.error import URLError
 from urllib.request import urlopen
 
 import pytest
@@ -319,6 +318,28 @@ def test_a_report_that_is_not_json_is_a_loop_error(tmp_path):
     assert "readable report" in str(failed.value)
 
 
+def test_a_report_without_a_pass_count_is_a_loop_error_not_a_key_error(tmp_path):
+    runner = _Runner(report_text='{"total_cases": 12}')
+
+    with pytest.raises(LoopError) as failed:
+        _run_loop(tmp_path, runner=runner, probe=_Probe())
+
+    assert "readable report" in str(failed.value)
+    assert "pass_count" in str(failed.value)
+
+
+def test_a_report_with_a_non_numeric_latency_is_a_loop_error(tmp_path):
+    runner = _Runner(
+        report_text='{"pass_count": 11, "total_cases": 12, "p50_latency_ms": "fast"}'
+    )
+
+    with pytest.raises(LoopError) as failed:
+        _run_loop(tmp_path, runner=runner, probe=_Probe())
+
+    assert "readable report" in str(failed.value)
+    assert "fast" in str(failed.value)
+
+
 def test_the_real_probe_retries_until_the_deadline(monkeypatch):
     clock = iter([0.0, 0.5, 2.0])
     slept = []
@@ -473,6 +494,8 @@ def test_the_command_prints_one_summary_line_and_exits_zero(tmp_path, monkeypatc
     assert capsys.readouterr().out == (
         "11 / 12 cases passed; p50 31.000 ms; p95 3444.000 ms; report "
         + str(outside)
+        + "; meters "
+        + loop._display_path(tmp_path / "meters.jsonl")
         + "\n"
     )
 
@@ -532,8 +555,17 @@ def test_the_loop_runs_the_supplied_runtime_and_scores_twelve_cases(tmp_path):
     assert result.p50_ms is not None
     assert result.p95_ms is not None
     assert result.exit_code == (0 if result.passed == result.total else 1)
-    with pytest.raises(URLError):
-        urlopen(f"http://127.0.0.1:{port}/health", timeout=1)
+    # Windows can reset the connection while the mock's socket closes, so any
+    # OS-level failure counts as "the mock is gone"; a successful answer does not.
+    assert not _health_answers(port)
+
+
+def _health_answers(port: int) -> bool:
+    try:
+        with urlopen(f"http://127.0.0.1:{port}/health", timeout=1):
+            return True
+    except OSError:
+        return False
 
 
 def _free_port():

@@ -39,18 +39,24 @@ uv run --locked python -m src.run_loop
 
 The loop makes the output directories, picks a free loopback port, starts the supplied mock on `.state/loop-<port>.sqlite`, waits up to 30 seconds for `GET /health`, runs the scored run into the report and submission paths, prints one summary line and stops the mock.
 
-A successful run looks like this. It is a real run from this tree; it wrote into a scratch directory so it did not republish the committed report:
+A successful run looks like this. It is a real run from this tree, pointed at a scratch directory so it did not republish the committed report:
+
+```sh
+uv run --locked python -m src.run_loop --report .loop-check/scored-run.json \
+    --case-meters .loop-check/meters.jsonl --markdown .loop-check/scored-run.md \
+    --submission .loop-check/submission.json
+```
 
 ```text
-Fictional training mock at http://127.0.0.1:8794; Ctrl-C stops it.
-11 / 12 cases passed; 0 format errors; p50 31.000 ms; p95 4128.000 ms; cost per case 0.00 USD
+Fictional training mock at http://127.0.0.1:61678; Ctrl-C stops it.
+11 / 12 cases passed; 0 format errors; p50 32.000 ms; p95 4108.000 ms; cost per case 0.00 USD
   CARD-D09: submitted (the intake statement is not an exact excerpt of the intake)
-11 / 12 cases passed; p50 31.000 ms; p95 4128.000 ms; report .loop-check/scored-run.json
+11 / 12 cases passed; p50 32.000 ms; p95 4108.000 ms; report .loop-check/scored-run.json; meters .loop-check/meters.jsonl
 ```
 
 - 11 of 12 is the expected result at this commit. CARD-D09 is the proposed COF-43 exception; see the troubleshooting table.
-- p95 moves between runs (the committed report holds 3444.000 ms, this run 4128.000 ms) because the retries wait on the wall clock. p50 stays at 31 ms.
-- With the defaults the last line ends `report reports/scored-run.json`.
+- p50 and p95 move between runs because the retries wait on the wall clock: the committed report holds 31.000 and 3444.000 ms, this run 32.000 and 4108.000 ms.
+- The last line names both the report and the meter file. With the defaults it ends `report reports/scored-run.json; meters reports/meters.jsonl`.
 - The first line comes from the supplied mock, the next two from the scored run, and the last from the loop.
 
 Exit status: 0 when the run completed, including a run with a failing case, because a case failure is data. 1 when the mock did not answer `GET /health` within the timeout or the scored run wrote no readable report. In both failure cases the mock is stopped before the error propagates.
