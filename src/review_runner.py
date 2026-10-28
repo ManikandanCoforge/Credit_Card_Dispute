@@ -147,6 +147,7 @@ def read_journal(path: Path) -> list[JournalEntry]:
 
     Raises:
         FileNotFoundError: The file does not exist, so no review was opened.
+        UnicodeDecodeError: The file is not UTF-8 text.
         json.JSONDecodeError: The file is not JSON.
         JournalError: The file is JSON but not a journal: not a list, or an entry
             without every journal field, string ids, a draft and a known status. It
@@ -238,7 +239,7 @@ def _check_journal(args: argparse.Namespace) -> None:
     except FileNotFoundError:
         sys.stderr.write(f"no review journal at {args.journal}: run submit first\n")
         raise SystemExit(1) from None
-    except (json.JSONDecodeError, JournalError):
+    except (UnicodeDecodeError, json.JSONDecodeError, JournalError):
         sys.stderr.write(f"{args.journal} is not a review journal this runner wrote\n")
         raise SystemExit(1) from None
     entries = check_reviews(args.base_url, journal, wait_seconds=args.wait)

@@ -409,6 +409,19 @@ def test_check_refuses_a_file_that_is_not_a_journal_and_leaves_it_alone(content,
     assert journal.read_text(encoding="utf-8") == content
 
 
+def test_check_refuses_a_journal_that_is_not_utf8(tmp_path, capsys):
+    journal = tmp_path / "reviews.json"
+    raw = b"\xff\xfe\x00"
+    journal.write_bytes(raw)
+
+    with pytest.raises(SystemExit) as stopped:
+        main(["check", "--journal", str(journal), "--wait", "0"])
+
+    assert stopped.value.code == 1
+    assert capsys.readouterr().err == f"{journal} is not a review journal this runner wrote\n"
+    assert journal.read_bytes() == raw
+
+
 def test_running_the_module_checks_the_default_journal(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     write_journal(tmp_path / "reports" / "reviews.json", [])
