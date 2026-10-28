@@ -35,6 +35,15 @@ DEV = ROOT / "data" / "dev"
 # operator command (a child process, the runtime module, its reviewer flag), approve
 # a review itself (write the review table or call an approval endpoint), or claim an
 # approval event it did not receive.
+#
+# src/run_loop.py is the one-command loop: it starts the supplied mock and does
+# nothing else. Its own tests assert the argv verb is "serve" and that the state file
+# is its own, so it may use the process-launch markers and no others. The exemption
+# is data, so a second file needs a deliberate edit here.
+_LAUNCH_MARKERS = frozenset(
+    {"subprocess", "runtime.py", "tools.runtime", "tools/runtime"}
+)
+_LAUNCH_ONLY_EXEMPT = {"run_loop.py": _LAUNCH_MARKERS}
 _OPERATOR_COMMAND_MARKERS = (
     "subprocess",
     "os.system",
@@ -62,10 +71,12 @@ def _operator_command_violations(root: Path) -> list[str]:
     """
     violations = []
     for module in sorted(root.rglob("*.py")):
+        relative = module.relative_to(root).as_posix()
+        exempt = _LAUNCH_ONLY_EXEMPT.get(relative, frozenset())
         for number, line in enumerate(module.read_text(encoding="utf-8").splitlines(), 1):
             for marker in _OPERATOR_COMMAND_MARKERS:
-                if marker in line:
-                    violations.append(f"{module.relative_to(root).as_posix()}:{number}: {marker}")
+                if marker in line and marker not in exempt:
+                    violations.append(f"{relative}:{number}: {marker}")
     return violations
 
 
@@ -411,3 +422,20 @@ def test_the_guard_allows_the_word_approved_where_a_person_decided(tmp_path):
     # Reading the bank's record of a person's decision is the gate working, not a
     # bypass, so it must not be flagged.
     assert _operator_command_violations(tmp_path / "src") == []
+
+
+def test_the_launch_exemption_for_run_loop_does_not_hide_an_approval_marker(tmp_path):
+    package = tmp_path / "src"
+    package.mkdir()
+    source = (ROOT / "src" / "run_loop.py").read_text(encoding="utf-8")
+    target = package / "run_loop.py"
+    target.write_text(source, encoding="utf-8")
+
+    # The loop starts the supplied mock, so its own process-launch markers are
+    # allowed. It must still be flagged the moment it names an approval path.
+    assert _operator_command_violations(package) == []
+
+    for marker in ("--reviewer", "/approve", "UPDATE reviews"):
+        target.write_text(source + f"\nOPERATOR = {marker}\n", encoding="utf-8")
+        violations = _operator_command_violations(package)
+        assert violations == [f"run_loop.py:{len(source.splitlines()) + 2}: {marker}"], marker
