@@ -30,7 +30,7 @@ Ownership is accountability for the module, not exclusive authorship. The substa
 
 - One person owns one live-change module. A change that crosses modules still needs the owner's review.
 - Every change needs one approval, and a "changes requested" blocks the merge. No direct pushes to `main`.
-- The reviewer for a path is named in `.github/CODEOWNERS`. That file asks for review; it does not enforce it, because the repository's rulesets are disabled and enabling them is issue #6.
+- The reviewer for a path is named in `.github/CODEOWNERS`. That file asks for review; it does not enforce it, because this repository's plan refuses rulesets (the API answers 403).
 - Each person can demo their module on the running system, not from slides.
 - The shared normal case is `CARD-D01`. Each owner can also explain the case that exercises their module, including the failure or escalation path.
 

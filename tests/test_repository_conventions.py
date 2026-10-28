@@ -17,6 +17,9 @@ CODEOWNERS = GITHUB / "CODEOWNERS"
 DEPENDABOT = GITHUB / "dependabot.yml"
 WORKFLOW = GITHUB / "workflows" / "checks.yml"
 IGNORE = ROOT / ".gitignore"
+SECURITY = ROOT / "SECURITY.md"
+CONTRIBUTING = ROOT / "CONTRIBUTING.md"
+EDITORCONFIG = ROOT / ".editorconfig"
 CONTRIBUTION = ROOT / "docs" / "CONTRIBUTION.md"
 
 SECTIONS = (
@@ -162,7 +165,15 @@ def test_code_owners_says_that_review_is_asked_and_not_enforced():
     preamble = "\n".join(line for line in _lines(CODEOWNERS) if line.startswith("#"))
     assert "asks for review" in preamble
     assert "does not enforce" in preamble
-    assert "#6" in preamble
+    assert "403" in preamble
+
+
+def test_the_community_files_exist_and_say_something():
+    assert "## Reporting a vulnerability" in "\n".join(_lines(SECURITY))
+    assert "## The gate" in "\n".join(_lines(CONTRIBUTING))
+    assert "root = true" in "\n".join(_lines(EDITORCONFIG))
+    for path in (SECURITY, CONTRIBUTING, EDITORCONFIG):
+        assert len(_lines(path)) > 10, path
 
 
 def test_the_ignore_list_covers_the_local_scratch():

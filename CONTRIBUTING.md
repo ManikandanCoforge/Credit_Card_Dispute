@@ -15,7 +15,7 @@ the lane table. Real examples from this repository:
 - `kenmann01/cof-74-repo-hygiene`
 - `kanitmann/cof-17-load-complaints-from-the-bank-into-working-records`
 - `mani/cof-39-conflict-and-out-of-scope-escalation`
-- `zacharypaulb/cof-8-add-a-three-job-ci-pipeline-for-the-application-source-tree`
+- `zacharypaulb/cof-43-per-case-meters-and-redacted-logs`
 
 Cut the branch from the head of the open pull request stack, not from a local main that
 may be behind, and keep one concern per branch.
@@ -60,7 +60,7 @@ use: `## What`, `## Why`, `## What to look hardest at`, `## How it was verified`
 checklist. "How it was verified" takes commands and measured numbers, not adjectives.
 
 `.github/CODEOWNERS` names the owner of each module. It asks for review; it does not
-enforce it, because the repository's rulesets are disabled and enabling them is issue #6.
+enforce it, because this repository's plan refuses rulesets (the API answers 403).
 Review is still expected: a pull request waits for the owner of the modules it touches.
 
 ## Review

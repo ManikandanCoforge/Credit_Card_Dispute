@@ -1,5 +1,6 @@
 # CODEOWNERS asks for review from the person who owns the module. It does not enforce
-# anything: the repository's rulesets are disabled, and turning them on is issue #6.
+# anything: this repository's plan refuses rulesets (the API answers 403), so required
+# reviews and owners cannot be turned on here.
 # Read this file next to docs/CONTRIBUTION.md, which names the lanes and says who
 # demos which module.
 
