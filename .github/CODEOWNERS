@@ -1,0 +1,29 @@
+# CODEOWNERS asks for review from the person who owns the module. It does not enforce
+# anything: the repository's rulesets are disabled, and turning them on is issue #6.
+# Read this file next to docs/CONTRIBUTION.md, which names the lanes and says who
+# demos which module.
+
+# Lead: the rules contract and the scored run
+/src/contract.py              @kenmann01
+/tools/scored_run.py          @kenmann01
+
+# Evidence: restricted values, instruction handling, escalation
+/src/untrusted.py             @ManikandanCoforge
+/src/escalation.py            @ManikandanCoforge
+
+# Eval and operations: retry, meters, spans, the evaluation suite
+/src/resilience.py            @zacharybonagura-coforge
+/src/meters.py                @zacharybonagura-coforge
+/src/observability.py         @zacharybonagura-coforge
+/src/span_store/              @zacharybonagura-coforge
+/evals/                       @zacharybonagura-coforge
+
+# Review gate and runner: the evidence lane and the eval lane together
+/src/review_gate.py           @zacharybonagura-coforge @kenmann01
+/src/review_runner.py         @ManikandanCoforge @kenmann01
+
+# The repository's own rules, template and CI
+/.github/                     @zacharybonagura-coforge
+
+# The contribution, security and limitations docs
+/docs/                        @kenmann01

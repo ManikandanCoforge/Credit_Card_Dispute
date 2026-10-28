@@ -1,0 +1,29 @@
+# Every pin in pyproject.toml is exact (==), so a minor or patch bump is a real
+# change to the locked set, not noise, and it lands with the lock file in the
+# same pull request. Dependabot opens at most three of them at a time.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      # One group for the tools the gate runs, so a weekly round is one review.
+      # Groups cannot use dependency-type here: the GitHub docs list bundler,
+      # composer, mix, maven, npm and pip for that key, and uv is not among them,
+      # so the dependencies are named one by one instead.
+      dev-tooling:
+        patterns:
+          - "bandit"
+          - "coverage"
+          - "mypy"
+          - "pytest"
+          - "pytest-cov"
+          - "ruff"
+      # One group for what ships at runtime.
+      runtime:
+        patterns:
+          - "opentelemetry-api"
+          - "opentelemetry-sdk"
+          - "pydantic"
