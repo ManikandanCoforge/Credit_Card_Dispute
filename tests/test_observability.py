@@ -248,23 +248,32 @@ def test_sqlite_stores_a_case_its_api_call_and_its_model_call(monkeypatch, tmp_p
 
     with sqlite3.connect(path) as db:
         rows = db.execute(
-            "SELECT name, span_id, parent_id, status, attributes FROM spans "
-            "ORDER BY start_time"
+            "SELECT name, span_id, parent_id, status, attributes FROM spans"
         ).fetchall()
-    assert [row[0] for row in rows] == [
-        "case CARD-D04",
-        "HTTP GET",
-        "chat demo.model-v1:mini",
-    ]
-    assert rows[0][2] is None
-    assert rows[1][2] == rows[0][1]
-    assert rows[2][2] == rows[0][1]
-    assert rows[1][3] == "UNSET"
-    assert rows[2][3] == "UNSET"
-    case_attributes = json.loads(rows[0][4])
+    # Row order is not a fact this store can keep. On Windows the host clock
+    # advances in roughly millisecond steps, so the case span, its API call and
+    # its model call can share one start_time, and ORDER BY start_time cannot
+    # recover the order they started in. Read the rows by name and pin the
+    # shape instead: one root case span and two children that point at it.
+    # A dict by name would hide an extra span that reused a name, so the count is
+    # pinned from the raw rows first.
+    assert len(rows) == 3
+    by_name = {row[0]: row for row in rows}
+    assert set(by_name) == {"case CARD-D04", "HTTP GET", "chat demo.model-v1:mini"}
+    case, api, model = (
+        by_name["case CARD-D04"],
+        by_name["HTTP GET"],
+        by_name["chat demo.model-v1:mini"],
+    )
+    assert case[2] is None
+    assert api[2] == case[1]
+    assert model[2] == case[1]
+    assert api[3] == "UNSET"
+    assert model[3] == "UNSET"
+    case_attributes = json.loads(case[4])
     assert case_attributes["missing_information"] == "authorization_confirmation"
     assert case_attributes["check"] == "ok"
-    model_attributes = json.loads(rows[2][4])
+    model_attributes = json.loads(model[4])
     assert model_attributes["gen_ai.request.model"] == "demo.model-v1:mini"
     assert model_attributes["gen_ai.operation.name"] == "chat"
     assert model_attributes["gen_ai.usage.input_tokens"] == 11
@@ -315,17 +324,18 @@ def test_a_memory_store_replaces_sqlite(monkeypatch, tmp_path):
     shutdown_tracing()
 
     assert not unused.exists()
-    records = sorted(store.records, key=lambda record: record["start_time"] or "")
-    assert [record["name"] for record in records] == [
-        "case CARD-D04",
-        "HTTP GET",
-        "chat demo.model-v1:mini",
-    ]
-    assert records[0]["parent_id"] is None
-    assert records[1]["parent_id"] == records[0]["span_id"]
-    assert records[2]["parent_id"] == records[0]["span_id"]
-    assert records[2]["attributes"]["gen_ai.usage.input_tokens"] == 11
-    assert records[2]["attributes"]["gen_ai.usage.output_tokens"] == 7
+    # The same coarse-clock caveat as the SQLite test above, so read by name, with
+    # the count pinned from the raw records so a duplicate name cannot hide a span.
+    assert len(store.records) == 3
+    by_name = {record["name"]: record for record in store.records}
+    assert set(by_name) == {"case CARD-D04", "HTTP GET", "chat demo.model-v1:mini"}
+    case = by_name["case CARD-D04"]
+    assert case["parent_id"] is None
+    assert by_name["HTTP GET"]["parent_id"] == case["span_id"]
+    model = by_name["chat demo.model-v1:mini"]
+    assert model["parent_id"] == case["span_id"]
+    assert model["attributes"]["gen_ai.usage.input_tokens"] == 11
+    assert model["attributes"]["gen_ai.usage.output_tokens"] == 7
 
 
 def test_a_second_start_tracing_keeps_the_store_already_open(monkeypatch, tmp_path):
