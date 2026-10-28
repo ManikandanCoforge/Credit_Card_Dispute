@@ -4,7 +4,7 @@
 - Status: **REHEARSED WITH ONE BLOCKER: CARD-D09 cannot build (COF-43).**
 - Last updated: 2026-10-27
 - Rehearsed: 2026-10-27 from commit 1c1d8ba (1c1d8baa00dafc5e4bbe6f03dfa15bb251187af2), mock on http://127.0.0.1:8793
-- Current scored run: 11 of 12, 0 format errors (reports/scored-run.md, generated 2026-10-27T23:26:44Z from dfd90c1)
+- Current scored run: 11 of 12, 0 format errors (reports/scored-run.md, generated 2026-10-28T00:07:58Z from 3a747a5)
 
 This is the runbook for the final demonstration and the record of the 2026-10-27 rehearsal. The six-beat arc was run twice end to end. Five beats passed in both runs, with beat 1 approved by the rehearsal driver acting as reviewer rather than by a person at a separate terminal. Beat 5, CARD-D09, failed in both runs on the COF-43 limit: the delivery note is joined to the customer's account, so the joined statement is not one exact excerpt of the intake. The duplicate path itself was shown with CARD-D02. Do not present the failing beat as passing, and do not hardcode a 12 of 12 result.
 
@@ -53,14 +53,14 @@ Observed in the rehearsal: health 200, case list 200, twelve cases CARD-D01 to C
 
 ## Numbers lock
 
-Use one report file for every number in the deck. On this branch that file is reports/scored-run.md, generated 2026-10-27T23:26:44Z from commit dfd90c11312ed0331bfe7b0c72cce6ec857906bd against http://127.0.0.1:8792.
+Use one report file for every number in the deck. On this branch that file is reports/scored-run.md, generated 2026-10-28T00:07:58Z from commit 3a747a58cc8255e47a4a47f17794a1f764354bf1 against http://127.0.0.1:8792.
 
 | Number | Source | Value on 2026-10-27 |
 |---|---|---|
 | Cases passed | reports/scored-run.json pass_count | 11 of 12 |
 | Format errors | reports/scored-run.json format_errors | 0 |
-| p50 draft latency | reports/scored-run.json p50_latency_ms | 30.000 ms (published; the rehearsal observed 31.000 ms in both runs, run-specific and within a millisecond) |
-| p95 draft latency | reports/scored-run.json p95_latency_ms | 4846.000 ms (published; the rehearsal observed 4842.000 ms then 3435.000 ms, run-specific because D07 sets the maximum) |
+| p50 draft latency | reports/scored-run.json p50_latency_ms | 31.000 ms (published; the rehearsal also observed 31.000 ms in both runs, so the published median matches the rehearsal) |
+| p95 draft latency | reports/scored-run.json p95_latency_ms | 3444.000 ms (published; the rehearsal observed 4842.000 ms then 3435.000 ms, run-specific because D07 sets the maximum) |
 | Cost per case | reports/scored-run.json cost_per_case_usd | 0.00 USD, 0 model calls, 0 tokens |
 | Failing cases | reports/scored-run.md | CARD-D09 only (proposed exception, COF-43) |
 
@@ -201,7 +201,7 @@ Boxes are checked only where the artifact exists.
 
 ## Freeze and escalation
 
-- Feature freeze: Tuesday 2026-10-27 17:00. The code for this rehearsal was frozen at 1c1d8ba; the published report now comes from dfd90c1, which differs only in tools/scored_run.py, the tests, .gitignore and the republished artifacts, with no change under src/, so the rehearsal still describes this code.
+- Feature freeze: Tuesday 2026-10-27 17:00. The code for this rehearsal was frozen at 1c1d8ba; the published report now comes from 3a747a5, which differs in tools/scored_run.py, a read-back helper in src/meters.py, the tests, .gitignore, README.md and the republished artifacts, with no change to the contract, retry, review or loader code, so the rehearsal still describes this code's behaviour.
 - Dry run: Thursday 2026-10-29.
 - Defence: Friday 2026-10-30.
 - If a blocker remains at the dry run, the fallback recording and an honest exception list are the deliverable. Do not add features after the freeze.

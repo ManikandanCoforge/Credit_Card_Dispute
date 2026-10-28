@@ -1,7 +1,7 @@
 # Roadmap
 
 - Last updated: 2026-10-27
-- Current state: 2026-10-27, integrated head `b4e988d` on `kenmann01/cof-40-cof-42-wire-retry-and-review-gate`; the COF-48 docs branch is cut from it
+- Current state: 2026-10-27, integrated head `e4b3e65` on `kenmann01/cof-40-cof-42-wire-retry-and-review-gate`; the COF-48 docs branch merges it
 - Related: `docs/LIMITATIONS.md`, `docs/decisions/ADR-001-model-narrative-boundary.md`, `docs/decisions/ADR-002-policy-version-selection.md`, `docs/decisions/ADR-003-hybrid-model-questions.md`
 
 This roadmap starts from what the software does now. It does not describe work that is already complete as future work, and it does not promise a date that has not been agreed.
@@ -17,7 +17,7 @@ At this head the application can:
 - assemble the supported classifications (unauthorized, duplicate_charge, service_not_received), route conflicting and unsupported accounts to a person, and include missing-evidence drafts routed to request_information with one targeted question per absent field, with exact citations, a per-type deterministic deadline, and the template narrative
 - continue after a case-level failure and report the reason for the case that stopped
 - open a human review for each finished draft, create a record only after a person approves the unchanged draft, return the existing record for a duplicate redelivery, and refuse a changed draft
-- attempt all twelve dev cases and publish a scored run with per-case pass/fail, p50 and p95 read from the meter file, and measured cost: 11 of 12 in the published report from `dfd90c1`, with CARD-D09 the only exception (`reports/scored-run.md`)
+- attempt all twelve dev cases and publish a scored run with per-case pass/fail, p50 and p95 read from the meter file, and measured cost: 11 of 12 in the published report from `3a747a5`, with CARD-D09 the only exception (`reports/scored-run.md`), and the report's Reads and retries section carries the per-case tool attempts and retries
 - write one redacted meter line per case and refuse a restricted value in any meter field
 - run lint, mypy, Bandit, and pytest with a 100 percent line-coverage gate in CI
 
@@ -25,7 +25,7 @@ CARD-D09's intake adds a delivery note that the parser joins to the customer's a
 
 ## Near term
 
-Target: complete the core contract and the create path for the supplied case types. This target is delivered on `b4e988d`. The earlier near-term classification and follow-up items are closed by the integrated head: the scored run passes CARD-D05 (ambiguous) and CARD-D06 (unsupported), and CARD-D05 cites both its intake and its follow-up. The create path is closed by COF-42. The one residual, all twelve cases passing, is on the not-done list below.
+Target: complete the core contract and the create path for the supplied case types. This target is delivered on `e4b3e65`. The earlier near-term classification and follow-up items are closed by the integrated head: the scored run passes CARD-D05 (ambiguous) and CARD-D06 (unsupported), and CARD-D05 cites both its intake and its follow-up. The create path is closed by COF-42. The one residual, all twelve cases passing, is on the not-done list below.
 
 Delivered on this head:
 
