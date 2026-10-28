@@ -1,9 +1,9 @@
 # Evaluation report - stress
 
-- Commit: `8a915e0`
+- Commit: `1338540`
 - Data: `evals/fixtures/stress/data`
 - Gold: `evals/fixtures/stress/gold.json`
-- Generated: 2026-10-28T03:49:40+00:00
+- Generated: 2026-10-28T14:05:18+00:00
 - Cases fully passed: **4/16**
 - Format errors: 0
 

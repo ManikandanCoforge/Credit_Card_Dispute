@@ -30,7 +30,7 @@ The scored run also applies `pii.artifact_checks` to `reports/meters.jsonl`, the
 uv run --locked python -m evals --suite evals/suites/dev.json
 ```
 
-Writes `reports/eval-dev.json` and `reports/eval-dev.md`, prints the case count, each metric rate, and every failing check by case. The committed `reports/eval-dev.md` cites `8553bb3` and 12 of 12, with every metric at 100%.
+Writes `reports/eval-dev.json` and `reports/eval-dev.md`, prints the case count, each metric rate, and every failing check by case. The committed `reports/eval-dev.md` cites `1338540` and 12 of 12, with every metric at 100%.
 
 ## Run an injected hidden set
 
@@ -82,7 +82,7 @@ Everything in this folder supports [ADR-003](../docs/decisions/ADR-003-hybrid-mo
 
 ### Latest deterministic results
 
-Offline suite, five primary evals, 2026-10-28 UTC: holdout at commit `f3ee194`, after the COF-39 escalation fixes, and stress at `8a915e0`, whose result those fixes do not change (measured). Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
+Offline suite, five primary evals, 2026-10-28 UTC: holdout at commit `f3ee194`, after the COF-39 escalation fixes, and stress at `1338540`, whose result those fixes do not change (measured). Both runs exit `1` and report no format error; each artifact lists every failing check with its evidence.
 
 | Suite | Cases | Fully passed | Failing cases | Artifact |
 |---|---|---|---|---|
