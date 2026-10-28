@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="900" height="520" fill="#ffffff"/>
+  <rect x="0" y="0" width="900" height="42" fill="#0f2a43"/>
+  <text x="18" y="27" font-size="15" font-weight="700" fill="#ffffff">Card Dispute Copilot · AWS pilot topology</text>
+  <rect x="636" y="10" width="246" height="22" fill="#1f6f4a"/>
+  <text x="759" y="25" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">LIVE · DEPLOYED 28 OCT 2026</text>
+
+  <rect x="170" y="54" width="584" height="392" fill="none" stroke="#9fb0bf" stroke-width="1" stroke-dasharray="6 4"/>
+  <text x="182" y="70" font-size="10" fill="#5b6b7a" letter-spacing="1.4">AWS REGION us-east-1 · VPC 10.42.0.0/16 · 2 PUBLIC SUBNETS</text>
+
+  <text x="8" y="70" font-size="9.5" fill="#5b6b7a" letter-spacing="1.4">CLIENT</text>
+  <rect x="8" y="82" width="150" height="78" fill="#f4f6f8" stroke="#cfd7df"/>
+  <text x="18" y="104" font-size="13" font-weight="700" fill="#16232e">Reviewer</text>
+  <text x="18" y="122" font-size="11" fill="#33475b">browser · curl</text>
+  <text x="18" y="136" font-size="11" fill="#33475b">no account, no auth</text>
+  <text x="18" y="152" font-size="10.5" fill="#b07d2b">POC trade, see section 6</text>
+
+  <rect x="8" y="246" width="150" height="78" fill="#f4f6f8" stroke="#cfd7df"/>
+  <text x="18" y="268" font-size="13" font-weight="700" fill="#16232e">Operator</text>
+  <text x="18" y="286" font-size="11" fill="#33475b">Git Bash · AWS CLI v2</text>
+  <text x="18" y="300" font-size="11" fill="#33475b">session-manager-plugin</text>
+  <text x="18" y="316" font-size="10.5" fill="#b07d2b">approval · audit read</text>
+
+  <rect x="182" y="86" width="152" height="88" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="192" y="106" font-size="13" font-weight="700" fill="#16232e">Application Load</text>
+  <text x="192" y="120" font-size="13" font-weight="700" fill="#16232e">Balancer</text>
+  <text x="192" y="140" font-size="10.5" fill="#33475b">public · HTTP :80</text>
+  <text x="192" y="154" font-size="10.5" fill="#33475b">SG allowlist /32 only</text>
+  <text x="192" y="168" font-size="10.5" fill="#33475b">health GET /health</text>
+
+  <rect x="182" y="248" width="152" height="80" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="192" y="268" font-size="12.5" font-weight="700" fill="#16232e">SSM Session</text>
+  <text x="192" y="282" font-size="12.5" font-weight="700" fill="#16232e">Manager</text>
+  <text x="192" y="301" font-size="10.5" fill="#33475b">audited Exec channel</text>
+  <text x="192" y="315" font-size="10.5" fill="#33475b">the human approval gate</text>
+
+  <rect x="182" y="346" width="206" height="86" fill="#ffffff" stroke="#d7dee5"/>
+  <text x="194" y="364" font-size="9.5" fill="#5b6b7a" letter-spacing="1.2">LEGEND</text>
+  <line x1="194" y1="382" x2="230" y2="382" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M230 382 l-8 -4 v8 z" fill="#16232e"/>
+  <text x="240" y="386" font-size="10.5" fill="#33475b">request path</text>
+  <line x1="194" y1="402" x2="230" y2="402" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M230 402 l-8 -4 v8 z" fill="#9fb0bf"/>
+  <text x="240" y="406" font-size="10.5" fill="#33475b">policy or config binding</text>
+  <rect x="194" y="414" width="16" height="10" fill="#b07d2b"/>
+  <text x="216" y="423" font-size="10.5" fill="#33475b">POC shortcut</text>
+
+  <rect x="356" y="80" width="236" height="300" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="366" y="100" font-size="13" font-weight="700" fill="#16232e">ECS cluster ccd-poc · Fargate</text>
+  <text x="366" y="115" font-size="10" fill="#5b6b7a">desired count 1 · no autoscaling</text>
+
+  <rect x="366" y="126" width="216" height="128" fill="#f4f6f8" stroke="#cfd7df"/>
+  <text x="376" y="142" font-size="9.5" fill="#5b6b7a" letter-spacing="1.2">CONTAINER main</text>
+  <text x="376" y="161" font-size="10.5" fill="#16232e">python deploy/poc/serve.py</text>
+  <text x="376" y="175" font-size="10.5" fill="#16232e">create_server(0.0.0.0:8000)</text>
+  <text x="376" y="192" font-size="10.5" fill="#33475b">0.5 vCPU · 1 GB</text>
+  <text x="376" y="206" font-size="10.5" fill="#33475b">GET /health · /v1/cases</text>
+  <text x="376" y="220" font-size="10.5" fill="#33475b">POST /v1/reviews · /v1/records</text>
+  <text x="376" y="236" font-size="10.5" fill="#b07d2b">KYC writes refused in code</text>
+
+  <ellipse cx="474" cy="276" rx="78" ry="12" fill="#eef2f5" stroke="#9fb0bf"/>
+  <path d="M396 276 v40 a78 12 0 0 0 156 0 v-40" fill="#eef2f5" stroke="#9fb0bf"/>
+  <text x="474" y="292" font-size="11.5" font-weight="700" fill="#16232e" text-anchor="middle">SQLite state</text>
+  <text x="474" y="304" font-size="10" fill="#5b6b7a" text-anchor="middle">/app/.state/mock.sqlite</text>
+  <text x="474" y="316" font-size="10" fill="#5b6b7a" text-anchor="middle">single writer · 5 tables</text>
+
+  <text x="366" y="340" font-size="10.5" fill="#33475b">Approval runs in the same process tree.</text>
+  <text x="366" y="353" font-size="10.5" fill="#33475b">No HTTP admin route reaches a model.</text>
+  <text x="366" y="366" font-size="10.5" fill="#b07d2b">Ephemeral disk: state dies with the task.</text>
+
+  <rect x="636" y="86" width="250" height="64" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="648" y="108" font-size="12.5" font-weight="700" fill="#16232e">ECR</text>
+  <text x="648" y="126" font-size="10.5" fill="#33475b">ccd-poc-api:poc · 344 MB</text>
+
+  <rect x="636" y="164" width="250" height="64" fill="#ffffff" stroke="#9fb0bf" stroke-dasharray="4 3"/>
+  <text x="648" y="186" font-size="12.5" font-weight="700" fill="#16232e">Execution role</text>
+  <text x="648" y="204" font-size="10.5" fill="#33475b">ECR pull + CloudWatch Logs</text>
+
+  <rect x="636" y="242" width="250" height="64" fill="#ffffff" stroke="#9fb0bf" stroke-dasharray="4 3"/>
+  <text x="648" y="264" font-size="12.5" font-weight="700" fill="#16232e">Task role</text>
+  <text x="648" y="282" font-size="10.5" fill="#33475b">ssmmessages · 4 channel actions</text>
+
+  <rect x="636" y="320" width="250" height="64" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="648" y="342" font-size="12.5" font-weight="700" fill="#16232e">CloudWatch Logs</text>
+  <text x="648" y="360" font-size="10.5" fill="#33475b">/ecs/ccd-poc-api · 7-day retention</text>
+
+  <line x1="158" y1="121" x2="180" y2="121" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M182 121 l-8 -4 v8 z" fill="#16232e"/>
+  <text x="146" y="113" font-size="9.5" fill="#5b6b7a" text-anchor="end">HTTP</text>
+  <line x1="334" y1="130" x2="354" y2="130" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M356 130 l-8 -4 v8 z" fill="#16232e"/>
+  <line x1="158" y1="285" x2="180" y2="285" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M182 285 l-8 -4 v8 z" fill="#16232e"/>
+  <line x1="334" y1="288" x2="354" y2="288" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M356 288 l-8 -4 v8 z" fill="#16232e"/>
+  <line x1="636" y1="118" x2="586" y2="150" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M582 153 l9 -1 -4 -8 z" fill="#9fb0bf"/>
+  <text x="600" y="112" font-size="9.5" fill="#5b6b7a">pull</text>
+  <line x1="636" y1="196" x2="602" y2="196" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M598 196 l9 -4 v8 z" fill="#9fb0bf"/>
+  <line x1="636" y1="274" x2="602" y2="274" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M598 274 l9 -4 v8 z" fill="#9fb0bf"/>
+  <line x1="588" y1="352" x2="634" y2="352" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M636 352 l-9 -4 v8 z" fill="#9fb0bf"/>
+
+  <rect x="8" y="458" width="884" height="54" fill="#f4f6f8" stroke="#d7dee5"/>
+  <text x="20" y="478" font-size="10.5" fill="#33475b">Deliberately not created: NAT gateway ($32.85/month) · RDS · domain and ACM certificate · WAF · S3.</text>
+  <text x="20" y="496" font-size="10.5" fill="#33475b">About $0.45 per 8-hour demo day · $1.35 a day if forgotten · exit is ./deploy/poc/teardown.sh --yes, about 3 minutes.</text>
+</svg>

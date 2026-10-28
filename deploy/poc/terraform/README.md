@@ -5,10 +5,16 @@ one container, one load balancer, one ECS service, two IAM roles, two security
 groups, one log group, one image repository. Nothing else. No NAT gateway, no
 database, no bucket, no domain, because the pilot does not need them.
 
-Validated with Terraform 1.17.0 and AWS provider 6.70.0 against the account's
-default VPC. It has **not been applied**: no credentials were used to build it,
-so the first `terraform plan` you run is the first real check of the account
-assumptions (default VPC present, Fargate quota, IAM permissions).
+Validated with Terraform 1.17.0 and AWS provider 6.70.0. It was applied on
+28 October 2026 in `us-east-1`: 26 resources in a dedicated VPC, with the image
+built from commit `c7ea9b2`. On a fresh account, run `./phases.sh preflight` and
+read the plan before applying; the plan is still the first real check of the
+account's quotas and IAM permissions.
+
+If you are the account owner and want the account-side steps, the budget, the
+quota checks, the credentials and the teardown proof, follow
+[AWS-ACCOUNT-SETUP.md](AWS-ACCOUNT-SETUP.md) first. It is written for you, not
+for the deployer.
 
 ## What it creates
 
@@ -17,11 +23,12 @@ assumptions (default VPC present, Fargate quota, IAM permissions).
 | `aws_ecr_repository` | `<name>-api` | Holds the image, scan on push, expiry for untagged layers |
 | `aws_cloudwatch_log_group` | `/ecs/<name>-api` | API logs and ECS Exec session logs, 7 day retention |
 | `aws_iam_role` execution | `<name>-exec` | ECR pull and CloudWatch Logs |
-| `aws_iam_role` task | `<name>-task` | The four `ssmmessages` actions ECS Exec needs, nothing else |
+| `aws_iam_role` task | `<name>-task` | The four `ssmmessages` actions ECS Exec needs, plus writes to the Exec session log group |
 | `aws_security_group` x2 | `<name>-alb-sg`, `<name>-task-sg` | Port 80 from your address, port 8000 from the ALB only |
 | `aws_lb` + target group + listener | `<name>-alb`, `<name>-tg` | Public HTTP entry point, health check on `/health` |
 | `aws_ecs_cluster` + service + task definition | `<name>`, `<name>-api` | One Fargate task, circuit breaker on, ECS Exec on |
-| `terraform_data.exec_session_logging` | n/a | One `aws ecs update-service` call that turns on session logging |
+| Cluster Exec logging | n/a | One `aws ecs update-cluster` call in `phases.sh` turns on session logging after the service applies. Not a Terraform resource. |
+| `aws_vpc` + 2 public subnets + IGW, optional | `<name>-vpc`, `<name>-public-1`, `<name>-public-2` | Only with `create_vpc = true`. Keeps the pilot out of the account's shared default VPC |
 
 Names match `deploy.sh` exactly, so `../demo.sh` and `../teardown.sh` work
 unchanged against a Terraform-created stack.
@@ -34,8 +41,38 @@ unchanged against a Terraform-created stack.
   provisioning step shells out to the CLI.
 - Docker with a running daemon.
 - On Windows, if provider downloads fail with "Access is denied" in
-  `%LOCALAPPDATA%\Temp`, point Terraform's temp directory at the workspace:
-  `export TMPDIR='D:\path\to\workspace\.local\tmp'`.
+  `%LOCALAPPDATA%\Temp`, point Terraform's temp directory at the workspace. Use
+  a native path with forward slashes, because an MSYS path such as `/d/...`
+  makes Terraform write to `\terraform-provider...`:
+
+  ```bash
+  export TMPDIR="$(cygpath -m "$PWD/.local/tmp")"
+  export TEMP="$TMPDIR" TMP="$TMPDIR"
+  ```
+
+  `phases.sh` does this for you.
+
+## Isolating the pilot from a shared account
+
+Nothing here creates an account or a group. By default the stack reads the
+account's **default VPC** and puts its resources in those shared subnets. If the
+key belongs to a work account that other people also use, that means:
+
+- the pilot's load balancer and task sit in subnets someone else may also use,
+- a new IAM role appears in an account-wide namespace,
+- the bill shows in that account, separated only by tags,
+- and if someone deletes the default VPC, the demo goes with it.
+
+Three ways to make that cleaner, in increasing order of isolation:
+
+| Route | What to do | Isolation | Effort |
+| --- | --- | --- | --- |
+| Dedicated VPC in the same account | `./phases.sh all` with `TF_VAR_create_vpc=true` | Own network, own CIDR (`10.42.0.0/16`), own route table | One variable |
+| Dedicated account | Create a member account in Organizations, then use its credentials | Own bill, own quotas, own IAM | Needs org permission and a fresh email |
+| Shared account as built | nothing | Names and tags only | zero |
+
+A dedicated VPC adds no billable resource. It does not isolate IAM, quotas or
+billing, only networking.
 
 ## Quick start
 
@@ -65,6 +102,64 @@ terraform apply -target=aws_ecr_repository.api
 terraform apply
 terraform output -raw api_base_url
 ```
+
+## Phased rollout
+
+`phases.sh` is the same stack split into steps you can check one at a time.
+Every subcommand is idempotent, every one reads credentials from `.env` at the
+repository root, and none of them echo a key.
+
+```bash
+./phases.sh preflight   # tools, identity, account alias. Creates nothing.
+./phases.sh registry    # ECR repository
+./phases.sh core        # log group, IAM roles, security groups
+./phases.sh image       # docker build and push, 342 MB
+./phases.sh edge        # load balancer, target group, listener
+./phases.sh service     # cluster, task definition, service, exec logging
+./phases.sh verify      # /health, target health, exec agent status
+./phases.sh status      # plan only, reports pending changes
+./phases.sh destroy     # stops billing
+./phases.sh all         # all of the above, in order
+```
+
+Why the order: the repository must exist before the image, and the image must
+exist before the service starts, otherwise the task fails with
+`CannotPullContainerError` and the circuit breaker rolls the deployment back.
+`edge` comes before `service` because the service registers itself into a target
+group that has to exist first.
+
+`preflight` prints the account id and alias from `aws sts get-caller-identity`.
+Read them before `registry` and stop if that is not the sandbox account.
+
+### Credentials, and where they come from
+
+`.env` at the repository root, copied from `.env.example` and filled in. It is
+git-ignored; the env-files CI job fails the build if a `.env` is ever tracked.
+Terraform and the AWS CLI read `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+`AWS_SESSION_TOKEN` (optional) and `AWS_REGION` from the environment; `phases.sh`
+exports them for the duration of one command.
+
+Either fill those lines in, or leave them blank and run `aws configure` once so
+the keys live in `%USERPROFILE%\.aws\credentials`. `phases.sh` checks for
+credentials in that order: `.env` first, then whatever profile the CLI already
+has, and only fails when both are missing. One caveat for blank `.env` keys:
+the shell that runs `phases.sh` must be able to see the profile, which is true
+for your own Git Bash but not for a process started with a different
+`HOME`/`USERPROFILE`.
+
+### Toolchain without admin rights
+
+This checkout keeps its tools under `.local/tools`, so nothing has to be
+installed system-wide:
+
+| Tool | Path | Notes |
+| --- | --- | --- |
+| Terraform | `.local/tools/terraform.exe` | 1.17.0, unzipped |
+| AWS CLI v2 | `.local/tools/awscli/Amazon/AWSCLIV2/aws.exe` | administrative MSI extract, no admin needed |
+| Session Manager plugin | `.local/tools/bin/session-manager-plugin.exe` | needed for ECS Exec, which the approval beat uses |
+
+`phases.sh` puts all three on `PATH` for its own commands. Outside it, prefix
+commands with `export PATH="$PWD/../../../.local/tools/awscli/Amazon/AWSCLIV2:$PATH"`.
 
 First apply takes about 10 minutes including the provider download, the image
 build and the service stabilising. The second apply after a reboot is faster.
@@ -159,11 +254,13 @@ terraform {
 
 1. **Phased apply.** Terraform cannot build an image, so the repository is
    created first and the service after the push.
-2. **ECS Exec session logging is a `terraform_data` call.** AWS provider 6.70
-   does not expose `execute_command_configuration` on `aws_ecs_service`. The
-   service attribute `enable_execute_command` is still Terraform-managed; only
-   the `logging = OVERRIDE` half needs the CLI. Set `exec_session_logging =
-   false` if you have no CLI and do not care about session logs.
+2. **ECS Exec session logging is a cluster-level CLI call in `phases.sh`.**
+   AWS provider 6.70 does not expose `execute_command_configuration` on
+   `aws_ecs_cluster` or `aws_ecs_service`. The service attribute
+   `enable_execute_command` is Terraform-managed; the `logging = OVERRIDE`
+   half is one `aws ecs update-cluster` call after the service applies. Set
+   `TF_VAR_exec_session_logging=false` if you have no CLI and do not care about
+   session logs.
 3. **The allowlist defaults to your own address.** When `allowed_cidrs` is null,
    `checkip.amazonaws.com` is called once at plan time and the /32 is allowed.
    `deploy.sh` defaults to `0.0.0.0/0`. Pass `allowed_cidrs = ["0.0.0.0/0"]` to
@@ -178,8 +275,9 @@ terraform {
 | `CannotPullContainerError` | image not pushed, wrong tag, or wrong architecture | `./push-image.sh`, check `image_tag` and `cpu_architecture` against the build platform |
 | Target stays unhealthy | container listening on loopback, or wrong port | the image runs `deploy/poc/serve.py`, which binds 0.0.0.0; check `container_port` |
 | `ExecuteCommandAgent` not RUNNING | task role missing `ssmmessages`, or no init process | the stack sets both; check you did not attach a different role |
-| Apply fails at `exec_session_logging` | aws CLI not installed | `terraform apply -var='exec_session_logging=false'` |
-| `The load balancer needs at least two subnets` | no default VPC in the region | pass `vpc_id` and `subnet_ids`, or pick another region |
+| `phase 5b` warns about Exec session logging | aws CLI missing, or `ecs:UpdateCluster` denied | install the CLI, or set `TF_VAR_exec_session_logging=false`; Exec still works without session logs |
+| `The load balancer needs at least two subnets` | no default VPC in the region | set `create_vpc = true`, or pass `vpc_id` and `subnet_ids` |
+| `ExpiredToken` or `RequestExpired` halfway through | temporary credentials from the console last one hour | refresh `.env`, re-run the same phase; every phase is idempotent. Use a long-lived IAM user key if the demo must outlive the hour |
 | `task_memory ... is not valid for task_cpu` | invalid Fargate pair | the error lists the valid sizes for that CPU |
 | Tasks pending, no capacity | Fargate vCPU quota, code `L-3032A538` | `aws service-quotas get-service-quota --service-code ecs --quota-code L-3032A538` |
 

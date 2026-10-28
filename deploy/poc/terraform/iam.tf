@@ -30,6 +30,10 @@ resource "aws_iam_role" "task" {
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume.json
 }
 
+# Session logging needs two things that are easy to miss: a cluster-level
+# executeCommandConfiguration (see phases.sh phase 5b) and permission on the task
+# role to write to that log group. Without the Logs permission the session runs
+# fine and nothing is recorded, which looks like success.
 data "aws_iam_policy_document" "exec_channel" {
   statement {
     sid = "EcsExecChannel"
@@ -40,6 +44,16 @@ data "aws_iam_policy_document" "exec_channel" {
       "ssmmessages:OpenDataChannel",
     ]
     resources = ["*"]
+  }
+
+  statement {
+    sid = "EcsExecSessionLogs"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogStreams",
+    ]
+    resources = ["${aws_cloudwatch_log_group.api.arn}:*"]
   }
 }
 

@@ -58,6 +58,16 @@ output "cpu_architecture" {
   value       = var.cpu_architecture
 }
 
+output "vpc_id" {
+  description = "VPC the pilot runs in: created here, passed in, or the account default."
+  value       = local.vpc_id
+}
+
+output "subnet_ids" {
+  description = "Subnets the load balancer and task use."
+  value       = local.subnet_ids
+}
+
 output "container_port" {
   description = "Port the container listens on."
   value       = var.container_port
