@@ -1,0 +1,31 @@
+# Keep the build context small and free of local state, credentials and tools.
+# The image needs only: pyproject.toml, models.toml, README.md, src, tools, evals,
+# feedback, data and deploy/poc.
+.git
+.github
+.devcontainer
+.worktrees
+.local
+.venv
+.state
+.coverage
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.pack
+docs
+tests
+reports
+submissions
+examples
+AGENTS.md
+**/__pycache__
+**/*.pyc
+# Terraform state, plans and the provider cache (the provider alone is ~800 MB).
+**/.terraform
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
+**/*.tfvars
+*.pem
+.env

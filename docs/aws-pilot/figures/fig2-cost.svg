@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 368" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="900" height="368" fill="#ffffff"/>
+  <rect x="0" y="0" width="900" height="42" fill="#0f2a43"/>
+  <text x="18" y="27" font-size="15" font-weight="700" fill="#ffffff">Cost model · us-east-1 price list · 28 October 2026</text>
+  <rect x="630" y="10" width="252" height="22" fill="#1f6f4a"/>
+  <text x="756" y="25" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">ACTUAL · ABOUT $0.04 SPENT</text>
+
+  <rect x="8" y="56" width="432" height="244" fill="#ffffff" stroke="#d7dee5"/>
+  <text x="22" y="80" font-size="13" font-weight="700" fill="#16232e">Where the $1.35 a day goes</text>
+  <text x="22" y="96" font-size="10.5" fill="#5b6b7a">0.5 vCPU / 1 GB task, one ALB, one public IPv4</text>
+
+  <rect x="22" y="110" width="181" height="26" fill="#0f2a43"/>
+  <rect x="203" y="110" width="164" height="26" fill="#33556f"/>
+  <rect x="367" y="110" width="37" height="26" fill="#b07d2b"/>
+  <rect x="404" y="110" width="29" height="26" fill="#c9a35f"/>
+  <rect x="433" y="110" width="7" height="26" fill="#b9c4cf"/>
+  <text x="30" y="127" font-size="10.5" fill="#ffffff">Fargate $0.59</text>
+  <text x="211" y="127" font-size="10.5" fill="#ffffff">ALB $0.54</text>
+
+  <rect x="22" y="154" width="11" height="11" fill="#0f2a43"/>
+  <text x="40" y="164" font-size="10.5" fill="#33475b">Fargate compute and memory</text>
+  <text x="432" y="164" font-size="10.5" fill="#16232e" text-anchor="end">$0.593 · 44%</text>
+  <rect x="22" y="176" width="11" height="11" fill="#33556f"/>
+  <text x="40" y="186" font-size="10.5" fill="#33475b">Application Load Balancer hours</text>
+  <text x="432" y="186" font-size="10.5" fill="#16232e" text-anchor="end">$0.540 · 40%</text>
+  <rect x="22" y="198" width="11" height="11" fill="#b07d2b"/>
+  <text x="40" y="208" font-size="10.5" fill="#33475b">Public IPv4 on the task</text>
+  <text x="432" y="208" font-size="10.5" fill="#16232e" text-anchor="end">$0.120 · 9%</text>
+  <rect x="22" y="220" width="11" height="11" fill="#c9a35f"/>
+  <text x="40" y="230" font-size="10.5" fill="#33475b">ALB capacity units, load dependent</text>
+  <text x="432" y="230" font-size="10.5" fill="#16232e" text-anchor="end">$0.096 · 7%</text>
+  <rect x="22" y="242" width="11" height="11" fill="#b9c4cf"/>
+  <text x="40" y="252" font-size="10.5" fill="#33475b">ECR storage, CloudWatch Logs</text>
+  <text x="432" y="252" font-size="10.5" fill="#16232e" text-anchor="end">$0.005 · under 1%</text>
+  <line x1="22" y1="266" x2="432" y2="266" stroke="#d7dee5"/>
+  <text x="22" y="282" font-size="9.5" fill="#5b6b7a">Fargate, ALB hours, ECR and Logs are exact from the Price List API, read 27 October 2026.</text>
+  <text x="22" y="294" font-size="9.5" fill="#5b6b7a">IPv4 and capacity units are published but load dependent.</text>
+
+  <rect x="460" y="56" width="432" height="244" fill="#ffffff" stroke="#d7dee5"/>
+  <text x="474" y="80" font-size="13" font-weight="700" fill="#16232e">Cost of forgetting to tear down</text>
+  <text x="474" y="96" font-size="10.5" fill="#5b6b7a">Same single-task footprint, linear scale</text>
+
+  <text x="474" y="128" font-size="10.5" fill="#33475b">1 hour</text>
+  <rect x="596" y="119" width="3" height="13" fill="#0f2a43"/>
+  <text x="606" y="128" font-size="10.5" fill="#16232e">$0.06</text>
+  <text x="474" y="158" font-size="10.5" fill="#33475b">8 hours, demo day</text>
+  <rect x="596" y="149" width="4" height="13" fill="#0f2a43"/>
+  <text x="608" y="158" font-size="10.5" fill="#16232e">$0.45</text>
+  <text x="474" y="188" font-size="10.5" fill="#33475b">1 day</text>
+  <rect x="596" y="179" width="9" height="13" fill="#33556f"/>
+  <text x="612" y="188" font-size="10.5" fill="#16232e">$1.35</text>
+  <text x="474" y="218" font-size="10.5" fill="#33475b">1 week</text>
+  <rect x="596" y="209" width="56" height="13" fill="#33556f"/>
+  <text x="660" y="218" font-size="10.5" fill="#16232e">$9.45</text>
+  <text x="474" y="248" font-size="10.5" fill="#33475b">1 month, forgotten</text>
+  <rect x="596" y="239" width="240" height="13" fill="#b07d2b"/>
+  <text x="870" y="248" font-size="10.5" font-weight="700" fill="#16232e" text-anchor="end">$41</text>
+
+  <line x1="474" y1="276" x2="878" y2="276" stroke="#d7dee5"/>
+  <text x="474" y="292" font-size="10.5" fill="#33475b">Exit is one command: ./deploy/poc/teardown.sh --yes, about 3 minutes.</text>
+
+  <rect x="8" y="312" width="884" height="40" fill="#f4f6f8" stroke="#d7dee5"/>
+  <text x="22" y="330" font-size="10.5" fill="#16232e">Total run-rate: $0.056 per hour · $1.35 per day · a demo day costs less than a coffee.</text>
+  <text x="22" y="344" font-size="10.5" fill="#33475b">Production target at 10k cases a month: $184 to $213 per month, a different estate the pilot does not build.</text>
+</svg>

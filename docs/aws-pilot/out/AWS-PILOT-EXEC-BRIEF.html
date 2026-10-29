@@ -1,0 +1,424 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>AWS Pilot Deployment: Executive Brief</title><style>@page { size: A4; margin: 24mm 18mm 20mm 18mm; }
+:root { --ink:#16232e; --muted:#5b6b7a; --rule:#d7dee5; --navy:#0f2a43; --accent:#b07d2b; --wash:#f4f6f8; }
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin:0; font-family:"Segoe UI", Arial, sans-serif; font-size:9.6pt; line-height:1.45; color:var(--ink); }
+.cover { height: 246mm; display:flex; flex-direction:column; }
+.cover .band { border-top:3pt solid var(--navy); border-bottom:1pt solid var(--rule); padding:10mm 0 7mm; }
+.cover .kicker { font-size:7.5pt; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.cover .title { font-size:27pt; line-height:1.1; margin:18mm 0 4mm; color:var(--navy); font-weight:700; letter-spacing:-.01em; }
+.cover .subtitle { font-size:11.5pt; color:#31465a; margin:0 0 10mm; max-width:150mm; }
+.cover .meta { margin-top:auto; display:grid; grid-template-columns:1fr 1fr; gap:4mm 10mm; border-top:1pt solid var(--rule); padding-top:6mm; font-size:8.4pt; }
+.cover .meta dt { color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-size:6.8pt; margin-bottom:1mm; }
+.cover .meta dd { margin:0; font-weight:600; }
+.cover .stamp { margin-top:8mm; border:1pt solid var(--rule); background:var(--wash); padding:4mm 5mm; font-size:8.2pt; color:#31465a; }
+.cover .footer { margin-top:6mm; font-size:7.6pt; color:var(--muted); }
+h1, h2, h3, h4 { color:var(--navy); break-after:avoid; page-break-after:avoid; }
+h1 { font-size:15.4pt; margin:11mm 0 4mm; padding-bottom:2mm; border-bottom:1.5pt solid var(--navy); break-after:avoid; page-break-after:avoid; }
+h1:first-of-type { margin-top:0; }
+h2 { font-size:11.6pt; margin:6mm 0 2mm; }
+h3 { font-size:10.2pt; margin:5mm 0 1.5mm; }
+h4 { font-size:9.6pt; margin:4mm 0 1mm; }
+p { margin:0 0 2.6mm; text-align:justify; }
+ul, ol { margin:0 0 3mm; padding-left:6mm; }
+li { margin:0 0 1.2mm; }
+table { width:100%; border-collapse:collapse; margin:2mm 0 4mm; font-size:8.2pt; line-height:1.32; }
+.tbl { break-inside:avoid; page-break-inside:avoid; }
+thead { display:table-header-group; }
+th { background:var(--navy); color:#fff; text-align:left; font-weight:600; padding:1.8mm 2mm; border:0.5pt solid var(--navy); }
+td { padding:1.5mm 2mm; border:0.5pt solid var(--rule); vertical-align:top; }
+tbody tr:nth-child(even) td { background:#fafbfc; }
+tr { break-inside:avoid; page-break-inside:avoid; }
+code { font-family:Consolas, "Cascadia Mono", monospace; font-size:8.4pt; background:var(--wash); padding:0.2mm 1mm; border-radius:1mm; }
+pre { background:#0f2a43; color:#e8eef4; padding:3mm 3.5mm; border-radius:1mm; font-size:8pt; line-height:1.35; break-inside:avoid; white-space:pre-wrap; }
+pre code { background:none; color:inherit; padding:0; font-size:8pt; }
+blockquote { margin:2mm 0 3mm; padding:2.5mm 4mm; border-left:2.5pt solid var(--accent); background:#fbf7ee; }
+hr { border:0; border-top:0.75pt solid var(--rule); margin:5mm 0; }
+a { color:#1f4e79; text-decoration:none; }
+.pb { break-after:page; page-break-after:always; height:0; }
+.toc { break-after:page; page-break-after:always; }
+.toc h2 { border-bottom:1pt solid var(--rule); padding-bottom:2mm; margin-top:0; font-size:11.6pt; }
+.toc ol { list-style:none; padding:0; margin:0; font-size:8.7pt; }
+.toc li { display:flex; align-items:baseline; gap:2mm; border-bottom:0.4pt dotted var(--rule); padding:0.55mm 0; }
+.toc li.lvl2 { padding-left:6mm; font-size:7.9pt; line-height:1.2; color:#33475b; border-bottom:0; padding-top:0.05mm; padding-bottom:0.05mm; }
+.toc .t { flex:0 0 auto; }
+.toc .leader { flex:1 1 auto; border-bottom:0.4pt dotted #b9c4cf; }
+.toc .n { flex:0 0 auto; color:var(--muted); }
+.toc-plain .leader, .toc-plain .n { display:none; }
+.note { border:0.75pt solid var(--rule); background:var(--wash); padding:3mm 4mm; margin:3mm 0; font-size:8.6pt; }
+.warn { border-left:2.5pt solid var(--accent); background:#fbf7ee; padding:3mm 4mm; margin:3mm 0; }
+.small { font-size:8.2pt; color:var(--muted); }
+.tag { display:inline-block; border:0.6pt solid var(--rule); border-radius:1mm; padding:0.2mm 1.4mm; font-size:7.4pt; color:var(--muted); margin-right:1mm; }
+.hmark { font-size:1px; color:#ffffff; }
+figure.fig { margin:4mm 0 5mm; break-inside:avoid; page-break-inside:avoid; border:0.6pt solid var(--rule); background:#fff; padding:3mm 3mm 2mm; }
+figure.fig svg.figsvg { display:block; width:100%; height:auto; }
+figure.fig figcaption { font-size:8pt; color:var(--muted); margin-top:2.4mm; padding-top:1.6mm; border-top:0.4pt solid var(--rule); }
+.figerr { color:#9b1c1c; font-size:8pt; border:0.6pt dashed #9b1c1c; padding:2mm; }
+</style></head><body><section class="cover"><div class="band"><div class="kicker">Coforge FDE Delivery · Associate FDE capstone, Lumen Bank Dispute Copilot</div></div><div class="title">AWS Pilot Deployment: Executive Brief</div><p class="subtitle">Card Dispute Intake and Evidence Copilot. One container, one load balancer, one audited human gate: architecture, controls, cost, and the record of the 28 October deployment.</p><dl class="meta"><div><dt>Document ID</dt><dd>CFG-FDE-AWS-001</dd></div><div><dt>Version</dt><dd>2.0</dd></div><div><dt>Status</dt><dd>Issued, pilot deployed in us-east-1</dd></div><div><dt>Date</dt><dd>28 October 2026</dd></div><div><dt>Owner</dt><dd>Coforge FDE Pod</dd></div><div><dt>Audience</dt><dd>Coforge delivery leadership; Lumen Bank platform, operations and model risk reviewers</dd></div><div><dt>Classification</dt><dd>Internal</dd></div></dl><div class="stamp">Fictional training material. All institutions, people, policies, records and currency in this document are fictional. The pilot described here was deployed on 28 October 2026 to AWS account 104005345381 in us-east-1 and exercised end to end in the cloud. Every figure marked cloud is a measurement from that deployment, not a forecast.</div><div class="footer">Internal · Fictional training data</div></section><section class="toc"><h2>Contents</h2><ol><li class="lvl1"><span class="t">1 Executive summary</span><span class="leader"></span><span class="n">3</span></li><li class="lvl2"><span class="t">1.1 What the pilot is</span><span class="leader"></span><span class="n">3</span></li><li class="lvl2"><span class="t">1.2 What the move to AWS changes</span><span class="leader"></span><span class="n">4</span></li><li class="lvl2"><span class="t">1.3 The ask</span><span class="leader"></span><span class="n">4</span></li><li class="lvl1"><span class="t">2 Why this, why now</span><span class="leader"></span><span class="n">4</span></li><li class="lvl1"><span class="t">3 What is being deployed</span><span class="leader"></span><span class="n">5</span></li><li class="lvl2"><span class="t">3.1 The four surfaces</span><span class="leader"></span><span class="n">5</span></li><li class="lvl2"><span class="t">3.2 What is deliberately absent, and why</span><span class="leader"></span><span class="n">5</span></li><li class="lvl1"><span class="t">4 Architecture as deployed</span><span class="leader"></span><span class="n">5</span></li><li class="lvl2"><span class="t">4.1 Request flow</span><span class="leader"></span><span class="n">6</span></li><li class="lvl2"><span class="t">4.2 Component choices and the constraint that forced each</span><span class="leader"></span><span class="n">7</span></li><li class="lvl2"><span class="t">4.3 Options considered and rejected</span><span class="leader"></span><span class="n">7</span></li><li class="lvl2"><span class="t">4.4 Status, stated plainly</span><span class="leader"></span><span class="n">7</span></li><li class="lvl1"><span class="t">5 Controls, and what a bank reviewer will still reject</span><span class="leader"></span><span class="n">8</span></li><li class="lvl2"><span class="t">5.1 What is true of this deployment</span><span class="leader"></span><span class="n">8</span></li><li class="lvl2"><span class="t">5.2 What a reviewer would still object to, with the answer for each</span><span class="leader"></span><span class="n">8</span></li><li class="lvl2"><span class="t">5.3 What this document is not</span><span class="leader"></span><span class="n">9</span></li><li class="lvl1"><span class="t">6 Cost</span><span class="leader"></span><span class="n">9</span></li><li class="lvl2"><span class="t">6.1 Price basis</span><span class="leader"></span><span class="n">9</span></li><li class="lvl2"><span class="t">6.2 Scenarios</span><span class="leader"></span><span class="n">10</span></li><li class="lvl2"><span class="t">6.3 Guardrails</span><span class="leader"></span><span class="n">10</span></li><li class="lvl2"><span class="t">6.4 What is deliberately not built, with the monthly cost avoided</span><span class="leader"></span><span class="n">10</span></li><li class="lvl1"><span class="t">7 Delivery plan</span><span class="leader"></span><span class="n">11</span></li><li class="lvl2"><span class="t">7.1 Effort, by stage</span><span class="leader"></span><span class="n">11</span></li><li class="lvl2"><span class="t">7.2 Prerequisites</span><span class="leader"></span><span class="n">11</span></li><li class="lvl2"><span class="t">7.3 Verification before anyone watches</span><span class="leader"></span><span class="n">11</span></li><li class="lvl2"><span class="t">7.4 Who does what</span><span class="leader"></span><span class="n">12</span></li><li class="lvl1"><span class="t">8 Operating the pilot</span><span class="leader"></span><span class="n">12</span></li><li class="lvl2"><span class="t">8.1 Seven beats, each one a claim on screen</span><span class="leader"></span><span class="n">12</span></li><li class="lvl2"><span class="t">8.2 Fallback ladder</span><span class="leader"></span><span class="n">13</span></li><li class="lvl2"><span class="t">8.3 Monitoring during the window</span><span class="leader"></span><span class="n">13</span></li><li class="lvl2"><span class="t">8.4 Failure modes and the fix</span><span class="leader"></span><span class="n">13</span></li><li class="lvl2"><span class="t">8.5 Teardown, in order, with confirmation</span><span class="leader"></span><span class="n">13</span></li><li class="lvl1"><span class="t">9 Risk register</span><span class="leader"></span><span class="n">14</span></li><li class="lvl2"><span class="t">9.1 The two risks that actually decide whether this works</span><span class="leader"></span><span class="n">14</span></li><li class="lvl1"><span class="t">10 From pilot to production</span><span class="leader"></span><span class="n">15</span></li><li class="lvl2"><span class="t">10.1 The three shortcuts, each with a named replacement</span><span class="leader"></span><span class="n">15</span></li><li class="lvl2"><span class="t">10.2 Phases and entry criteria</span><span class="leader"></span><span class="n">15</span></li><li class="lvl2"><span class="t">10.3 If the model is ever turned on, it is Bedrock</span><span class="leader"></span><span class="n">15</span></li><li class="lvl1"><span class="t">11 Decisions and status</span><span class="leader"></span><span class="n">16</span></li><li class="lvl1"><span class="t">12 Assumptions and limits</span><span class="leader"></span><span class="n">16</span></li><li class="lvl1"><span class="t">Appendix A, verification evidence, 28 October 2026</span><span class="leader"></span><span class="n">17</span></li><li class="lvl1"><span class="t">Appendix B, command reference</span><span class="leader"></span><span class="n">18</span></li><li class="lvl1"><span class="t">Appendix C, source register</span><span class="leader"></span><span class="n">19</span></li></ol></section><h1 id="1-executive-summary" class="h1"><span class="hmark">[[H0]]</span>1 Executive summary</h1>
+<p><strong>In one line:</strong> the copilot left the laptop. On 28 October 2026 it was deployed to AWS as one container behind one load balancer, answered on a public amazonaws.com hostname, scored 12 of 12 in the cloud, and ran all seven demo beats against real cloud state, including a human approval issued through ECS Exec and a duplicate write refused with 409. It costs about $0.45 for a demo day, stands up in about 95 minutes, and tears down in 3. The four decisions in section 11 now concern what happens after the pilot window.</p>
+<h2 id="1-1-what-the-pilot-is" class="h2"><span class="hmark">[[H1]]</span>1.1 What the pilot is</h2>
+<p>The card dispute copilot reads a bank complaint, collects the linked records, and prepares one cited working record for a human operator. It is a Python service with a contract engine, an evaluation suite, a human review gate, and an audit trail. It has no user interface, no live model calls in the default path, and no database server.</p>
+<p>The pilot takes the same container image and puts it behind a public Application Load Balancer on ECS Fargate in us-east-1. One task, one state file, two least-privilege IAM roles, logs in CloudWatch, and an operator approval channel that runs inside the cloud task rather than on a laptop.</p>
+<div class="tbl"><table><thead><tr><th class="left">Measure</th><th class="left">Value</th><th class="left">Basis</th></tr></thead><tbody><tr><td class="left">Dev cases passed, cloud</td><td class="left">12 of 12</td><td class="left">scored run executed inside the Fargate task through ECS Exec, 28 Oct 2026</td></tr><tr><td class="left">Draft latency, p50 and p95, cloud</td><td class="left">17 ms and 3.96 s</td><td class="left">same run, nearest-rank over 12 cases. The tail is retry backoff on CARD-D07 and CARD-D10</td></tr><tr><td class="left">Cost per case</td><td class="left">$0.00</td><td class="left">0 model calls, 0 tokens in the meter file</td></tr><tr><td class="left">Source under test</td><td class="left">5,472 lines across 21 modules</td><td class="left">src/ count at commit c7ea9b2</td></tr><tr><td class="left">Automated checks</td><td class="left">5 CI jobs: lint, bandit, pytest, pytest-windows, env-files</td><td class="left">.github/workflows/checks.yml, 100 percent coverage gate</td></tr><tr><td class="left">Container image</td><td class="left">342 MB, deployed</td><td class="left">built from deploy/poc/Dockerfile at commit c7ea9b2, pushed to ECR as ccd-poc-api:poc</td></tr><tr><td class="left">Infrastructure as code</td><td class="left">16 Terraform files, applied</td><td class="left">26 resources in account 104005345381, terraform 1.17.0 with AWS provider 6.70</td></tr><tr><td class="left">Live endpoint</td><td class="left">http://ccd-poc-alb-1873782563.us-east-1.elb.amazonaws.com</td><td class="left">ALB DNS, us-east-1, reachable only from the operator address</td></tr><tr><td class="left">Pilot run-rate</td><td class="left">$0.056 per hour, $1.35 per day</td><td class="left">AWS Price List API, us-east-1, 28 Oct 2026</td></tr><tr><td class="left">Demo day</td><td class="left">about $0.45 for 8 hours</td><td class="left">same</td></tr><tr><td class="left">Stand-up effort</td><td class="left">95 minutes, first attempt, including three script defects</td><td class="left">measured, section 7</td></tr><tr><td class="left">Teardown</td><td class="left">about 3 minutes, billing stops</td><td class="left">one command, section 8.5</td></tr><tr><td class="left">AWS spend, deployed</td><td class="left">about $0.04 at the time of writing</td><td class="left">40 minutes of one task and one ALB at the published rates</td></tr></tbody></table></div>
+<p><strong>Revision 2.0, 28 October 2026.</strong> Version 1.2 of this brief described a target state. That target state now exists. The stack was applied in six phases to account 104005345381, the image was pushed to ECR, the service came up healthy behind the ALB, and the seven beats ran against the deployed task. Appendix A carries the cloud outputs, section 4.4 states what is and is not proven, and three defects found during the deployment are recorded rather than smoothed over: the phase script did not target the VPC network resources, the image build used the wrong context, and the ECS Exec logging call named an API parameter that does not exist in this version.</p>
+<p><strong>Revision 1.1, 28 October 2026.</strong> Version 1.0 of this brief carried the 27 October measurement: 9 of 12 cases, p95 10.8 ms, with CARD-D07, CARD-D09 and CARD-D10 failing. The D09 statement fix and the retry handling for the two bank-read cases landed on main that evening. Every measured figure below was re-read or re-executed for this revision, the KPI table from the published run at commit 8c3ac7f and Appendix A from a container built at c7ea9b2.</p>
+<h2 id="1-2-what-the-move-to-aws-changes" class="h2"><span class="hmark">[[H2]]</span>1.2 What the move to AWS changes</h2>
+<div class="tbl"><table><thead><tr><th class="left">It changes</th><th class="left">It does not change</th></tr></thead><tbody><tr><td class="left">The service boundary becomes public and real, not a localhost port</td><td class="left">The score: 12 of 12 cases pass in the cloud because they pass in the container</td></tr><tr><td class="left">The human approval becomes a cloud-side state change, logged in CloudWatch</td><td class="left">The engine, the contracts, the dataset, the rules</td></tr><tr><td class="left">The audit trail lives where a bank reviewer can reach it</td><td class="left">Cost per case, which stays at zero model calls</td></tr><tr><td class="left">An IAM boundary exists between the service and the account</td><td class="left">The refusal path: unapproved writes still return 403</td></tr><tr><td class="left">&quot;Where does it run&quot; gets an artifact instead of an assurance</td><td class="left">Data handling: the dataset remains fictional training data</td></tr></tbody></table></div>
+<p>The honest framing to repeat to any audience: <strong>deployment does not launder correctness.</strong> The value of the pilot is that it moves the boundary, the human gate and the audit trail into the cloud, and that it can be stood up and destroyed on demand for the price of a coffee.</p>
+<h2 id="1-3-the-ask" class="h2"><span class="hmark">[[H3]]</span>1.3 The ask</h2>
+<p>Four decisions, detailed in section 11: approve a capped spend envelope on one sandbox account; choose the transport security stance for demo day; sanction the &quot;same score, different boundary&quot; framing for the panel; and set a date for the production hardening review. The first is the only one that costs money, and the cap proposed is $25.</p>
+<h1 id="2-why-this-why-now" class="h1"><span class="hmark">[[H4]]</span>2 Why this, why now</h1>
+<p>The capstone is in its final leg and its evidence today is a laptop. Three audiences ask three different questions about the same system.</p>
+<div class="tbl"><table><thead><tr><th class="left">Audience</th><th class="left">Their question</th><th class="left">What answers it</th></tr></thead><tbody><tr><td class="left">Capstone panel</td><td class="left">Can this team ship, and can the work be defended?</td><td class="left">Score, contracts, audit trail, demo</td></tr><tr><td class="left">Coforge delivery leadership</td><td class="left">Is there a credible transition story beyond the capstone?</td><td class="left">A priced, controlled, reversible pilot</td></tr><tr><td class="left">Lumen Bank platform and risk</td><td class="left">Would this survive our review, and what would it cost to make it?</td><td class="left">Controls matrix, named gaps, production path</td></tr></tbody></table></div>
+<p>A pilot answers the second question properly and the third partially: it demonstrates the boundary and the human gate in a real cloud account, and it lists, without softening, what a bank audit would still reject. It does not pretend to answer the security questionnaire.</p>
+<p>Two constraints shape the design. First, the system's deployable surface is genuinely small: a read-only bank API, a review queue, and an audit table. Second, the capstone's own gate is a 70 out of 100 rubric recorded in docs/POD_PLAN.md, and that rubric contains no cloud criterion. So this is not gate-driven work. It is a deliberate, low-cost investment in the transition story, and the cost of being wrong is 45 cents.</p>
+<h1 id="3-what-is-being-deployed" class="h1"><span class="hmark">[[H5]]</span>3 What is being deployed</h1>
+<h2 id="3-1-the-four-surfaces" class="h2"><span class="hmark">[[H6]]</span>3.1 The four surfaces</h2>
+<p>Everything the pilot exposes is one of four things: reading bank records, requesting a review, creating a record after an approved review, and reading the audit trail. The service is deliberately narrow.</p>
+<div class="tbl"><table><thead><tr><th class="left">Surface</th><th class="left">Endpoints</th><th class="left">Who calls it</th></tr></thead><tbody><tr><td class="left">Health and inventory</td><td class="left">GET /health, GET /v1/cases</td><td class="left">Operator, load balancer health check</td></tr><tr><td class="left">Case evidence, read only</td><td class="left">GET /v1/cases/{case}/{tool} (transactions, merchant)</td><td class="left">The draft builder</td></tr><tr><td class="left">Review queue</td><td class="left">POST /v1/reviews, GET /v1/reviews/{id}</td><td class="left">Operator, demo script</td></tr><tr><td class="left">Record creation and readback</td><td class="left">POST /v1/records (Idempotency-Key), GET /v1/records/{case}</td><td class="left">Operator after approval</td></tr></tbody></table></div>
+<p>KYC writes are refused in code, not by network policy: every creation path returns 403 read_only_mission. Approval is bound to a SHA-256 hash of the draft, so a draft edited after approval is refused with 403 approval_missing_or_draft_changed. Duplicate logical keys return 409 with the existing record id.</p>
+<h2 id="3-2-what-is-deliberately-absent-and-why" class="h2"><span class="hmark">[[H7]]</span>3.2 What is deliberately absent, and why</h2>
+<div class="tbl"><table><thead><tr><th class="left">Absent</th><th class="left">Why, for this pilot</th><th class="left">When it arrives</th></tr></thead><tbody><tr><td class="left">Live model calls</td><td class="left">models.toml registers the model with an empty approved_by, and the client refuses a live pair without a passed, bank-approved entry. The scored run makes 0 calls.</td><td class="left">Phase 2, behind a qualification run and a signature</td></tr><tr><td class="left">Web interface</td><td class="left">The operator path is a CLI by design; adding a browser console adds an admin surface the model could reach</td><td class="left">Phase 2, with authentication</td></tr><tr><td class="left">User authentication</td><td class="left">There are no users. The write path is gated by an approved review, not by identity</td><td class="left">Phase 1, Cognito or an IAM authorizer</td></tr><tr><td class="left">Database service</td><td class="left">SQLite is single-writer and in-process. RDS or Aurora would force a persistence adapter, which is a code change, not a deployment change</td><td class="left">Phase 1, behind the existing store seam</td></tr><tr><td class="left">TLS on the demo endpoint</td><td class="left">ACM needs a domain you control. The demo runs on a one-address allowlist over HTTP with fictional data</td><td class="left">Phase 1, or CloudFront from day one if a bank stakeholder joins</td></tr></tbody></table></div>
+<h1 id="4-architecture-as-deployed" class="h1"><span class="hmark">[[H8]]</span>4 Architecture as deployed</h1>
+<p>The design is one container, one load balancer, two IAM roles and one state file. The account had no default VPC, so the stack creates a dedicated VPC at 10.42.0.0/16 with two public subnets and an internet gateway, and it deliberately does not create a NAT gateway, a database, an S3 bucket or a domain.</p>
+<figure class="fig"><svg class="figsvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Segoe UI, Arial, sans-serif" preserveAspectRatio="xMidYMid meet">
+  <rect width="900" height="520" fill="#ffffff"/>
+  <rect x="0" y="0" width="900" height="42" fill="#0f2a43"/>
+  <text x="18" y="27" font-size="15" font-weight="700" fill="#ffffff">Card Dispute Copilot · AWS pilot topology</text>
+  <rect x="636" y="10" width="246" height="22" fill="#1f6f4a"/>
+  <text x="759" y="25" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">LIVE · DEPLOYED 28 OCT 2026</text>
+
+  <rect x="170" y="54" width="584" height="392" fill="none" stroke="#9fb0bf" stroke-width="1" stroke-dasharray="6 4"/>
+  <text x="182" y="70" font-size="10" fill="#5b6b7a" letter-spacing="1.4">AWS REGION us-east-1 · VPC 10.42.0.0/16 · 2 PUBLIC SUBNETS</text>
+
+  <text x="8" y="70" font-size="9.5" fill="#5b6b7a" letter-spacing="1.4">CLIENT</text>
+  <rect x="8" y="82" width="150" height="78" fill="#f4f6f8" stroke="#cfd7df"/>
+  <text x="18" y="104" font-size="13" font-weight="700" fill="#16232e">Reviewer</text>
+  <text x="18" y="122" font-size="11" fill="#33475b">browser · curl</text>
+  <text x="18" y="136" font-size="11" fill="#33475b">no account, no auth</text>
+  <text x="18" y="152" font-size="10.5" fill="#b07d2b">POC trade, see section 6</text>
+
+  <rect x="8" y="246" width="150" height="78" fill="#f4f6f8" stroke="#cfd7df"/>
+  <text x="18" y="268" font-size="13" font-weight="700" fill="#16232e">Operator</text>
+  <text x="18" y="286" font-size="11" fill="#33475b">Git Bash · AWS CLI v2</text>
+  <text x="18" y="300" font-size="11" fill="#33475b">session-manager-plugin</text>
+  <text x="18" y="316" font-size="10.5" fill="#b07d2b">approval · audit read</text>
+
+  <rect x="182" y="86" width="152" height="88" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="192" y="106" font-size="13" font-weight="700" fill="#16232e">Application Load</text>
+  <text x="192" y="120" font-size="13" font-weight="700" fill="#16232e">Balancer</text>
+  <text x="192" y="140" font-size="10.5" fill="#33475b">public · HTTP :80</text>
+  <text x="192" y="154" font-size="10.5" fill="#33475b">SG allowlist /32 only</text>
+  <text x="192" y="168" font-size="10.5" fill="#33475b">health GET /health</text>
+
+  <rect x="182" y="248" width="152" height="80" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="192" y="268" font-size="12.5" font-weight="700" fill="#16232e">SSM Session</text>
+  <text x="192" y="282" font-size="12.5" font-weight="700" fill="#16232e">Manager</text>
+  <text x="192" y="301" font-size="10.5" fill="#33475b">audited Exec channel</text>
+  <text x="192" y="315" font-size="10.5" fill="#33475b">the human approval gate</text>
+
+  <rect x="182" y="346" width="206" height="86" fill="#ffffff" stroke="#d7dee5"/>
+  <text x="194" y="364" font-size="9.5" fill="#5b6b7a" letter-spacing="1.2">LEGEND</text>
+  <line x1="194" y1="382" x2="230" y2="382" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M230 382 l-8 -4 v8 z" fill="#16232e"/>
+  <text x="240" y="386" font-size="10.5" fill="#33475b">request path</text>
+  <line x1="194" y1="402" x2="230" y2="402" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M230 402 l-8 -4 v8 z" fill="#9fb0bf"/>
+  <text x="240" y="406" font-size="10.5" fill="#33475b">policy or config binding</text>
+  <rect x="194" y="414" width="16" height="10" fill="#b07d2b"/>
+  <text x="216" y="423" font-size="10.5" fill="#33475b">POC shortcut</text>
+
+  <rect x="356" y="80" width="236" height="300" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="366" y="100" font-size="13" font-weight="700" fill="#16232e">ECS cluster ccd-poc · Fargate</text>
+  <text x="366" y="115" font-size="10" fill="#5b6b7a">desired count 1 · no autoscaling</text>
+
+  <rect x="366" y="126" width="216" height="128" fill="#f4f6f8" stroke="#cfd7df"/>
+  <text x="376" y="142" font-size="9.5" fill="#5b6b7a" letter-spacing="1.2">CONTAINER main</text>
+  <text x="376" y="161" font-size="10.5" fill="#16232e">python deploy/poc/serve.py</text>
+  <text x="376" y="175" font-size="10.5" fill="#16232e">create_server(0.0.0.0:8000)</text>
+  <text x="376" y="192" font-size="10.5" fill="#33475b">0.5 vCPU · 1 GB</text>
+  <text x="376" y="206" font-size="10.5" fill="#33475b">GET /health · /v1/cases</text>
+  <text x="376" y="220" font-size="10.5" fill="#33475b">POST /v1/reviews · /v1/records</text>
+  <text x="376" y="236" font-size="10.5" fill="#b07d2b">KYC writes refused in code</text>
+
+  <ellipse cx="474" cy="276" rx="78" ry="12" fill="#eef2f5" stroke="#9fb0bf"/>
+  <path d="M396 276 v40 a78 12 0 0 0 156 0 v-40" fill="#eef2f5" stroke="#9fb0bf"/>
+  <text x="474" y="292" font-size="11.5" font-weight="700" fill="#16232e" text-anchor="middle">SQLite state</text>
+  <text x="474" y="304" font-size="10" fill="#5b6b7a" text-anchor="middle">/app/.state/mock.sqlite</text>
+  <text x="474" y="316" font-size="10" fill="#5b6b7a" text-anchor="middle">single writer · 5 tables</text>
+
+  <text x="366" y="340" font-size="10.5" fill="#33475b">Approval runs in the same process tree.</text>
+  <text x="366" y="353" font-size="10.5" fill="#33475b">No HTTP admin route reaches a model.</text>
+  <text x="366" y="366" font-size="10.5" fill="#b07d2b">Ephemeral disk: state dies with the task.</text>
+
+  <rect x="636" y="86" width="250" height="64" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="648" y="108" font-size="12.5" font-weight="700" fill="#16232e">ECR</text>
+  <text x="648" y="126" font-size="10.5" fill="#33475b">ccd-poc-api:poc · 344 MB</text>
+
+  <rect x="636" y="164" width="250" height="64" fill="#ffffff" stroke="#9fb0bf" stroke-dasharray="4 3"/>
+  <text x="648" y="186" font-size="12.5" font-weight="700" fill="#16232e">Execution role</text>
+  <text x="648" y="204" font-size="10.5" fill="#33475b">ECR pull + CloudWatch Logs</text>
+
+  <rect x="636" y="242" width="250" height="64" fill="#ffffff" stroke="#9fb0bf" stroke-dasharray="4 3"/>
+  <text x="648" y="264" font-size="12.5" font-weight="700" fill="#16232e">Task role</text>
+  <text x="648" y="282" font-size="10.5" fill="#33475b">ssmmessages · 4 channel actions</text>
+
+  <rect x="636" y="320" width="250" height="64" fill="#ffffff" stroke="#16232e" stroke-width="1.4"/>
+  <text x="648" y="342" font-size="12.5" font-weight="700" fill="#16232e">CloudWatch Logs</text>
+  <text x="648" y="360" font-size="10.5" fill="#33475b">/ecs/ccd-poc-api · 7-day retention</text>
+
+  <line x1="158" y1="121" x2="180" y2="121" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M182 121 l-8 -4 v8 z" fill="#16232e"/>
+  <text x="146" y="113" font-size="9.5" fill="#5b6b7a" text-anchor="end">HTTP</text>
+  <line x1="334" y1="130" x2="354" y2="130" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M356 130 l-8 -4 v8 z" fill="#16232e"/>
+  <line x1="158" y1="285" x2="180" y2="285" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M182 285 l-8 -4 v8 z" fill="#16232e"/>
+  <line x1="334" y1="288" x2="354" y2="288" stroke="#16232e" stroke-width="1.4"/>
+  <path d="M356 288 l-8 -4 v8 z" fill="#16232e"/>
+  <line x1="636" y1="118" x2="586" y2="150" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M582 153 l9 -1 -4 -8 z" fill="#9fb0bf"/>
+  <text x="600" y="112" font-size="9.5" fill="#5b6b7a">pull</text>
+  <line x1="636" y1="196" x2="602" y2="196" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M598 196 l9 -4 v8 z" fill="#9fb0bf"/>
+  <line x1="636" y1="274" x2="602" y2="274" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M598 274 l9 -4 v8 z" fill="#9fb0bf"/>
+  <line x1="588" y1="352" x2="634" y2="352" stroke="#9fb0bf" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <path d="M636 352 l-9 -4 v8 z" fill="#9fb0bf"/>
+
+  <rect x="8" y="458" width="884" height="54" fill="#f4f6f8" stroke="#d7dee5"/>
+  <text x="20" y="478" font-size="10.5" fill="#33475b">Deliberately not created: NAT gateway ($32.85/month) · RDS · domain and ACM certificate · WAF · S3.</text>
+  <text x="20" y="496" font-size="10.5" fill="#33475b">About $0.45 per 8-hour demo day · $1.35 a day if forgotten · exit is ./deploy/poc/teardown.sh --yes, about 3 minutes.</text>
+</svg>
+<figcaption>Figure 1. The pilot topology as deployed in us-east-1 on 28 October 2026. Every box in this figure exists. The Exec channel is the human gate: approval runs inside the same container as the API, so the state the audience sees is the state the operator changed.</figcaption></figure>
+<h2 id="4-1-request-flow" class="h2"><span class="hmark">[[H9]]</span>4.1 Request flow</h2>
+<ol>
+<li>A reviewer or script calls the ALB DNS name over HTTP on port 80. The ALB security group accepts only one /32 address, taken once at deploy time.</li>
+<li>The ALB forwards to target group ccd-poc-tg on port 8000. Only the ALB security group may reach port 8000 on the task.</li>
+<li>The single Fargate task runs python deploy/poc/serve.py, a 20 line wrapper that calls the repository's own create_server with host 0.0.0.0. The repository CLI binds loopback only, which a load balancer can never reach. No application code changes.</li>
+<li>State lives in one SQLite file on the task's ephemeral disk: reviews, records, keys, calls and audit.</li>
+<li>The operator approves a review with aws ecs execute-command into the same task, running the repository's own CLI against the same file. Logs, including Exec session output, stream to CloudWatch.</li>
+</ol>
+<h2 id="4-2-component-choices-and-the-constraint-that-forced-each" class="h2"><span class="hmark">[[H10]]</span>4.2 Component choices and the constraint that forced each</h2>
+<div class="tbl"><table><thead><tr><th class="left">Choice</th><th class="left">Constraint that forced it</th></tr></thead><tbody><tr><td class="left">ECS Fargate, not Lambda</td><td class="left">The application is a long-lived ThreadingHTTPServer with a mutable SQLite file. Lambda gives a fresh /tmp per sandbox and no stable single writer, so the review-then-record flow would break between invocations</td></tr><tr><td class="left">One task, desired count 1</td><td class="left">SQLite is single-writer, and autoscaling would fork the audit trail. p50 latency is 31 ms over 12 cases and the tail is one retry backoff, so a single task is ample for the pilot</td></tr><tr><td class="left">Application Load Balancer, not API Gateway</td><td class="left">The app speaks plain HTTP with no OpenAPI schema and no authorizer. API Gateway would add a proxy layer and an identity layer to a pilot that has no users</td></tr><tr><td class="left">ECS Exec for the operator gate</td><td class="left">Approval is deliberately CLI-only and reads the state file directly. Exec keeps that guarantee in the cloud without adding an HTTP admin route the model could reach</td></tr><tr><td class="left">Ephemeral disk, not EFS</td><td class="left">Approval and API are the same task, so no shared volume is needed. EFS adds mount targets, POSIX permissions and SQLite-over-NFS locking risk for a pilot that lasts one day</td></tr><tr><td class="left">Public subnet, no NAT gateway</td><td class="left">A NAT gateway is $32.85 a month and would dwarf every other line. A public IP gives egress for ECR and logs; ingress stays restricted to the ALB security group</td></tr><tr><td class="left">HTTP for the demo window</td><td class="left">ACM cannot issue for a bare ALB hostname. A one-day endpoint on fictional data, closed to one address, is a defensible POC trade. Section 6.4 prices the alternatives</td></tr></tbody></table></div>
+<h2 id="4-3-options-considered-and-rejected" class="h2"><span class="hmark">[[H11]]</span>4.3 Options considered and rejected</h2>
+<div class="tbl"><table><thead><tr><th class="left">Option</th><th class="left">Verdict</th><th class="left">Why</th></tr></thead><tbody><tr><td class="left">ECS Fargate plus ALB</td><td class="left">Chosen</td><td class="left">Full control of health checks, Exec and logging at about $1.35 a day, every step scripted</td></tr><tr><td class="left">ECS Express Mode</td><td class="left">Fallback only</td><td class="left">One call to a public HTTPS URL, but the container spec is single-container with no volumes and no enable-execute-command. That removes both the human gate and any state that survives a task replacement</td></tr><tr><td class="left">AWS App Runner</td><td class="left">Not available</td><td class="left">Closed to new customers; AWS points new workloads at ECS Express Mode</td></tr><tr><td class="left">Lambda plus Function URL</td><td class="left">No</td><td class="left">Needs a web adapter, /tmp-only SQLite, no single writer across invocations, no operator shell</td></tr><tr><td class="left">EC2 with Docker</td><td class="left">No</td><td class="left">Cheaper per hour, but you own patching, TLS and the audit story, and it under-sells the architecture review</td></tr><tr><td class="left">EKS</td><td class="left">No</td><td class="left">Control plane cost and operational surface for a single container</td></tr></tbody></table></div>
+<h2 id="4-4-status-stated-plainly" class="h2"><span class="hmark">[[H12]]</span>4.4 Status, stated plainly</h2>
+<p>The figure above is labelled LIVE because the topology is running: the ALB to task hop is healthy, and Exec against a real Fargate task is proven by the cloud run of every beat that needs it. What is proven, precisely:</p>
+<ul>
+<li>26 Terraform-managed resources, applied, with a clean re-apply afterwards.</li>
+<li>The ALB forwards to one Fargate task on port 8000; the target is healthy and /health answers in 70 ms from the operator address.</li>
+<li>The scored run, executed inside the task, returns 12 of 12 with 0 format errors.</li>
+<li>The human gate is a real cloud action: an approval issued through ECS Exec changed service state, and a write without it is refused with 403.</li>
+<li>Every Exec session is captured in CloudWatch under /ecs/ccd-poc-api, stream prefix ecs-execute-command.</li>
+<p>What is not proven, and should be said before anyone asks: availability beyond one task in one availability zone, behaviour under concurrent operators, and anything a bank would call production. Section 10 names the replacement for each shortcut.</p>
+</ul>
+<h1 id="5-controls-and-what-a-bank-reviewer-will-still-reject" class="h1"><span class="hmark">[[H13]]</span>5 Controls, and what a bank reviewer will still reject</h1>
+<h2 id="5-1-what-is-true-of-this-deployment" class="h2"><span class="hmark">[[H14]]</span>5.1 What is true of this deployment</h2>
+<ul>
+<li><strong>Fictional data only.</strong> The dataset self-identifies as fictional_training_only, and the health endpoint says so. No card numbers, no cardholder names, no PII.</li>
+<li><strong>No credentials in the image.</strong> No AWS keys, no model API keys. The live model path is refused because approved_by is empty.</li>
+<li><strong>Two least-privilege roles.</strong> The execution role holds ECR pull and CloudWatch Logs. The task role holds the four ssmmessages channel actions that Exec needs, plus write access to one log group for session logging. No S3, no DynamoDB, no Secrets Manager.</li>
+<li><strong>The task is not internet-reachable except through the ALB.</strong> Port 8000 accepts traffic only from the ALB security group. The public IP exists for egress.</li>
+<li><strong>Every Exec session is logged.</strong> The break-glass channel is auditable in CloudWatch, including the operator approval. Verified 28 October: a session appears as its own stream under /ecs/ccd-poc-api, script-captured with command and exit code. This needs both the cluster-level configuration and the task-role Logs permission; with only the first, sessions run and nothing is recorded, which looks like success until someone asks for the log.</li>
+<li><strong>KYC read-only is enforced in code</strong>, through dataset.allow_write and the 403 path. Moving to AWS did not weaken it.</li>
+<li><strong>Retention is 7 days</strong> on the log group, so the pilot leaves no long-lived trace.</li>
+</ul>
+<h2 id="5-2-what-a-reviewer-would-still-object-to-with-the-answer-for-each" class="h2"><span class="hmark">[[H15]]</span>5.2 What a reviewer would still object to, with the answer for each</h2>
+<div class="tbl"><table><thead><tr><th class="left">Objection</th><th class="left">Pilot answer</th><th class="left">Production answer</th></tr></thead><tbody><tr><td class="left">No TLS</td><td class="left">Fictional data, one day, one allowed address, torn down after</td><td class="left">ACM with 443 and TLS 1.2 minimum, or CloudFront in front of the ALB</td></tr><tr><td class="left">No user authentication</td><td class="left">There are no users; the write path requires an approved review</td><td class="left">Cognito user pool or an IAM authorizer at the edge</td></tr><tr><td class="left">No WAF</td><td class="left">Single-address allowlist on the ALB security group</td><td class="left">WAF managed rules at the edge</td></tr><tr><td class="left">SQLite on ephemeral disk</td><td class="left">One task, one writer, lifetime measured in hours</td><td class="left">Aurora or DynamoDB behind a persistence adapter</td></tr><tr><td class="left">Exec runs as root in the container</td><td class="left">Documented AWS behaviour, session logged to CloudWatch</td><td class="left">No Exec in the steady state; a signed admin API, Exec as break-glass only</td></tr><tr><td class="left">Public ALB on a public IP</td><td class="left">Dedicated VPC created for the pilot, address allowlist, deleted after the demo</td><td class="left">Private subnets, private ALB, VPC endpoints</td></tr><tr><td class="left">Data at rest</td><td class="left">Fargate ephemeral storage is encrypted by default</td><td class="left">KMS-managed volumes and database encryption</td></tr></tbody></table></div>
+<h2 id="5-3-what-this-document-is-not" class="h2"><span class="hmark">[[H16]]</span>5.3 What this document is not</h2>
+<p>It is not a security attestation, a penetration test, a data protection impact assessment, or evidence of regulatory compliance. It is an engineering brief with named gaps. Anyone presenting it as more than that is overclaiming, and section 9 records that as a standing risk.</p>
+<h1 id="6-cost" class="h1"><span class="hmark">[[H17]]</span>6 Cost</h1>
+<h2 id="6-1-price-basis" class="h2"><span class="hmark">[[H18]]</span>6.1 Price basis</h2>
+<p>Every rate comes from the public AWS Price List API for us-east-1, publication date 2026-10-28T00:46:31Z, read on 27 October 2026. Two lines are published but not price-list-exact: public IPv4 addresses and load balancer capacity units. Both are rounding errors at demo volume. Fargate, ALB hours, ECR storage and CloudWatch Logs are exact.</p>
+<p><strong>What was actually spent.</strong> The deployment ran for about ninety minutes on 28 October: one 0.5 vCPU task, one ALB, one public IPv4, ECR storage for one 83 MB image, and the Exec sessions on top. At the published rates that is about four cents. The forecast below is unchanged, and a demo day still costs forty-five cents.</p>
+<figure class="fig"><svg class="figsvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 368" font-family="Segoe UI, Arial, sans-serif" preserveAspectRatio="xMidYMid meet">
+  <rect width="900" height="368" fill="#ffffff"/>
+  <rect x="0" y="0" width="900" height="42" fill="#0f2a43"/>
+  <text x="18" y="27" font-size="15" font-weight="700" fill="#ffffff">Cost model · us-east-1 price list · 28 October 2026</text>
+  <rect x="630" y="10" width="252" height="22" fill="#1f6f4a"/>
+  <text x="756" y="25" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="1">ACTUAL · ABOUT $0.04 SPENT</text>
+
+  <rect x="8" y="56" width="432" height="244" fill="#ffffff" stroke="#d7dee5"/>
+  <text x="22" y="80" font-size="13" font-weight="700" fill="#16232e">Where the $1.35 a day goes</text>
+  <text x="22" y="96" font-size="10.5" fill="#5b6b7a">0.5 vCPU / 1 GB task, one ALB, one public IPv4</text>
+
+  <rect x="22" y="110" width="181" height="26" fill="#0f2a43"/>
+  <rect x="203" y="110" width="164" height="26" fill="#33556f"/>
+  <rect x="367" y="110" width="37" height="26" fill="#b07d2b"/>
+  <rect x="404" y="110" width="29" height="26" fill="#c9a35f"/>
+  <rect x="433" y="110" width="7" height="26" fill="#b9c4cf"/>
+  <text x="30" y="127" font-size="10.5" fill="#ffffff">Fargate $0.59</text>
+  <text x="211" y="127" font-size="10.5" fill="#ffffff">ALB $0.54</text>
+
+  <rect x="22" y="154" width="11" height="11" fill="#0f2a43"/>
+  <text x="40" y="164" font-size="10.5" fill="#33475b">Fargate compute and memory</text>
+  <text x="432" y="164" font-size="10.5" fill="#16232e" text-anchor="end">$0.593 · 44%</text>
+  <rect x="22" y="176" width="11" height="11" fill="#33556f"/>
+  <text x="40" y="186" font-size="10.5" fill="#33475b">Application Load Balancer hours</text>
+  <text x="432" y="186" font-size="10.5" fill="#16232e" text-anchor="end">$0.540 · 40%</text>
+  <rect x="22" y="198" width="11" height="11" fill="#b07d2b"/>
+  <text x="40" y="208" font-size="10.5" fill="#33475b">Public IPv4 on the task</text>
+  <text x="432" y="208" font-size="10.5" fill="#16232e" text-anchor="end">$0.120 · 9%</text>
+  <rect x="22" y="220" width="11" height="11" fill="#c9a35f"/>
+  <text x="40" y="230" font-size="10.5" fill="#33475b">ALB capacity units, load dependent</text>
+  <text x="432" y="230" font-size="10.5" fill="#16232e" text-anchor="end">$0.096 · 7%</text>
+  <rect x="22" y="242" width="11" height="11" fill="#b9c4cf"/>
+  <text x="40" y="252" font-size="10.5" fill="#33475b">ECR storage, CloudWatch Logs</text>
+  <text x="432" y="252" font-size="10.5" fill="#16232e" text-anchor="end">$0.005 · under 1%</text>
+  <line x1="22" y1="266" x2="432" y2="266" stroke="#d7dee5"/>
+  <text x="22" y="282" font-size="9.5" fill="#5b6b7a">Fargate, ALB hours, ECR and Logs are exact from the Price List API, read 27 October 2026.</text>
+  <text x="22" y="294" font-size="9.5" fill="#5b6b7a">IPv4 and capacity units are published but load dependent.</text>
+
+  <rect x="460" y="56" width="432" height="244" fill="#ffffff" stroke="#d7dee5"/>
+  <text x="474" y="80" font-size="13" font-weight="700" fill="#16232e">Cost of forgetting to tear down</text>
+  <text x="474" y="96" font-size="10.5" fill="#5b6b7a">Same single-task footprint, linear scale</text>
+
+  <text x="474" y="128" font-size="10.5" fill="#33475b">1 hour</text>
+  <rect x="596" y="119" width="3" height="13" fill="#0f2a43"/>
+  <text x="606" y="128" font-size="10.5" fill="#16232e">$0.06</text>
+  <text x="474" y="158" font-size="10.5" fill="#33475b">8 hours, demo day</text>
+  <rect x="596" y="149" width="4" height="13" fill="#0f2a43"/>
+  <text x="608" y="158" font-size="10.5" fill="#16232e">$0.45</text>
+  <text x="474" y="188" font-size="10.5" fill="#33475b">1 day</text>
+  <rect x="596" y="179" width="9" height="13" fill="#33556f"/>
+  <text x="612" y="188" font-size="10.5" fill="#16232e">$1.35</text>
+  <text x="474" y="218" font-size="10.5" fill="#33475b">1 week</text>
+  <rect x="596" y="209" width="56" height="13" fill="#33556f"/>
+  <text x="660" y="218" font-size="10.5" fill="#16232e">$9.45</text>
+  <text x="474" y="248" font-size="10.5" fill="#33475b">1 month, forgotten</text>
+  <rect x="596" y="239" width="240" height="13" fill="#b07d2b"/>
+  <text x="870" y="248" font-size="10.5" font-weight="700" fill="#16232e" text-anchor="end">$41</text>
+
+  <line x1="474" y1="276" x2="878" y2="276" stroke="#d7dee5"/>
+  <text x="474" y="292" font-size="10.5" fill="#33475b">Exit is one command: ./deploy/poc/teardown.sh --yes, about 3 minutes.</text>
+
+  <rect x="8" y="312" width="884" height="40" fill="#f4f6f8" stroke="#d7dee5"/>
+  <text x="22" y="330" font-size="10.5" fill="#16232e">Total run-rate: $0.056 per hour · $1.35 per day · a demo day costs less than a coffee.</text>
+  <text x="22" y="344" font-size="10.5" fill="#33475b">Production target at 10k cases a month: $184 to $213 per month, a different estate the pilot does not build.</text>
+</svg>
+<figcaption>Figure 2. Cost composition and the cost of neglect. Left: where the $1.35 daily run-rate goes. Right: the same footprint left running for an hour up to a month, on a linear scale.</figcaption></figure>
+<h2 id="6-2-scenarios" class="h2"><span class="hmark">[[H19]]</span>6.2 Scenarios</h2>
+<div class="tbl"><table><thead><tr><th class="left">Scenario</th><th class="left">Cost</th><th class="left">Note</th></tr></thead><tbody><tr><td class="left">One demo day, 8 hours</td><td class="left">$0.45</td><td class="left">The intended use</td></tr><tr><td class="left">Rehearsal plus demo, 2 days</td><td class="left">$1.35</td><td class="left">Dry run 29 Oct, defence 30 Oct</td></tr><tr><td class="left">One week, left up</td><td class="left">$9.45</td><td class="left">Still cheap, but it should not happen</td></tr><tr><td class="left">One month, forgotten</td><td class="left">about $41</td><td class="left">The failure case the teardown script exists to prevent</td></tr><tr><td class="left">Larger task, 1 vCPU / 2 GB</td><td class="left">about $1.18 more per day</td><td class="left">Not needed: the workload is rules and I/O</td></tr><tr><td class="left">Graviton (ARM64)</td><td class="left">about 20 percent off compute, $0.15 a day</td><td class="left">Available as a build flag; worth it only if there is spare time</td></tr><tr><td class="left">Production target, 10k cases a month</td><td class="left">$184 to $213 per month</td><td class="left">Different estate: API Gateway, SQS, Step Functions, Lambda, DynamoDB, Bedrock, WAF</td></tr></tbody></table></div>
+<h2 id="6-3-guardrails" class="h2"><span class="hmark">[[H20]]</span>6.3 Guardrails</h2>
+<p>A $10 monthly budget with an email notification is the alarm. It sits well above the planned pilot spend of about $1.35 for two days and well below a forgotten month of $41, so it only fires when something is badly wrong. One limitation matters: <strong>a budget action cannot stop ECS.</strong> Budget actions reach IAM, SCPs and EC2 or RDS stop actions only. The kill switch for this pilot is the teardown script, not the budget.</p>
+<p>Three CloudWatch alarms, about $0.10 per alarm-month each, would have caught every failure mode in section 8.4: ALB target 5xx count, healthy host count below 1, and ECS service CPU above 80 percent for five minutes.</p>
+<h2 id="6-4-what-is-deliberately-not-built-with-the-monthly-cost-avoided" class="h2"><span class="hmark">[[H21]]</span>6.4 What is deliberately not built, with the monthly cost avoided</h2>
+<div class="tbl"><table><thead><tr><th class="left">Not built</th><th class="left">Monthly cost avoided</th><th class="left">Why it is not needed for a one-day pilot</th></tr></thead><tbody><tr><td class="left">NAT gateway</td><td class="left">$32.85</td><td class="left">A public IP gives the task egress without a NAT</td></tr><tr><td class="left">RDS or Aurora</td><td class="left">$12 to $15 at the smallest size</td><td class="left">SQLite in one task is the correct shape for a pilot</td></tr><tr><td class="left">WAF</td><td class="left">$5 plus requests</td><td class="left">The allowlist does the job for one address for one day</td></tr><tr><td class="left">Route 53 zone and certificate</td><td class="left">$0.50 plus a domain</td><td class="left">No domain is owned or needed</td></tr><tr><td class="left">CloudFront</td><td class="left">pennies at this volume</td><td class="left">Only if TLS is required on the pilot endpoint</td></tr></tbody></table></div>
+<h1 id="7-delivery-plan" class="h1"><span class="hmark">[[H22]]</span>7 Delivery plan</h1>
+<h2 id="7-1-effort-by-stage" class="h2"><span class="hmark">[[H23]]</span>7.1 Effort, by stage</h2>
+<div class="tbl"><table><thead><tr><th class="left">Stage</th><th class="left">Effort</th><th class="left">Mostly spent on</th></tr></thead><tbody><tr><td class="left">Prerequisites on the workstation</td><td class="left">15 min</td><td class="left">AWS CLI, Session Manager plugin, Docker running, identity check</td></tr><tr><td class="left">Provision and deploy</td><td class="left">25 to 35 min</td><td class="left">ALB and target group activation, first task start</td></tr><tr><td class="left">Build and push the image</td><td class="left">10 to 15 min</td><td class="left">First build only; the image is 342 MB</td></tr><tr><td class="left">Verify and rehearse</td><td class="left">20 min</td><td class="left">The five checks in section 7.3, then the seven beats</td></tr><tr><td class="left">Teardown</td><td class="left">3 min</td><td class="left">Ordered deletes, then a confirmation sweep</td></tr></tbody></table></div>
+<p>Measured on 28 October: 95 minutes from empty account to a healthy endpoint on a first attempt, including three script defects that had to be found and fixed, and two credential expiries. The second attempt is about 15 minutes because every phase is idempotent and the image is already in ECR.</p>
+<h2 id="7-2-prerequisites" class="h2"><span class="hmark">[[H24]]</span>7.2 Prerequisites</h2>
+<div class="tbl"><table><thead><tr><th class="left">Item</th><th class="left">Status, 28 Oct 2026, account 104005345381</th><th class="left">How to verify</th></tr></thead><tbody><tr><td class="left">AWS account able to create ECR, ECS, ELB, IAM, CloudWatch and security groups</td><td class="left">Present: admin role, org member o-u9p6hbqjuf, budget alarm at 1,000 USD per month</td><td class="left">aws sts get-caller-identity</td></tr><tr><td class="left">AWS CLI v2</td><td class="left">Installed, 2.39.0, into .local/tools with no admin rights</td><td class="left">aws --version</td></tr><tr><td class="left">Session Manager plugin</td><td class="left">Installed, 1.2.896.0, after one elevated click; required for the approval beat</td><td class="left">session-manager-plugin --version</td></tr><tr><td class="left">Terraform</td><td class="left">1.17.0 local, AWS provider 6.70.0</td><td class="left">terraform version</td></tr><tr><td class="left">Docker Desktop</td><td class="left">Installed, daemon reachable</td><td class="left">docker info prints a server section</td></tr><tr><td class="left">A VPC with two subnets</td><td class="left">This account has no default VPC, so the stack creates 10.42.0.0/16 with two public subnets</td><td class="left">terraform output vpc_id</td></tr><tr><td class="left">Fargate vCPU quota</td><td class="left">512 vCPU, ample for a 0.5 vCPU task</td><td class="left">aws service-quotas get-service-quota, code L-3032A538</td></tr><tr><td class="left">Region</td><td class="left">us-east-1</td><td class="left">terraform output region</td></tr><tr><td class="left">TMPDIR</td><td class="left">Must be a native Windows path or terraform init fails with Access is denied; phases.sh sets it</td><td class="left">echo $TMPDIR</td></tr></tbody></table></div>
+<h2 id="7-3-verification-before-anyone-watches" class="h2"><span class="hmark">[[H25]]</span>7.3 Verification before anyone watches</h2>
+<p>Run these in order. The last one is the check people skip, and it is the one that predicts whether the approval beat works.</p>
+<ol>
+<li>curl the ALB hostname /health and expect fictional_training_only true.</li>
+<li>aws elbv2 describe-target-health on ccd-poc-tg and expect healthy.</li>
+<li>aws ecs describe-tasks and expect the container managed agent ExecuteCommandAgent to be RUNNING.</li>
+<li>Run the scored run against the cloud URL and expect the same 12 of 12 with 0 format errors.</li>
+<li>Read the audit table through Exec and expect an ordered trail ending in the last action performed.</li>
+</ol>
+<h2 id="7-4-who-does-what" class="h2"><span class="hmark">[[H26]]</span>7.4 Who does what</h2>
+<div class="tbl"><table><thead><tr><th class="left">Role</th><th class="left">Person or group</th><th class="left">Accountable for</th></tr></thead><tbody><tr><td class="left">Pilot operator</td><td class="left">Ken (FDE)</td><td class="left">Provisioning, verification, demo execution, teardown</td></tr><tr><td class="left">Delivery lead</td><td class="left">Coforge pod lead</td><td class="left">Spend approval, audience management, sign-off on claims</td></tr><tr><td class="left">Platform owner</td><td class="left">Coforge AWS account administrator</td><td class="left">Account, guardrails, credential issuance, quota</td></tr><tr><td class="left">Bank reviewer</td><td class="left">Lumen platform and model risk</td><td class="left">Objection register, production criteria, model sign-off</td></tr></tbody></table></div>
+<h1 id="8-operating-the-pilot" class="h1"><span class="hmark">[[H27]]</span>8 Operating the pilot</h1>
+<h2 id="8-1-seven-beats-each-one-a-claim-on-screen" class="h2"><span class="hmark">[[H28]]</span>8.1 Seven beats, each one a claim on screen</h2>
+<div class="tbl"><table><thead><tr><th class="left">Beat</th><th class="left">Command</th><th class="left">What the audience sees</th><th class="left">What it proves</th></tr></thead><tbody><tr><td class="left">1 Boundary is real</td><td class="left">health, cases</td><td class="left">200 from an amazonaws.com hostname, 12 cases</td><td class="left">The service is public and governed</td></tr><tr><td class="left">2 Score is unchanged</td><td class="left">score</td><td class="left">12 of 12, 0 format errors, p50 17 ms, p95 3.96 s, $0.00 per case</td><td class="left">Moving to cloud did not launder correctness</td></tr><tr><td class="left">3 A draft arrives</td><td class="left">request CARD-D01, pending</td><td class="left">201 with rev id and draft hash, review in queue</td><td class="left">The queue is real state, not a fixture</td></tr><tr><td class="left">4 Human gate</td><td class="left">approve rev, pending</td><td class="left">approved, then an empty queue</td><td class="left">Approval is a deliberate human act</td></tr><tr><td class="left">5 Creation and idempotency</td><td class="left">record rev</td><td class="left">201 created, 200 replay, 409 conflict, 403 tampered approval</td><td class="left">Writes are gated and replay-safe</td></tr><tr><td class="left">6 Duplicate protection</td><td class="left">CARD-D02 then CARD-D09, different idempotency keys</td><td class="left">second call 409 duplicate_case with existing record id</td><td class="left">The logical key is enforced. Reusing the same idempotency key instead returns 409 idempotency_conflict, which proves the other guard</td></tr><tr><td class="left">7 Audit trail</td><td class="left">audit</td><td class="left">ordered rows: tool_read, review_requested, human_approved, record_created, write_replayed, idempotency_conflict, unapproved_write_attempt, duplicate_prevented</td><td class="left">Every step is attributable and hash-bound</td></tr></tbody></table></div>
+<p>Warm up 10 minutes before the audience. Capture the audit table to a file outside the task before starting, and do not redeploy between warm-up and demo: a new task means a new empty state file, and beats 3 to 6 would start from nothing.</p>
+<p>Leave a second between the approve beat and the record beat. Approval writes and the API reads share one SQLite file, and a read that lands inside the write came back 404 once in testing; a one-second gap removed it, and the same gap is worth keeping on stage. Beat 6 needs a different idempotency key from beat 5, otherwise the second call fails on the key rather than on the logical record and you see 409 idempotency_conflict instead of 409 duplicate_case.</p>
+<h2 id="8-2-fallback-ladder" class="h2"><span class="hmark">[[H29]]</span>8.2 Fallback ladder</h2>
+<div class="tbl"><table><thead><tr><th class="left">Level</th><th class="left">Trigger</th><th class="left">Action</th><th class="left">Time to switch</th></tr></thead><tbody><tr><td class="left">1 Cloud</td><td class="left">Normal</td><td class="left">Run the beats against the ALB</td><td class="left">0</td></tr><tr><td class="left">2 Local container</td><td class="left">ALB or task unhealthy and not fixed in 5 minutes</td><td class="left">Same image, docker run on the laptop, same seven beats</td><td class="left">2 min</td></tr><tr><td class="left">3 Recorded evidence</td><td class="left">No working endpoint at all</td><td class="left">Appendix A outputs plus the audit file captured at warm-up</td><td class="left">0</td></tr></tbody></table></div>
+<p>The ladder is stated out loud to the audience, not hidden. A team that can name its fallback is more credible than one that improvises.</p>
+<h2 id="8-3-monitoring-during-the-window" class="h2"><span class="hmark">[[H30]]</span>8.3 Monitoring during the window</h2>
+<div class="tbl"><table><thead><tr><th class="left">Signal</th><th class="left">Where</th><th class="left">What it tells you</th></tr></thead><tbody><tr><td class="left">Target health</td><td class="left">describe-target-health</td><td class="left">Whether the ALB can reach the task, the single most common failure</td></tr><tr><td class="left">5xx count on the ALB</td><td class="left">CloudWatch, per target group</td><td class="left">Application errors versus infrastructure errors</td></tr><tr><td class="left">Service CPU and memory</td><td class="left">CloudWatch, ECS metrics</td><td class="left">A runaway loop or a memory ceiling</td></tr><tr><td class="left">Log tail</td><td class="left">aws logs tail /ecs/ccd-poc-api</td><td class="left">The actual traceback, in one command</td></tr><tr><td class="left">Exec agent status</td><td class="left">describe-tasks managed agents</td><td class="left">Whether the human gate will work at all</td></tr></tbody></table></div>
+<h2 id="8-4-failure-modes-and-the-fix" class="h2"><span class="hmark">[[H31]]</span>8.4 Failure modes and the fix</h2>
+<div class="tbl"><table><thead><tr><th class="left">Symptom</th><th class="left">Cause</th><th class="left">Fix</th></tr></thead><tbody><tr><td class="left">CannotPullContainerError</td><td class="left">Execution role missing the managed policy, or architecture mismatch</td><td class="left">Attach AmazonECSTaskExecutionRolePolicy; build for linux/amd64 for X86_64</td></tr><tr><td class="left">Target unhealthy</td><td class="left">Wrong health path or port, or the app bound to loopback</td><td class="left">Health check must be /health on 8000; the wrapper must bind 0.0.0.0</td></tr><tr><td class="left">ALB returns 503</td><td class="left">No healthy targets</td><td class="left">describe-target-health, then the log group</td></tr><tr><td class="left">Exec fails with TargetNotConnected</td><td class="left">Service created without enable-execute-command, or task role lacks ssmmessages</td><td class="left">Re-run update-service with the flag; check the task role policy</td></tr><tr><td class="left">Writes fail with readonly database</td><td class="left">An Exec session running as root left a root-owned journal file</td><td class="left">chown the state directory inside the task</td></tr><tr><td class="left">Exec works but the URL 404s</td><td class="left">Tool names are per case in the dataset, not global</td><td class="left">Read GET /v1/cases, then request a tool the case actually has</td></tr></tbody></table></div>
+<h2 id="8-5-teardown-in-order-with-confirmation" class="h2"><span class="hmark">[[H32]]</span>8.5 Teardown, in order, with confirmation</h2>
+<ol>
+<li>Scale the service to zero, then delete it, so Fargate billing stops first.</li>
+<li>Delete the cluster.</li>
+<li>Delete the load balancer and wait until it is gone before deleting listeners or target groups, or the call fails with ResourceInUse.</li>
+<li>Delete the target group and both security groups.</li>
+<li>Delete the log group; delete the ECR repository with force.</li>
+<li>Delete the inline policy, then both IAM roles.</li>
+<li>Confirm with five list and describe calls that nothing billing remains.</li>
+<p>If CloudFront was added for TLS, disable the distribution, wait for status Deployed, then delete it. An enabled distribution cannot be deleted.</p>
+</ol>
+<h1 id="9-risk-register" class="h1"><span class="hmark">[[H33]]</span>9 Risk register</h1>
+<div class="tbl"><table><thead><tr><th class="left">Risk</th><th class="left">Likelihood</th><th class="left">Impact</th><th class="left">Mitigation</th><th class="left">Owner</th></tr></thead><tbody><tr><td class="left">First-time deployment overruns the 90 minute estimate</td><td class="left">Medium</td><td class="left">Medium</td><td class="left">Run the idempotent script once in a sandbox account before the demo date; rehearse the fallback</td><td class="left">Operator</td></tr><tr><td class="left">Fargate vCPU quota exhausted on a busy account</td><td class="left">Low</td><td class="left">High</td><td class="left">Check quota L-3032A538 before provisioning; the task needs 0.5 vCPU</td><td class="left">Platform owner</td></tr><tr><td class="left">Address allowlist locks the team out after an IP change</td><td class="left">Medium</td><td class="left">Medium</td><td class="left">Take the CIDR from one place, keep a console path, re-authorize the group in one call</td><td class="left">Operator</td></tr><tr><td class="left">Task replacement wipes SQLite state mid-demo</td><td class="left">Low</td><td class="left">High</td><td class="left">No redeploy after warm-up; audit baseline captured off-task; redo sequence rehearsed</td><td class="left">Operator</td></tr><tr><td class="left">Reading the pilot as production-ready</td><td class="left">Medium</td><td class="left">High</td><td class="left">Section 4.4 lists what is proven and what is not; section 10 replaces each shortcut by name</td><td class="left">Delivery lead</td></tr><tr><td class="left">Short-lived credentials expire inside the demo window</td><td class="left">Medium</td><td class="left">High</td><td class="left">A long-lived IAM user key for the window, or a fresh console export immediately before; the ExpiredToken path is in the runbook</td><td class="left">Operator</td></tr><tr><td class="left">Credential exposure during setup</td><td class="left">Low</td><td class="left">High</td><td class="left">SSO or short-lived credentials, no keys in the image, CI rejects committed env files</td><td class="left">Platform owner</td></tr><tr><td class="left">Cost drift if the stack is left running</td><td class="left">Low</td><td class="left">Low</td><td class="left">Budget alarm, teardown script, scale to zero between sessions</td><td class="left">Operator</td></tr><tr><td class="left">Scope creep into live model calls</td><td class="left">Medium</td><td class="left">Medium</td><td class="left">Model stays replay-only until a qualification record and a bank signature exist</td><td class="left">Delivery lead</td></tr><tr><td class="left">Demo day network failure</td><td class="left">Medium</td><td class="left">Medium</td><td class="left">Fallback ladder in section 8.2, rehearsed at level 2</td><td class="left">Operator</td></tr></tbody></table></div>
+<h2 id="9-1-the-two-risks-that-actually-decide-whether-this-works" class="h2"><span class="hmark">[[H34]]</span>9.1 The two risks that actually decide whether this works</h2>
+<p>Every row above is manageable. Two of them decide the outcome, and both are behavioural rather than technical.</p>
+<ul>
+<li><strong>Overclaiming.</strong> If anyone describes the pilot as deployed before it is, the first question from a bank reviewer becomes &quot;which account, which controls&quot;, and the answer is a design document. The mitigation is cheap and absolute: the words &quot;pilot ready, not yet provisioned&quot; until the seven beats run against an amazonaws.com hostname.</li>
+<li><strong>First-time deploy overrun.</strong> The 90 minute estimate assumes someone has done it before. If the demo date is fixed, run deploy.sh once in a throwaway window, delete everything, then run it again on the day. The second run is about 25 minutes because the script is idempotent.</li>
+<p>Neither risk costs money to close. Both cost credibility if left open.</p>
+</ul>
+<h1 id="10-from-pilot-to-production" class="h1"><span class="hmark">[[H35]]</span>10 From pilot to production</h1>
+<h2 id="10-1-the-three-shortcuts-each-with-a-named-replacement" class="h2"><span class="hmark">[[H36]]</span>10.1 The three shortcuts, each with a named replacement</h2>
+<div class="tbl"><table><thead><tr><th class="left">Pilot choice</th><th class="left">Production replacement</th><th class="left">Why it cannot carry forward</th></tr></thead><tbody><tr><td class="left">One task in one AZ</td><td class="left">Two or more tasks across AZs behind the ALB</td><td class="left">Availability, and it forces the state question into the open</td></tr><tr><td class="left">SQLite on ephemeral disk</td><td class="left">Aurora PostgreSQL or DynamoDB behind the existing store interface</td><td class="left">Durability, concurrency, backup, restore</td></tr><tr><td class="left">No authentication on the API</td><td class="left">Cognito user pool or an IAM-authenticated API Gateway</td><td class="left">Operator identity has to be provable, not asserted</td></tr><tr><td class="left">HTTP on the ALB</td><td class="left">ACM with 443, TLS 1.2 minimum, or CloudFront</td><td class="left">A bank requirement, not a preference</td></tr><tr><td class="left">Address allowlist</td><td class="left">WAF managed rules plus private subnets</td><td class="left">The allowlist is a convenience, not a control</td></tr><tr><td class="left">Exec for approval</td><td class="left">A signed admin API, Exec as break-glass only</td><td class="left">Approval must be a first-class, audited action</td></tr><tr><td class="left">Replay-only model</td><td class="left">Live model behind the qualification gate</td><td class="left">Already designed; needs the adapter and a signature</td></tr></tbody></table></div>
+<h2 id="10-2-phases-and-entry-criteria" class="h2"><span class="hmark">[[H37]]</span>10.2 Phases and entry criteria</h2>
+<div class="tbl"><table><thead><tr><th class="left">Phase</th><th class="left">Scope</th><th class="left">Effort estimate</th><th class="left">Exit criterion</th></tr></thead><tbody><tr><td class="left">P0 Pilot, this document</td><td class="left">One container, public boundary, human gate, audit</td><td class="left">1 day</td><td class="left">Seven beats demonstrated, teardown confirmed</td></tr><tr><td class="left">P1 Hardening</td><td class="left">TLS, authentication, private subnets, persistence adapter, CI deploy on main</td><td class="left">2 to 3 weeks for one engineer</td><td class="left">A bank reviewer can walk the controls matrix without exceptions</td></tr><tr><td class="left">P2 Model live</td><td class="left">Bedrock adapter, model access, qualification run at the registered schema hash, guardrail decision, sign-off</td><td class="left">3 to 4 weeks</td><td class="left">A named bank approver in models.toml, and a qualification record that passes</td></tr></tbody></table></div>
+<h2 id="10-3-if-the-model-is-ever-turned-on-it-is-bedrock" class="h2"><span class="hmark">[[H38]]</span>10.3 If the model is ever turned on, it is Bedrock</h2>
+<ul>
+<li>There is no Bedrock adapter today. src/model_clients.py allows only azure_openai and anthropic_foundry, and model_from_env raises for anything else.</li>
+<li>The gate needs two things the pilot does not have: a passed qualification record at the registered schema hash, and a non-empty approved_by in models.toml.</li>
+<li>Structured output uses outputConfig.textFormat.type as json_schema, and the schema field is a JSON string, not an object. The repository's cue schemas already satisfy the supported subset.</li>
+<li>First use compiles a grammar, which can take up to about 90 seconds, so warm the model before any demo and treat a timeout as retryable.</li>
+<li>Guardrails cost roughly nine times the tokens of the call itself. At pilot volume the model is about $0.005 a day, so cost is not the reason to defer it. Signature and evidence are.</li>
+</ul>
+<h1 id="11-decisions-and-status" class="h1"><span class="hmark">[[H39]]</span>11 Decisions and status</h1>
+<div class="tbl"><table><thead><tr><th class="left">#</th><th class="left">Decision</th><th class="left">Status, 28 October 2026</th><th class="left">What remains</th></tr></thead><tbody><tr><td class="left">D1</td><td class="left">Spend and account</td><td class="left"><strong>Granted.</strong> Deployed to account 104005345381, us-east-1; about four cents spent</td><td class="left">Keep the residual cap and the teardown script as the only standing conditions</td></tr><tr><td class="left">D2</td><td class="left">Transport security for the demo</td><td class="left"><strong>Decided: HTTP</strong> with a one-address allowlist</td><td class="left">CloudFront with TLS if a bank stakeholder joins the session</td></tr><tr><td class="left">D3</td><td class="left">Framing</td><td class="left"><strong>Adopted:</strong> &quot;identical score, different boundary&quot;, stated first</td><td class="left">Section 4.4 is the one paragraph to keep repeating</td></tr><tr><td class="left">D4</td><td class="left">Production hardening review</td><td class="left"><strong>Open.</strong> Needs a date and an owner for P1</td><td class="left">Two to three weeks of engineering, pod lead plus bank platform</td></tr></tbody></table></div>
+<p>Two notes that still apply. The account must be a sandbox or a dedicated pilot account, not a shared production account, because the pilot creates and deletes IAM roles and a load balancer; this one is a Coforge member account with a 1,000 USD monthly budget, so a four cent pilot is invisible to the alarm and the teardown script, not the budget, is the kill switch. And the demo endpoint must be torn down or scaled to zero after the defence window, because the load balancer bills whether or not anyone is watching.</p>
+<h1 id="12-assumptions-and-limits" class="h1"><span class="hmark">[[H40]]</span>12 Assumptions and limits</h1>
+<ul>
+<li>Prices are us-east-1 list prices on 28 October 2026, without reservations, savings plans, support plan or tax. They will be wrong in another region and after the next price change.</li>
+<li>Effort estimates assume one engineer who knows this repository. A first-time AWS operator should add time for the prerequisites, not for the design.</li>
+<li>The pilot processes 12 fictional dev cases. Throughput claims do not extrapolate from 12 cases, and none are made here.</li>
+<li>The scored run uses the repository's determinism and replay recordings; it makes no model calls, so latency here says nothing about model latency.</li>
+<li>Nothing in this document is a security attestation, a compliance statement or legal advice.</li>
+<li>Distribution is Internal. Sending it to a bank requires the review that the classification implies.</li>
+</ul>
+<div class="pb"></div>
+<h1 id="appendix-a-verification-evidence-28-october-2026" class="h1"><span class="hmark">[[H41]]</span>Appendix A, verification evidence, 28 October 2026</h1>
+<p>Everything below was executed against the deployed pilot in account 104005345381, us-east-1, on 28 October 2026. Beats that must read or write the state file run inside the single task through ECS Exec, which is the point: the operator acts on cloud state, not on a copy.</p>
+<div class="tbl"><table><thead><tr><th class="left">Check</th><th class="left">Result</th></tr></thead><tbody><tr><td class="left">terraform apply, six phases</td><td class="left">26 resources, exit 0; a later re-apply reports no changes except the two intended ones</td></tr><tr><td class="left">Deployment path</td><td class="left">registry, core, image, edge, service, verify, through phases.sh</td></tr><tr><td class="left">Target health</td><td class="left">10.42.0.206 healthy, from the ALB target group</td></tr><tr><td class="left">GET /health through the ALB</td><td class="left">200 in 70 ms, status ok, fictional_training_only true</td></tr><tr><td class="left">GET /v1/cases</td><td class="left">200, 12 cases, each with case_id, intake_source and documents</td></tr><tr><td class="left">Scored run inside the task</td><td class="left">12 of 12 passed, 0 format errors, p50 17 ms, p95 3,957 ms, $0.00 per case</td></tr><tr><td class="left">ExecuteCommandAgent</td><td class="left">RUNNING on the running task</td></tr><tr><td class="left">POST /v1/reviews</td><td class="left">201, rev_3af0e66ae161, draft hash 8b0c0110aa7d617171f68039688aaeaf2b08b032117cde3055bb7ca403fa5665</td></tr><tr><td class="left">pending, through Exec</td><td class="left">one review, status pending, reviewer null, draft and hash visible</td></tr><tr><td class="left">approve rev_3af0e66ae161 --reviewer ken</td><td class="left">approved, reviewer recorded as ken</td></tr><tr><td class="left">record path</td><td class="left">201 created dispute-d01, 200 replay identical, a changed draft refused because the hash differs, 200 readback</td></tr><tr><td class="left">Duplicate guard</td><td class="left">CARD-D02 approved and created dispute-double-02 from rev_854d00942293; CARD-D09 from rev_d1dc3cc4b0b5, same logical key, different idempotency key, returned 409 duplicate_case with existing_record_id dispute-double-02</td></tr><tr><td class="left">Audit table</td><td class="left">278 ordered rows, ending in duplicate_prevented for CARD-D09</td></tr><tr><td class="left">Exec session log</td><td class="left">stream ecs-execute-command-a8faq7tqo6buuzkuc7kcdva6ja under /ecs/ccd-poc-api, script-captured with COMMAND and COMMAND_EXIT_CODE</td></tr><tr><td class="left">Spend at the time of writing</td><td class="left">about four cents</td></tr></tbody></table></div>
+<p>Three defects were found during the deployment and fixed in the repository, not in the console: the core phase did not target the VPC network resources, so the first apply created a VPC with no subnets; the image build passed deploy/ as its context instead of the repository root; and the Exec logging step called update-service with a parameter this API version does not have, which is why logging now goes through update-cluster in phase 5b. The load balancer left behind by an interrupted apply was imported into state by ARN rather than recreated, and the Exec logging claim in section 5.1 was only true after the task role was given write access to the log group.</p>
+<div class="pb"></div>
+<h1 id="appendix-b-command-reference" class="h1"><span class="hmark">[[H42]]</span>Appendix B, command reference</h1>
+<p>Prerequisites, once, in PowerShell as administrator:</p>
+<pre><code class="language-powershell">
+winget install --id Amazon.AWSCLI -e
+# Session Manager plugin: MSI from the AWS documentation page
+aws configure          # or aws configure sso, region us-east-1, output json
+session-manager-plugin
+docker info            # must print a server section
+</code></pre>
+<p>The same stack is also defined in Terraform, in deploy/poc/terraform, with up.sh and down.sh wrappers. The script below is the imperative path and creates identical resource names, so the seven beats work against either.</p>
+<p>Deploy, from Git Bash in the repository root:</p>
+<pre><code class="language-bash">
+export AWS_REGION=us-east-1
+export ALLOW_CIDR=&quot;$(curl -s https://checkip.amazonaws.com)/32&quot;
+./deploy/poc/deploy.sh
+./deploy/poc/demo.sh health
+./deploy/poc/demo.sh score
+</code></pre>
+<p>Verify the human gate before the audience:</p>
+<pre><code class="language-bash">
+aws ecs describe-tasks --cluster ccd-poc --tasks &quot;$(aws ecs list-tasks \
+  --cluster ccd-poc --service-name ccd-poc-api --query 'taskArns[0]' --output text)&quot; \
+  --query 'tasks[0].containers[0].managedAgents[0].lastStatus' --output text
+</code></pre>
+<p>Run the seven beats, then tear down:</p>
+<pre><code class="language-bash">
+./deploy/poc/demo.sh request CARD-D01
+./deploy/poc/demo.sh pending
+./deploy/poc/demo.sh approve rev_xxx --reviewer ken
+./deploy/poc/demo.sh record rev_xxx
+./deploy/poc/demo.sh audit
+./deploy/poc/teardown.sh --yes
+</code></pre>
+<div class="pb"></div>
+<h1 id="appendix-c-source-register" class="h1"><span class="hmark">[[H43]]</span>Appendix C, source register</h1>
+<p>All pages retrieved 27 and 28 October 2026. Prices from the AWS Price List API, which is the machine-readable source behind the pricing pages.</p>
+<div class="tbl"><table><thead><tr><th class="left">Topic</th><th class="left">Reference</th></tr></thead><tbody><tr><td class="left">ECS Exec prerequisites and limits</td><td class="left">docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html</td></tr><tr><td class="left">Session Manager plugin installation</td><td class="left">docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html</td></tr><tr><td class="left">ECS service load balancing and health checks</td><td class="left">docs.aws.amazon.com/AmazonECS/latest/developerguide/service-load-balancing.html</td></tr><tr><td class="left">Fargate task sizes and pricing</td><td class="left">aws.amazon.com/fargate/pricing</td></tr><tr><td class="left">Application Load Balancer pricing</td><td class="left">docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html</td></tr><tr><td class="left">ECR pricing</td><td class="left">aws.amazon.com/ecr/pricing</td></tr><tr><td class="left">CloudWatch Logs retention</td><td class="left">docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Working-with-log-groups-and-log-streams.html</td></tr><tr><td class="left">Budgets and budget actions</td><td class="left">docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html</td></tr><tr><td class="left">AWS Price List API, us-east-1</td><td class="left">pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECS/current/us-east-1/index.json</td></tr><tr><td class="left">App Runner availability change</td><td class="left">docs.aws.amazon.com/apprunner/latest/dg/apprunner-availability-change.html</td></tr><tr><td class="left">ECS Express Mode overview</td><td class="left">docs.aws.amazon.com/AmazonECS/latest/developerguide/express-service.html</td></tr><tr><td class="left">Bedrock structured outputs</td><td class="left">docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html</td></tr><tr><td class="left">SQLite over network filesystems</td><td class="left">sqlite.org/useovernet.html</td></tr></tbody></table></div></body></html>

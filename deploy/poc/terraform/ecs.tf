@@ -105,22 +105,9 @@ resource "aws_ecs_service" "api" {
   ]
 }
 
-# Session logging for ECS Exec is a service-level setting that the AWS provider
-# 6.70 does not expose (there is no execute_command_configuration block on
-# aws_ecs_service). Terraform still owns enable_execute_command above; this one
-# call turns on audit logging so every operator session lands in CloudWatch.
-# It is the only step in the stack that needs the aws CLI.
-resource "terraform_data" "exec_session_logging" {
-  count = var.exec_session_logging ? 1 : 0
-
-  triggers_replace = [
-    aws_ecs_service.api.id,
-    aws_cloudwatch_log_group.api.name,
-  ]
-
-  provisioner "local-exec" {
-    command = "aws ecs update-service --region ${var.region} --cluster ${aws_ecs_cluster.poc.name} --service ${aws_ecs_service.api.name} --enable-execute-command --enable-execute-command-configuration \"logging=OVERRIDE,executeCommandConfiguration={logConfiguration={cloudWatchLogGroupName=${aws_cloudwatch_log_group.api.name},cloudWatchEncryptionEnabled=false}}\""
-  }
-
-  depends_on = [aws_ecs_service.api]
-}
+# Session logging for ECS Exec is not exposed by the AWS provider 6.70 in any
+# resource: aws_ecs_service has no execute_command_configuration block, and
+# aws_ecs_cluster does not model configuration either. The setting lives on the
+# cluster and is applied by the one AWS CLI call in phases.sh (service phase).
+# Terraform owns enable_execute_command above; that call owns the logging
+# destination, so a rejected apply never leaves a half-written resource behind.
