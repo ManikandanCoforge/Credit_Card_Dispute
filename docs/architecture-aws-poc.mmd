@@ -1,0 +1,18 @@
+flowchart TB
+  OP["Operator<br/>one allowlisted /32"] -->|"HTTP, no TLS"| ALB["Public Application Load Balancer<br/>ccd-poc-alb-1873782563.us-east-1.elb.amazonaws.com"]
+
+  subgraph TASK["ECS Fargate · one task · 0.5 vCPU · 1 GB"]
+    APP["Copilot API container<br/>application code and mock service"]
+    DB[("SQLite<br/>case and review state")]
+    DATA["Read-only fictional dataset<br/>loaded at start"]
+    APP --- DB
+    APP --- DATA
+  end
+
+  ALB -->|"forward"| APP
+  APP --> LOG["CloudWatch Logs<br/>/ecs/ccd-poc-api · 7-day retention"]
+  APP --> EXEC["ECS Exec<br/>break-glass, every session logged"]
+  TF["Terraform<br/>16 files · 26 resources"] -.->|"provisions"| TASK
+  IMG["Image ccd-poc-api:poc<br/>342 MB · commit c7ea9b2"] -.->|"runs"| APP
+  APP -.->|"limits"| NOTE["Not in the POC<br/>TLS · sign-in · WAF<br/>NAT · managed DB<br/>no concurrency · multi-AZ"]
+  APP -.->|"future"| TARGET["Target state, not built<br/>API Gateway · Lambda · Step Functions<br/>DynamoDB · S3 · Bedrock · Cognito"]

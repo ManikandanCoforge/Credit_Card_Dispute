@@ -2,7 +2,7 @@
 title: "AWS Pilot Deployment: Executive Brief"
 subtitle: "Card Dispute Intake and Evidence Copilot. One container, one load balancer, one audited human gate: architecture, controls, cost, and the record of the 28 October deployment."
 docid: CFG-FDE-AWS-001
-version: 2.0
+version: 2.1
 status: Issued, pilot deployed in us-east-1
 date: 28 October 2026
 owner: Coforge FDE Pod
@@ -39,6 +39,8 @@ The pilot takes the same container image and puts it behind a public Application
 | Stand-up effort | 95 minutes, first attempt, including three script defects | measured, section 7 |
 | Teardown | about 3 minutes, billing stops | one command, section 8.5 |
 | AWS spend, deployed | about $0.04 at the time of writing | 40 minutes of one task and one ALB at the published rates |
+
+**Revision 2.1, 28 October 2026.** Section 3.3 was added after a design review asked whether the SQLite file in the container is the customer database. It is not: the five tables are the platform's workflow state, the customer data is the fictional bank's dataset served read-only over HTTP, and the two share a process. Section 3.3 states that custody gap plainly, and sections 5.2, 9 and 10.1 now answer it by name. No code changed for this revision.
 
 **Revision 2.0, 28 October 2026.** Version 1.2 of this brief described a target state. That target state now exists. The stack was applied in six phases to account 104005345381, the image was pushed to ECR, the service came up healthy behind the ALB, and the seven beats ran against the deployed task. Appendix A carries the cloud outputs, section 4.4 states what is and is not proven, and three defects found during the deployment are recorded rather than smoothed over: the phase script did not target the VPC network resources, the image build used the wrong context, and the ECS Exec logging call named an API parameter that does not exist in this version.
 
@@ -98,6 +100,27 @@ KYC writes are refused in code, not by network policy: every creation path retur
 | User authentication | There are no users. The write path is gated by an approved review, not by identity | Phase 1, Cognito or an IAM authorizer |
 | Database service | SQLite is single-writer and in-process. RDS or Aurora would force a persistence adapter, which is a code change, not a deployment change | Phase 1, behind the existing store seam |
 | TLS on the demo endpoint | ACM needs a domain you control. The demo runs on a one-address allowlist over HTTP with fictional data | Phase 1, or CloudFront from day one if a bank stakeholder joins |
+
+[[PAGEBREAK]]
+
+## 3.3 One process plays two roles, and that is the gap a reviewer will find
+
+The deployed image serves two things that a bank keeps apart. In the same Python process, on the same disk, under one task role:
+
+- **The fictional bank.** GET /v1/cases and GET /v1/cases/{case}/{tool}, read-only, from the dataset loaded at startup.
+- **The dispute platform.** The review queue, record creation, idempotency ledger and audit trail, which are the write path.
+
+It is worth being precise about what lives where, because the two are easy to conflate.
+
+| Thing | Where it actually is | Whose data it is |
+| --- | --- | --- |
+| Card, transaction and merchant records | data/dev/dataset.json, loaded at start (tools/runtime.py:48) and served over HTTP only | The bank's |
+| Reviews, records, idempotency keys, attempt counters, audit | SQLite, five tables (tools/runtime.py:29), never read from disk by the copilot | The platform's |
+| The dataset in the image | Copied in at build time (deploy/poc/Dockerfile:32) | The bank's, held in the wrong container |
+
+So the honest answer to "does the write path hold the customer database" is yes: same process, same ephemeral disk, same IAM role, with fictional data. The read-only guarantee is a code rule (403 read_only_mission), not custody.
+
+It stays that way for the pilot on purpose. Splitting the two services means a scope switch inside create_server, two base URLs in the CLI clients, and tests for both, under a 100 percent coverage gate, on the exact path that produces the 12 of 12 run. That is half a day of code the night before a defence, in exchange for a boundary that a reviewer would still qualify, because two containers in one task share an ENI, a disk and a role. Section 10.1 names the replacement: a separate bank service on its own read-only contract, with no customer data in the copilot image at all. Say this before the reviewer asks, not after.
 
 # 4 Architecture as deployed
 
@@ -171,6 +194,7 @@ What is not proven, and should be said before anyone asks: availability beyond o
 | Exec runs as root in the container | Documented AWS behaviour, session logged to CloudWatch | No Exec in the steady state; a signed admin API, Exec as break-glass only |
 | Public ALB on a public IP | Dedicated VPC created for the pilot, address allowlist, deleted after the demo | Private subnets, private ALB, VPC endpoints |
 | Data at rest | Fargate ephemeral storage is encrypted by default | KMS-managed volumes and database encryption |
+| Bank system of record and write path in one process | Section 3.3 states it first: same task, same disk, same role, fictional data only, read-only enforced in code | Separate bank service; the copilot image holds no customer data and reaches the bank through a read-only PrivateLink contract |
 
 ## 5.3 What this document is not
 
@@ -335,6 +359,7 @@ If CloudFront was added for TLS, disable the distribution, wait for status Deplo
 | Credential exposure during setup | Low | High | SSO or short-lived credentials, no keys in the image, CI rejects committed env files | Platform owner |
 | Cost drift if the stack is left running | Low | Low | Budget alarm, teardown script, scale to zero between sessions | Operator |
 | Scope creep into live model calls | Medium | Medium | Model stays replay-only until a qualification record and a bank signature exist | Delivery lead |
+| Reviewer reads the shared process as custody of customer data | Medium | High | Section 3.3 raises it before they do, and 10.1 names the replacement; the pilot claims a contract boundary, not custody | Delivery lead |
 | Demo day network failure | Medium | Medium | Fallback ladder in section 8.2, rehearsed at level 2 | Operator |
 
 ## 9.1 The two risks that actually decide whether this works
@@ -359,6 +384,7 @@ Neither risk costs money to close. Both cost credibility if left open.
 | Address allowlist | WAF managed rules plus private subnets | The allowlist is a convenience, not a control |
 | Exec for approval | A signed admin API, Exec as break-glass only | Approval must be a first-class, audited action |
 | Replay-only model | Live model behind the qualification gate | Already designed; needs the adapter and a signature |
+| Bank mock and dispute platform in one process (section 3.3) | A separate bank service, read-only contract, copilot image carrying no customer data | Custody: the component that writes decisions must not hold the system of record |
 
 ## 10.2 Phases and entry criteria
 
@@ -392,6 +418,7 @@ Two notes that still apply. The account must be a sandbox or a dedicated pilot a
 - Prices are us-east-1 list prices on 28 October 2026, without reservations, savings plans, support plan or tax. They will be wrong in another region and after the next price change.
 - Effort estimates assume one engineer who knows this repository. A first-time AWS operator should add time for the prerequisites, not for the design.
 - The pilot processes 12 fictional dev cases. Throughput claims do not extrapolate from 12 cases, and none are made here.
+- The bank in this pilot is a mock that shares the platform's process (section 3.3). Nothing in this document is evidence about a real bank integration, its latency, or its data contract.
 - The scored run uses the repository's determinism and replay recordings; it makes no model calls, so latency here says nothing about model latency.
 - Nothing in this document is a security attestation, a compliance statement or legal advice.
 - Distribution is Internal. Sending it to a bank requires the review that the classification implies.
