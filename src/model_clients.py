@@ -302,12 +302,29 @@ def _replay(env: Mapping[str, str], registry: Path, require_qualified: bool) -> 
     return replay
 
 
+_AZURE_OPERATION_SUFFIXES = (
+    "/openai/v1/responses",
+    "/openai/v1/chat/completions",
+    "/openai/v1",
+    "/openai",
+)
+
+
+def _azure_base_url(endpoint: str) -> str:
+    """The v1 base URL for a resource endpoint or an operation URL from the portal."""
+    base = endpoint.strip().rstrip("/")
+    for suffix in _AZURE_OPERATION_SUFFIXES:
+        if base.endswith(suffix):
+            base = base[: -len(suffix)].rstrip("/")
+            break
+    return f"{base}/openai/v1/"
+
+
 def _live_client(env: Mapping[str, str], provider: str, model_id: str) -> ModelClient:
     if provider == "azure_openai":
         openai = _sdk("openai")
-        endpoint = _required(env, "AZURE_OPENAI_ENDPOINT").rstrip("/")
         client = openai.OpenAI(
-            base_url=f"{endpoint}/openai/v1/",
+            base_url=_azure_base_url(_required(env, "AZURE_OPENAI_ENDPOINT")),
             api_key=_required(env, "AZURE_OPENAI_API_KEY"),
             max_retries=1,
             timeout=_TIMEOUT_S,

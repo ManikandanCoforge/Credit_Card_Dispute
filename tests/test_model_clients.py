@@ -10,6 +10,7 @@ import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import urlparse
 
 import pytest
 
@@ -542,6 +543,40 @@ def test_azure_builds_a_client_on_the_v1_endpoint_with_one_retry(tmp_path, monke
     # The fake client raises the SDK's own APIError, which must become no answer.
     answer, call = client.ask(CUE_SYSTEM, USER, CUE_SCHEMA)
     assert (answer, call["answered"], call["error"]) == (None, False, "APIError")
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "https://example.openai.azure.com",
+        "https://example.openai.azure.com/openai/v1",
+        "https://example.openai.azure.com/openai/v1/responses",
+        "https://example.openai.azure.com/openai/v1/chat/completions",
+        "https://example.openai.azure.com/openai",
+        "https://example.services.ai.azure.com/openai/v1/responses/",
+    ],
+    ids=[
+        "resource root",
+        "v1 base",
+        "responses URL",
+        "chat completions URL",
+        "openai base",
+        "Foundry responses URL",
+    ],
+)
+def test_azure_accepts_the_full_responses_url_the_portal_shows(
+    endpoint, tmp_path, monkeypatch
+):
+    # The Azure portal can show the path of one operation as the endpoint. A pasted
+    # /openai/v1/responses URL must reach the same resource, not a 404.
+    openai = _fake_openai()
+    monkeypatch.setitem(sys.modules, "openai", openai)
+    env = {**_LUNA_ENV, "AZURE_OPENAI_ENDPOINT": endpoint}
+
+    model_from_env(env, _registry(tmp_path))
+
+    host = urlparse(endpoint)
+    assert openai.built[0]["base_url"] == f"{host.scheme}://{host.netloc}/openai/v1/"
 
 
 def test_a_live_run_appends_every_answer_to_the_named_recording(tmp_path, monkeypatch):
