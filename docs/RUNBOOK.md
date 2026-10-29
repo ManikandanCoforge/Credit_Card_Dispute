@@ -23,7 +23,7 @@ The loop is the only actor that owns a port, a state file and the output paths f
 - Git Bash or a POSIX shell for the Makefile recipes. `make` itself is optional; every recipe is one `uv run --locked` line.
 - Windows: `PYTHONUTF8=1` before any command, or a non-ASCII merchant name is read in the locale encoding.
 - Run every command from the repository root. `uv run --locked` uses `uv.lock` and the package paths are relative to the root.
-- No network and no credentials. The mock binds loopback, and the default application makes no model call.
+- No network and no credentials for the mock and the published scored run. The drafting commands use the hybrid model by default; when it cannot be set up they fall back to the rules. The published scored run stays offline.
 
 ## The one-command path
 
@@ -147,8 +147,13 @@ or `make eval` where make is installed. The six demo beats and the numbers lock 
 | `DISPUTE_PORT` | `python -m src.run_loop` | unset | Port when `--port` is omitted; a value that is not a whole number fails the run |
 | `DISPUTE_DATA` | `python -m src.run_loop` | `data/dev` | Dataset when `--data` is omitted |
 | `DISPUTE_STATE` | `python -m src.run_loop` | `.state/loop-<port>.sqlite` | State file when `--state` is omitted |
+| `MODEL_PROVIDER` | drafting commands, `tools/run_model.sh` | `azure_openai` in drafting; unset means off in `model_from_env` | `off` disables the hybrid; `replay` needs `MODEL_REPLAY` |
+| `MODEL_ID` | drafting commands, `tools/run_model.sh` | `gpt-6-luna` | Deployment or model name; it must match a passed entry in `models.toml` |
+| `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_KEY` | Azure OpenAI | unset | The live pair's endpoint and key |
+| `ANTHROPIC_FOUNDRY_RESOURCE` and `ANTHROPIC_FOUNDRY_API_KEY` | Claude on Foundry | unset | Used when `MODEL_PROVIDER=anthropic_foundry` |
+| `MODEL_REPLAY` | replay | unset | Recording read when `MODEL_PROVIDER=replay` |
 
-`.env.example` documents `PYTHONUTF8`, `DISPUTE_PORT`, `DISPUTE_DATA` and `DISPUTE_STATE`. The loop reads the three `DISPUTE_*` names as fallbacks when `--port`, `--data` and `--state` are omitted, and a flag always wins. Nothing in the file is a secret, and `.env` itself is ignored. If you copy it, export it by hand in Git Bash and run the loop:
+`.env.example` documents `PYTHONUTF8`, `DISPUTE_PORT`, `DISPUTE_DATA`, `DISPUTE_STATE` and the model names. The loop reads the three `DISPUTE_*` names as fallbacks when `--port`, `--data` and `--state` are omitted, and a flag always wins. Nothing in the example is a secret; a filled `.env` may hold the model key, and git ignores it. If you copy it, export it by hand in Git Bash and run the loop:
 
 ```sh
 set -a; . ./.env; set +a
@@ -157,7 +162,30 @@ uv run --locked python -m src.run_loop
 
 `make serve` and `make score` take `PORT` and `STATE` explicitly, so pass the values: `PORT=$DISPUTE_PORT STATE=$DISPUTE_STATE make serve`.
 
-The optional hybrid model reads `MODEL_PROVIDER` and the related names; see the README section. The default run needs none of them.
+### Live model run
+
+The drafting commands use the hybrid by default; `tools/scored_run.py` stays rules-only. Put the provider values in `.env` (gitignored) or in the environment:
+
+```sh
+MODEL_PROVIDER=azure_openai
+MODEL_ID=gpt-6-luna
+AZURE_OPENAI_ENDPOINT=https://RESOURCE.openai.azure.com
+AZURE_OPENAI_API_KEY=...
+```
+
+`tools/run_model.sh` sources `.env`, checks the pair, and writes `reports/scored-run-hybrid.json`:
+
+```sh
+bash tools/run_model.sh
+```
+
+`SUITES="dev synth stress holdout" bash tools/run_model.sh` covers every suite. To test the wiring without a key, replay the recording:
+
+```sh
+MODEL_PROVIDER=replay MODEL_REPLAY=evals/recordings/gpt-6-luna.jsonl bash tools/run_model.sh
+```
+
+`MODEL_PROVIDER=off` disables the hybrid. Keep the key in `.env` or the environment, never in `models.toml`.
 
 ## Severity-1 incident path
 
