@@ -173,6 +173,10 @@ AZURE_OPENAI_ENDPOINT=https://RESOURCE.openai.azure.com
 AZURE_OPENAI_API_KEY=...
 ```
 
+The portal sometimes shows the endpoint with an operation path, such as
+`https://RESOURCE.services.ai.azure.com/openai/v1/responses`. Paste that value or
+the resource URL; the client strips the operation path and builds one base URL.
+
 `tools/run_model.sh` sources `.env`, checks the pair, and writes `reports/scored-run-hybrid.json`:
 
 ```sh
