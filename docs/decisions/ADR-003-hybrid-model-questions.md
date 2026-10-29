@@ -29,7 +29,7 @@ A qualified, approved model may answer two closed questions. Code decides what e
 
 **When no question is asked.** The rules decide alone, as they do with no model, in each of these cases:
 
-- No model is configured. This is the default.
+- No model is configured in this environment, or its key, endpoint or SDK is absent.
 - A customer statement holds text the detectors recognise as an order to the system, a filing command, text addressed to a model (such as "Hi AI:", "note to the assistant", "approve this" or "classify it as"), or `<evidence>` markup. The detectors are `src/untrusted.py` `has_instruction` and `addresses_a_model`, and `src/contract.py` `_INSTRUCTION_SENTENCE`.
 - A restricted value would survive redaction, such as a card number split at any point across a line break or broken up by hidden characters. The lines are scanned joined by a space and joined with nothing.
 - A customer statement has no `Source ID` line to cite its lines by.
