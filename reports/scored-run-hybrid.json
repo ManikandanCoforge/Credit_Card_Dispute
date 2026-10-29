@@ -1,0 +1,213 @@
+{
+  "model": "azure_openai/gpt-6-luna",
+  "git_commit": "e4368df",
+  "generated_at": "2026-10-29T06:01:30Z",
+  "suites": [
+    {
+      "suite": "dev",
+      "rules": {
+        "passed": 12,
+        "total": 12,
+        "failed": {},
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 3,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 0,
+        "model_answers": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "hybrid": {
+        "passed": 12,
+        "total": 12,
+        "failed": {},
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 3,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 7,
+        "model_answers": 7,
+        "input_tokens": 981,
+        "output_tokens": 244
+      }
+    },
+    {
+      "suite": "synth",
+      "rules": {
+        "passed": 25,
+        "total": 31,
+        "failed": {
+          "SYN-S03": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "SYN-S04": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "SYN-S05": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "SYN-S07": [
+            "classification"
+          ],
+          "SYN-S26": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "SYN-S31": [
+            "classification"
+          ]
+        },
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 15,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 0,
+        "model_answers": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "hybrid": {
+        "passed": 30,
+        "total": 31,
+        "failed": {
+          "SYN-S26": [
+            "classification",
+            "deadline",
+            "routing"
+          ]
+        },
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 12,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 22,
+        "model_answers": 22,
+        "input_tokens": 4494,
+        "output_tokens": 663
+      }
+    },
+    {
+      "suite": "stress",
+      "rules": {
+        "passed": 7,
+        "total": 16,
+        "failed": {
+          "STR-P03": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "STR-P05": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "STR-P06": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "STR-P07": [
+            "classification"
+          ],
+          "STR-P08": [
+            "classification"
+          ],
+          "STR-P09": [
+            "classification"
+          ],
+          "STR-P10": [
+            "classification"
+          ],
+          "STR-P14": [
+            "classification",
+            "deadline",
+            "routing"
+          ],
+          "STR-P15": [
+            "classification",
+            "deadline",
+            "routing"
+          ]
+        },
+        "not_built_reasons": {},
+        "wrong_ready": [
+          "STR-P15"
+        ],
+        "manual_review": 11,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 0,
+        "model_answers": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "hybrid": {
+        "passed": 16,
+        "total": 16,
+        "failed": {},
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 8,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 16,
+        "model_answers": 16,
+        "input_tokens": 5585,
+        "output_tokens": 604
+      }
+    },
+    {
+      "suite": "holdout",
+      "rules": {
+        "passed": 6,
+        "total": 8,
+        "failed": {
+          "HLD-H06": [
+            "classification"
+          ],
+          "HLD-H08": [
+            "classification",
+            "deadline",
+            "routing"
+          ]
+        },
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 3,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 0,
+        "model_answers": 0,
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "hybrid": {
+        "passed": 8,
+        "total": 8,
+        "failed": {},
+        "not_built_reasons": {},
+        "wrong_ready": [],
+        "manual_review": 2,
+        "not_built": [],
+        "format_errors": [],
+        "model_calls": 9,
+        "model_answers": 9,
+        "input_tokens": 2226,
+        "output_tokens": 410
+      }
+    }
+  ]
+}
