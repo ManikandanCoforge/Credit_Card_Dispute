@@ -21,6 +21,7 @@ SECURITY = ROOT / "SECURITY.md"
 CONTRIBUTING = ROOT / "CONTRIBUTING.md"
 EDITORCONFIG = ROOT / ".editorconfig"
 CONTRIBUTION = ROOT / "docs" / "CONTRIBUTION.md"
+MODEL_RUNNER = ROOT / "tools" / "run_model.sh"
 
 SECTIONS = (
     "## What",
@@ -204,6 +205,16 @@ def test_the_workflow_cancels_superseded_runs_and_stays_read_only():
     assert "permissions:\n  contents: read" in text
     assert "group: ${{ github.workflow }}-${{ github.ref }}" in text
     assert "cancel-in-progress: true" in text
+
+
+def test_the_live_model_runner_reads_the_local_env_and_names_the_sdk():
+    text = MODEL_RUNNER.read_text(encoding="utf-8")
+    assert text.startswith("#!/usr/bin/env bash")
+    assert "set -euo pipefail" in text
+    assert ".env" in text
+    assert "MODEL_PROVIDER" in text
+    assert "tools/hybrid_eval.py" in text
+    assert "openai==3.37.0" in text
 
 
 def test_dependabot_updates_uv_weekly_in_two_groups():
