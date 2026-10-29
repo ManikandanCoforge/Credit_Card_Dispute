@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the hybrid model over one or more suites and write a JSON report.
+# Run the hybrid model over one or more suites and write a JSON and Markdown report.
 #
 # The Python commands read the process environment, not .env. This wrapper
 # loads .env when it exists, checks the provider's variables, and runs
@@ -27,6 +27,7 @@ fi
 provider="${MODEL_PROVIDER:-azure_openai}"
 model="${MODEL_ID:-gpt-6-luna}"
 report="${REPORT:-reports/scored-run-hybrid.json}"
+markdown="${MARKDOWN:-${report%.json}.md}"
 port="${PORT:-8901}"
 export MODEL_PROVIDER="$provider"
 export MODEL_ID="$model"
@@ -46,7 +47,7 @@ fi
 
 run_report() {
   exec uv run --locked "$@" python tools/hybrid_eval.py \
-    --suites "${suite_args[@]}" --report "$report" --port "$port"
+    --suites "${suite_args[@]}" --report "$report" --markdown "$markdown" --port "$port"
 }
 
 require() {
@@ -64,19 +65,19 @@ case "$provider" in
       echo "MODEL_REPLAY does not name a file: $MODEL_REPLAY" >&2
       exit 1
     fi
-    echo "model: replay/$model; suites: ${suite_args[*]}; report: $report"
+    echo "model: replay/$model; suites: ${suite_args[*]}; report: $report; markdown: $markdown"
     run_report
     ;;
   azure_openai)
     require AZURE_OPENAI_ENDPOINT "in .env, for example https://RESOURCE.openai.azure.com"
     require AZURE_OPENAI_API_KEY "in .env or the environment"
-    echo "model: $provider/$model; suites: ${suite_args[*]}; report: $report"
+    echo "model: $provider/$model; suites: ${suite_args[*]}; report: $report; markdown: $markdown"
     run_report --with openai==3.37.0
     ;;
   anthropic_foundry)
     require ANTHROPIC_FOUNDRY_RESOURCE "in .env"
     require ANTHROPIC_FOUNDRY_API_KEY "in .env or the environment"
-    echo "model: $provider/$model; suites: ${suite_args[*]}; report: $report"
+    echo "model: $provider/$model; suites: ${suite_args[*]}; report: $report; markdown: $markdown"
     run_report --with anthropic==2.1.0
     ;;
   off)

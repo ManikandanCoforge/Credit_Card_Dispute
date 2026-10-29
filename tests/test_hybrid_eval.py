@@ -12,6 +12,7 @@ import runpy
 import socket
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -163,6 +164,8 @@ def test_main_runs_the_dev_suite_against_the_mock_with_recorded_answers(
     assert status == 0
     written = json.loads(report_path.read_text(encoding="utf-8"))
     assert written["model"].startswith("replay/")
+    assert written["git_commit"]
+    assert written["generated_at"].endswith("Z")
     [suite] = written["suites"]
     dataset = json.loads((ROOT / "data" / "dev" / "dataset.json").read_text(encoding="utf-8"))
     assert suite["suite"] == "dev"
@@ -172,6 +175,110 @@ def test_main_runs_the_dev_suite_against_the_mock_with_recorded_answers(
     assert suite["rules"]["format_errors"] == suite["hybrid"]["format_errors"] == []
     printed = capsys.readouterr().out
     assert printed == f"Model: {written['model']}\n{render_table(written['suites'])}\n"
+
+
+def _row(passed=0, total=0, failed=None, not_built=None, format_errors=None):
+    return {
+        "passed": passed,
+        "total": total,
+        "failed": failed or {},
+        "not_built_reasons": not_built or {},
+        "wrong_ready": [],
+        "manual_review": 0,
+        "not_built": sorted((not_built or {})),
+        "format_errors": format_errors or [],
+        "model_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+    }
+
+
+def test_the_markdown_report_names_the_model_commit_and_every_failure():
+    report = {
+        "model": "azure_openai/gpt-6-luna",
+        "git_commit": "26d70c3",
+        "generated_at": "2026-10-29T05:40:00Z",
+        "suites": [
+            {
+                "suite": "synth",
+                "rules": _row(
+                    25,
+                    31,
+                    failed={"SYN-S26": ["classification", "deadline", "routing"]},
+                ),
+                "hybrid": _row(
+                    30,
+                    31,
+                    failed={"SYN-S26": ["classification", "deadline", "routing"]},
+                    not_built={"SYN-S27": "BankReadError"},
+                    format_errors=["the submission for SYN-S28 has no case_id"],
+                ),
+            }
+        ],
+    }
+
+    text = hybrid_eval.render_markdown(report)
+
+    assert text.startswith("# Hybrid model run\n\n")
+    assert "Model: `azure_openai/gpt-6-luna`" in text
+    assert "Commit: `26d70c3`" in text
+    assert "Generated: 2026-10-29T05:40:00Z" in text
+    assert "| synth | rules | 25 / 31 | 0 | 0 | 0 | 0 | 0 / 0 |" in text
+    assert "- synth / rules: SYN-S26 (classification, deadline, routing)" in text
+    assert "- synth / hybrid: SYN-S27 not built (BankReadError)" in text
+    assert "- synth / hybrid format: the submission for SYN-S28 has no case_id" in text
+
+
+def test_the_markdown_report_says_none_when_everything_passed():
+    report = {
+        "model": "replay/gpt-6-luna",
+        "git_commit": "abc1234",
+        "generated_at": "2026-10-29T05:40:00Z",
+        "suites": [{"suite": "dev", "rules": _row(12, 12), "hybrid": _row(12, 12)}],
+    }
+
+    assert "## Failures\n\nNone.\n" in hybrid_eval.render_markdown(report)
+
+
+def test_git_commit_is_unknown_when_git_cannot_run(monkeypatch):
+    def broken(*args, **kwargs):
+        raise OSError("no git on this host")
+
+    monkeypatch.setattr(hybrid_eval.subprocess, "run", broken)
+
+    assert hybrid_eval._git_commit() == "unknown"
+
+
+def test_main_writes_the_markdown_report_beside_the_json(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(
+        hybrid_eval,
+        "model_from_env",
+        lambda env: SimpleNamespace(provider="replay", model="test"),
+    )
+    row = _row(12, 12)
+    monkeypatch.setattr(
+        hybrid_eval,
+        "evaluate_suite",
+        lambda name, model, port: {"suite": name, "rules": row, "hybrid": row},
+    )
+    report_path = tmp_path / "reports" / "hybrid-eval.json"
+    markdown_path = tmp_path / "reports" / "hybrid-eval.md"
+
+    status = main(
+        [
+            "--suites",
+            "dev",
+            "--report",
+            str(report_path),
+            "--markdown",
+            str(markdown_path),
+        ]
+    )
+
+    assert status == 0
+    assert report_path.exists()
+    assert "Model: `replay/test`" in markdown_path.read_text(encoding="utf-8")
+    assert capsys.readouterr().out.startswith("Model: replay/test\n")
 
 
 def test_waiting_for_the_mock_gives_up_after_its_deadline(monkeypatch):
