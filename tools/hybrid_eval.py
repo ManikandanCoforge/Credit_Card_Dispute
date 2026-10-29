@@ -31,6 +31,7 @@ import time
 import urllib.request
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -170,6 +171,70 @@ def render_table(reports: Sequence[Mapping[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def render_markdown(report: Mapping[str, Any]) -> str:
+    """A readable version of the JSON report: the same rows, then every failure."""
+    lines = [
+        "# Hybrid model run",
+        "",
+        f"Model: `{report['model']}`",
+        f"Commit: `{report['git_commit']}`",
+        f"Generated: {report['generated_at']}",
+        "",
+        "| Suite | Design | Passed | Wrong ready | Manual review | Not built | Calls | Tokens in/out |",
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for suite in report["suites"]:
+        for label in ("rules", "hybrid"):
+            row = suite[label]
+            lines.append(
+                f"| {suite['suite']} | {label} | {row['passed']} / {row['total']} | "
+                f"{len(row['wrong_ready'])} | {row['manual_review']} | "
+                f"{len(row['not_built'])} | {row['model_calls']} | "
+                f"{row['input_tokens']} / {row['output_tokens']} |"
+            )
+    failures = _failure_lines(report["suites"])
+    lines += ["", "## Failures", ""]
+    return "\n".join(lines + (failures or ["None."])) + "\n"
+
+
+def _failure_lines(suites: Sequence[Mapping[str, Any]]) -> list[str]:
+    """One line per failed, unbuilt or malformed case, named with its suite and design."""
+    lines = []
+    for suite in suites:
+        for label in ("rules", "hybrid"):
+            row = suite[label]
+            not_built = set(row["not_built_reasons"])
+            for case_id, checks in row["failed"].items():
+                if case_id not in not_built:
+                    lines.append(f"- {suite['suite']} / {label}: {case_id} ({', '.join(checks)})")
+            for case_id, reason in row["not_built_reasons"].items():
+                lines.append(f"- {suite['suite']} / {label}: {case_id} not built ({reason})")
+            for error in row["format_errors"]:
+                lines.append(f"- {suite['suite']} / {label} format: {error}")
+    return lines
+
+
+def _git_commit() -> str:
+    """The short commit the run was made from, or unknown outside a git checkout."""
+    try:
+        completed = subprocess.run(  # nosec B603 B607
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+    return completed.stdout.strip() or "unknown"
+
+
+def _timestamp() -> str:
+    """The UTC time the report was written, in the format the other reports use."""
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Evaluate the chosen suites and write the report."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -178,6 +243,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--report", type=Path, default=ROOT / "evals" / "reports" / "hybrid-eval.json"
     )
     parser.add_argument("--port", type=int, default=8901)
+    parser.add_argument("--markdown", type=Path, default=None)
     args = parser.parse_args(argv)
     try:
         model = model_from_env(os.environ)
@@ -188,12 +254,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("set MODEL_PROVIDER (for example replay with MODEL_REPLAY) first", file=sys.stderr)
         return 1
     reports = [evaluate_suite(name, model, args.port) for name in args.suites]
+    payload = {
+        "model": f"{model.provider}/{model.model}",
+        "git_commit": _git_commit(),
+        "generated_at": _timestamp(),
+        "suites": reports,
+    }
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    args.report.write_text(
-        json.dumps({"model": f"{model.provider}/{model.model}", "suites": reports}, indent=2)
-        + "\n",
-        encoding="utf-8",
-    )
+    args.report.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    if args.markdown is not None:
+        args.markdown.parent.mkdir(parents=True, exist_ok=True)
+        args.markdown.write_text(render_markdown(payload), encoding="utf-8")
     print(f"Model: {model.provider}/{model.model}\n{render_table(reports)}")
     return 0
 

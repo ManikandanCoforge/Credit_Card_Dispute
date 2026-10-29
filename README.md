@@ -81,13 +81,15 @@ A live run needs the provider SDK, which is not in `uv.lock`. Put the credential
 MODEL_PROVIDER=azure_openai MODEL_ID=gpt-6-luna AZURE_OPENAI_ENDPOINT=https://RESOURCE.openai.azure.com AZURE_OPENAI_API_KEY=KEY uv run --locked --with openai==3.37.0 python -m src.contract_records http://127.0.0.1:8765 data/dev
 ```
 
-The wrapper writes `reports/scored-run-hybrid.json` and leaves the committed replay report alone. Add the four names to `.env` once, then run it:
+The wrapper writes `reports/scored-run-hybrid.json` and a readable `reports/scored-run-hybrid.md`, and leaves the committed replay report alone. Add the four names to `.env` once, then run it:
 
 ```sh
 bash tools/run_model.sh
 ```
 
 `SUITES="dev synth stress holdout" bash tools/run_model.sh` covers every suite. `MODEL_PROVIDER=replay` runs the same wrapper without a key, using the recording named in `MODEL_REPLAY`.
+
+`reports/scored-run-hybrid.md` is the report to read: it names the model, the commit, the generated time, one row per suite and every failure. The committed copy is the live run on 2026-10-29: dev 12/12, synth 30/31, stress 16/16, holdout 8/8, with SYN-S26 the only failing case. A rerun writes both files from the tree it runs in.
 
 Claude Haiku 5.5 on Microsoft Foundry has to be qualified and registered first. It then runs with these settings:
 

@@ -214,6 +214,7 @@ def test_the_live_model_runner_reads_the_local_env_and_names_the_sdk():
     assert ".env" in text
     assert "MODEL_PROVIDER" in text
     assert "tools/hybrid_eval.py" in text
+    assert "--markdown" in text
     assert "openai==3.37.0" in text
 
 
